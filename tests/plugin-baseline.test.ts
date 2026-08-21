@@ -80,9 +80,12 @@ describe('原生 Workbench 插件基线', () => {
     await plugin.onload();
     expect(plugin.settings).toEqual({ dshCommand: 'dsh' });
 
-    await plugin.updateDshCommand('C:\\Tools\\dsh.cmd');
-    expect(plugin.settings).toEqual({ dshCommand: 'C:\\Tools\\dsh.cmd' });
-    expect(mockObsidian.savedData).toEqual([{ dshCommand: 'C:\\Tools\\dsh.cmd' }]);
+    const absoluteCommand = process.platform === 'win32'
+      ? 'C:\\Tools\\dsh.cmd'
+      : '/opt/deepseek/dsh';
+    await plugin.updateDshCommand(absoluteCommand);
+    expect(plugin.settings).toEqual({ dshCommand: absoluteCommand });
+    expect(mockObsidian.savedData).toEqual([{ dshCommand: absoluteCommand }]);
   });
 
 });
