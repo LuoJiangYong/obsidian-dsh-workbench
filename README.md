@@ -10,15 +10,18 @@
 
 | 能力 | 状态 |
 | --- | --- |
-| 原生 Workbench 视图 | 已实现，已通过隔离 Vault 加载与重载验收 |
-| ribbon 与命令入口 | 已实现，命令入口已通过隔离 Vault 验收 |
+| 中央 Workbench 与内部导航 | 已实现；已通过本批隔离 Vault 运行与视觉验收 |
+| ribbon 与中央标签页命令入口 | 已实现；已通过本批隔离 Vault 运行验收 |
+| 可选右侧快速助手容器 | 已实现真实空状态；已通过本批隔离 Vault 运行与视觉验收 |
 | DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |
 | DSH 会话、流式事件与取消 | 尚未实现 |
 | Vault 读取与写入 | 未启用 |
 | GitHub Release | 未创建 |
 | Obsidian 社区提交 | 尚未进行 |
 
-当前视图只展示真实的工程状态，并提供手动 `--version` 健康检查；不提供不可用的聊天输入、发送或停止入口。DSH 命令可在插件设置中配置为 PATH 裸命令或受支持扩展名的绝对路径。
+当前 ribbon 和“打开工作台”命令打开或复用一个中央 Workbench 标签页。标签页内的插件自有左导航只开放“概览”和“运行状态”；助手、项目、专家/Skill/连接器、自动化、资料库和领域工作台均明确标记为“规划中”。
+
+运行状态只提供手动 `--version` 健康检查；可选右侧快速助手当前只展示健康状态、上下文空态和快捷提问不可用说明，不提供聊天输入、发送、停止或模型选择。DSH 命令可在插件设置中配置为 PATH 裸命令或受支持扩展名的绝对路径。
 
 ## 开发运行
 
@@ -93,9 +96,21 @@ npm run verify
 - 测试插件目录、临时假运行时和测试设置已清理；没有读取或写入 Vault 内容。
 - P0 只接受薄 `obsidian-bridge` 作为未来生产路线；SDK 与 ACP 不作为并行 fallback，生产 bridge 仍未实现。
 
+## Workbench 壳层批次验收
+
+- ribbon 和命令打开或复用中央 Workbench 标签页；连续打开后主工作区内只有一个 Workbench。
+- 插件自有 `194px` 左导航开放概览与运行状态，六个未来模块保持原生禁用并显示“规划中”。
+- DSH 健康检查移动到运行状态页；隔离 Vault 读回 `DSH 可执行（0.1.1-rc.1）`，同时仍显示“尚未连接 DSH”。
+- 可选快速助手只在显式命令后出现在右侧，展示健康、上下文空态和快捷提问不可用说明；没有输入、发送、停止或模型选择。
+- 宽屏浅色、宽屏深色、`700px` 窄容器和右侧快速助手截图通过同屏参考比较；设计验收结果为 `passed`。
+- Obsidian 错误缓冲与错误级控制台消息均为 0；没有读取或写入 Vault 内容。
+
 ## 开发治理
 
 - 项目开发宪法：[AGENTS.md](./AGENTS.md)
+- UI 设计权威：[DESIGN.md](./DESIGN.md)
+- Workbench 壳层 ADR：[docs/architecture/ADR-002-workbench-shell.md](./docs/architecture/ADR-002-workbench-shell.md)
+- 设计验收：[design-qa.md](./design-qa.md)
 - 开发宪法评估：[docs/governance/development-constitution-assessment.md](./docs/governance/development-constitution-assessment.md)
 - CI/CD 路线图：[docs/ci-cd-roadmap.md](./docs/ci-cd-roadmap.md)
 - P0 运行时路线评估：[docs/architecture/p0-runtime-route-assessment.md](./docs/architecture/p0-runtime-route-assessment.md)

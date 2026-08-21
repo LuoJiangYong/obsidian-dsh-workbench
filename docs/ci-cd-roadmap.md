@@ -46,6 +46,7 @@ Phase A 不创建 Release，不提交社区目录，也不批准 Phase B。
 - manifest/package/versions 一致性与构建资产检查。
 - 仓库边界、禁止文件、敏感路径和凭据模式检查。
 - workflow 命令与 package scripts 的覆盖自检。
+- 中央 Workbench 标签页复用、内部导航、运行状态切换和按需右侧快速助手由插件基线测试覆盖；`verify:ci-coverage` 明确校验这些用例仍属于双平台完整 `npm test`。
 - Node 24 action runtime 版本固定与防止退回 Node 20 runtime 的自检。
 
 ## Phase B：治理与架构门
@@ -102,7 +103,7 @@ Batch 0B 已建立其中的只读健康检查子集：
 
 Phase D 未通过时不得创建公开 Release 或提交社区目录。
 
-当前已完成 Phase D 中与 Batch 0A 对应的最小加载/禁用冒烟，以及 Batch 0B 的设置读回、真实健康检查、错误恢复、超时和禁用进程清理验收。测试插件目录和临时运行时均已清理。完整会话、Vault 安全矩阵和发布资产验收仍未实现，因此 Phase D 整体仍是延期，未通过。
+当前已完成 Phase D 中与 Batch 0A 对应的最小加载/禁用冒烟、Batch 0B 的设置读回与真实健康检查，以及中央 Workbench、内部导航和可选快速助手的隔离 Vault 运行与视觉验收。完整会话、Vault 安全矩阵和发布资产验收仍未实现，因此 Phase D 整体仍是延期，未通过。
 
 ## Phase E：Release Automation
 
@@ -135,4 +136,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-Batch 0B 已完成只读健康检查、P0 路线决策和隔离 Vault 验收。Windows 专项 CI 已接入；远端 CI 与原始 annotations 由本批提交后的 GitHub 检查确认。完整协议、真实取消、权限回路与 Vault 安全仍属于后续独立批次。
+当前批次已把 Workbench 从右侧叶片升级为中央标签页与内部导航，并建立按需右侧快速助手空容器。UI 契约已接入双平台 `npm test` 和 CI 覆盖自检，隔离 Vault 运行与视觉验收已通过；远端 CI 与原始 annotations 仍待提交后确认。完整协议、真实取消、权限回路与 Vault 安全仍属于后续独立批次。

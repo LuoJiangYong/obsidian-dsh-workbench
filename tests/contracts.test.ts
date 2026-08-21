@@ -37,6 +37,8 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
+    expect(readme).toContain('| 中央 Workbench 与内部导航 | 已实现；已通过本批隔离 Vault 运行与视觉验收 |');
+    expect(readme).toContain('| 可选右侧快速助手容器 | 已实现真实空状态；已通过本批隔离 Vault 运行与视觉验收 |');
     expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |');
     expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
     expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
@@ -44,6 +46,23 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('| Vault 读取与写入 | 未启用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('- 不采集客户端遥测。');
+  });
+
+  it('DESIGN 与 ADR 固定中央工作台、内部导航和可选快速助手边界', async () => {
+    const design = await readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8');
+    const adr = await readFile(
+      path.join(repositoryRoot, 'docs', 'architecture', 'ADR-002-workbench-shell.md'),
+      'utf8',
+    );
+
+    expect(design).toContain('状态：已批准，作为本仓库 UI 设计权威。');
+    expect(design).toContain('中央 Workbench 标签页');
+    expect(design).toContain('桌面宽屏导航宽度固定为 `194px`');
+    expect(design).toContain('快速助手是独立、按需打开的 Obsidian 右侧视图');
+    expect(design).toContain('当前不得显示可编辑对话框、发送、停止、模型选择');
+    expect(adr).toContain('状态：已接受');
+    expect(adr).toContain("调用 `workspace.getLeaf('tab')`");
+    expect(adr).toContain('不建立公共模块注册器、动态加载器或数据协议');
   });
 
   it('P0 评估只接受一个生产运行时 ADR', async () => {
