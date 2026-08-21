@@ -12,24 +12,31 @@ export interface CommandRegistration {
 export class MockElement {
   readonly children: MockElement[] = [];
   readonly classes = new Set<string>();
+  readonly attributes = new Map<string, string>();
   disabled = false;
   private readonly eventListeners = new Map<string, Array<() => void | Promise<void>>>();
+  icon = '';
+  readonly tagName: string;
   text = '';
+
+  constructor(tagName = 'div') {
+    this.tagName = tagName;
+  }
 
   addClass(className: string): void {
     this.classes.add(className);
   }
 
-  createDiv(options: { cls?: string; text?: string } = {}): MockElement {
-    return this.createChild(options);
+  createDiv(options: ElementOptions = {}): MockElement {
+    return this.createChild('div', options);
   }
 
-  createEl(_tag: string, options: { cls?: string; text?: string } = {}): MockElement {
-    return this.createChild(options);
+  createEl(tag: string, options: ElementOptions = {}): MockElement {
+    return this.createChild(tag, options);
   }
 
-  createSpan(options: { cls?: string; text?: string } = {}): MockElement {
-    return this.createChild(options);
+  createSpan(options: ElementOptions = {}): MockElement {
+    return this.createChild('span', options);
   }
 
   empty(): void {
@@ -48,18 +55,40 @@ export class MockElement {
     for (const listener of this.eventListeners.get('click') ?? []) await listener();
   }
 
+  findAllByClass(className: string): MockElement[] {
+    return [
+      ...(this.classes.has(className) ? [this] : []),
+      ...this.children.flatMap((child) => child.findAllByClass(className)),
+    ];
+  }
+
+  setAttr(name: string, value: string): void {
+    this.attributes.set(name, value);
+  }
+
   allText(): string[] {
     return [this.text, ...this.children.flatMap((child) => child.allText())]
       .filter((value) => value.length > 0);
   }
 
-  private createChild(options: { cls?: string; text?: string }): MockElement {
-    const child = new MockElement();
-    if (options.cls) child.addClass(options.cls);
+  private createChild(tagName: string, options: ElementOptions): MockElement {
+    const child = new MockElement(tagName);
+    if (options.cls) {
+      for (const className of options.cls.split(' ')) child.addClass(className);
+    }
     if (options.text) child.text = options.text;
+    for (const [name, value] of Object.entries(options.attr ?? {})) {
+      child.setAttr(name, value);
+    }
     this.children.push(child);
     return child;
   }
+}
+
+interface ElementOptions {
+  readonly attr?: Readonly<Record<string, string>>;
+  readonly cls?: string;
+  readonly text?: string;
 }
 
 export class WorkspaceLeaf {
@@ -81,6 +110,7 @@ export class WorkspaceLeaf {
 export class Workspace {
   readonly detachedTypes: string[] = [];
   readonly leaves: WorkspaceLeaf[] = [];
+  readonly requestedLeafTypes: string[] = [];
   revealedLeaf: WorkspaceLeaf | undefined;
   readonly rightLeaf: WorkspaceLeaf;
 
@@ -98,6 +128,13 @@ export class Workspace {
 
   getLeavesOfType(type: string): WorkspaceLeaf[] {
     return this.leaves.filter((leaf) => leaf.viewState?.type === type);
+  }
+
+  getLeaf(type: string): WorkspaceLeaf {
+    this.requestedLeafTypes.push(type);
+    const leaf = new WorkspaceLeaf(this.rightLeaf.app);
+    this.leaves.push(leaf);
+    return leaf;
   }
 
   getRightLeaf(_split: boolean): WorkspaceLeaf {
@@ -197,4 +234,8 @@ export class Notice {
   constructor(message: string) {
     mockObsidian.notices.push(message);
   }
+}
+
+export function setIcon(element: MockElement, iconName: string): void {
+  element.icon = iconName;
 }

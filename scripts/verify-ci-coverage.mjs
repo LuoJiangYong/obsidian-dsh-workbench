@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
 const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
+const pluginBaseline = await readFile('tests/plugin-baseline.test.ts', 'utf8');
 
 const requiredCommands = [
   'npm ci',
@@ -44,8 +45,19 @@ assert(
     && packageJson.scripts['test:runtime'].includes('tests/dsh-health.test.ts'),
   'test:runtime 必须覆盖设置契约和受管健康检查',
 );
+assert(
+  packageJson.scripts.test === 'vitest run',
+  'test 必须执行完整 Vitest 集，不能把 UI 契约排除在双平台 CI 外',
+);
+for (const uiContract of [
+  '在中央标签页打开并复用 Workbench 视图',
+  '渲染内部导航、概览真值，并切换到运行状态',
+  '只在显式请求时打开并复用右侧快速助手真实空状态',
+]) {
+  assert(pluginBaseline.includes(uiContract), `插件基线缺少 UI 契约：${uiContract}`);
+}
 
-console.debug('CI 覆盖验证通过：双平台 Phase A 与 Windows DSH 专项门已接入。');
+console.debug('CI 覆盖验证通过：双平台 Phase A、Workbench UI 契约与 Windows DSH 专项门已接入。');
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);

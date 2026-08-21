@@ -8,6 +8,10 @@ import {
   validateDshCommand,
 } from './dsh-settings';
 import { WorkbenchSettingTab } from './settings-tab';
+import {
+  QuickAssistantView,
+  VIEW_TYPE_QUICK_ASSISTANT,
+} from './quick-assistant-view';
 import { VIEW_TYPE_WORKBENCH, WorkbenchView } from './workbench-view';
 
 export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
@@ -27,6 +31,12 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
         runDshHealthCheck: async () => await this.runDshHealthCheck(),
       }),
     );
+    this.registerView(
+      VIEW_TYPE_QUICK_ASSISTANT,
+      (leaf: WorkspaceLeaf) => new QuickAssistantView(leaf, {
+        getDshHealth: () => this.health,
+      }),
+    );
 
     this.addRibbonIcon('bot', '打开 DeepSeek Harness Workbench', () => {
       void this.activateWorkbench().catch((error: unknown) => {
@@ -40,6 +50,16 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
       callback: () => {
         void this.activateWorkbench().catch((error: unknown) => {
           new Notice(this.activationErrorMessage(error));
+        });
+      },
+    });
+
+    this.addCommand({
+      id: 'open-quick-assistant',
+      name: '打开快速助手',
+      callback: () => {
+        void this.activateQuickAssistant().catch((error: unknown) => {
+          new Notice(this.quickAssistantActivationErrorMessage(error));
         });
       },
     });
@@ -70,13 +90,25 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
 
   async activateWorkbench(): Promise<void> {
     const existingLeaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_WORKBENCH)[0];
-    const leaf = existingLeaf ?? this.app.workspace.getRightLeaf(false);
+    const leaf = existingLeaf ?? this.app.workspace.getLeaf('tab');
 
     if (!leaf) {
-      throw new Error('无法创建右侧 Workbench 视图');
+      throw new Error('无法创建中央 Workbench 标签页');
     }
 
     await leaf.setViewState({ type: VIEW_TYPE_WORKBENCH, active: true });
+    await this.app.workspace.revealLeaf(leaf);
+  }
+
+  async activateQuickAssistant(): Promise<void> {
+    const existingLeaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_QUICK_ASSISTANT)[0];
+    const leaf = existingLeaf ?? this.app.workspace.getRightLeaf(false);
+
+    if (!leaf) {
+      throw new Error('无法创建右侧快速助手视图');
+    }
+
+    await leaf.setViewState({ type: VIEW_TYPE_QUICK_ASSISTANT, active: true });
     await this.app.workspace.revealLeaf(leaf);
   }
 
@@ -85,9 +117,17 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     return `无法打开 DeepSeek Harness Workbench：${detail}`;
   }
 
+  private quickAssistantActivationErrorMessage(error: unknown): string {
+    const detail = error instanceof Error ? error.message : String(error);
+    return `无法打开快速助手：${detail}`;
+  }
+
   private refreshWorkbenchViews(): void {
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_WORKBENCH)) {
       if (leaf.view instanceof WorkbenchView) leaf.view.render();
+    }
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_QUICK_ASSISTANT)) {
+      if (leaf.view instanceof QuickAssistantView) leaf.view.render();
     }
   }
 }
