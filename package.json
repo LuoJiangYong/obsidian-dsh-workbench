@@ -1,0 +1,41 @@
+{
+  "name": "obsidian-dsh-workbench",
+  "version": "0.1.0",
+  "description": "A native, scoped Agent workbench for Obsidian, powered by DeepSeek Harness.",
+  "main": "main.js",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24 <26"
+  },
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run",
+    "build": "node esbuild.config.mjs production",
+    "verify:release-state": "node scripts/verify-release-state.mjs",
+    "verify:boundaries": "node scripts/verify-repo-boundaries.mjs",
+    "verify:ci-coverage": "node scripts/verify-ci-coverage.mjs",
+    "verify": "npm run verify:release-state && npm run verify:boundaries && npm run verify:ci-coverage"
+  },
+  "keywords": [
+    "obsidian",
+    "deepseek-harness",
+    "agent-workbench"
+  ],
+  "author": "Jiang Yong Luo",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "@types/node": "24.13.3",
+    "esbuild": "0.25.5",
+    "eslint": "9.39.4",
+    "eslint-plugin-obsidianmd": "0.4.1",
+    "globals": "17.11.0",
+    "obsidian": "1.13.1",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.67.0",
+    "vitest": "4.1.11"
+  }
+}

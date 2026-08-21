@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Phase A (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@v4
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: 锁文件安装
+        run: npm ci
+
+      - name: TypeScript 检查
+        run: npm run typecheck
+
+      - name: 代码规范
+        run: npm run lint
+
+      - name: 单元与契约测试
+        run: npm test
+
+      - name: 生产构建
+        run: npm run build
+
+      - name: 治理与仓库边界验证
+        run: npm run verify

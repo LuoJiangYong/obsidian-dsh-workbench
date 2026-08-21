@@ -1,0 +1,10 @@
+{
+  "id": "deepseek-harness-workbench",
+  "name": "DeepSeek Harness Workbench",
+  "version": "0.1.0",
+  "minAppVersion": "1.13.0",
+  "description": "Open a native, scoped Agent workbench for an external DeepSeek Harness.",
+  "author": "Jiang Yong Luo",
+  "authorUrl": "https://github.com/LuoJiangYong",
+  "isDesktopOnly": true
+}
