@@ -23,7 +23,7 @@ CI/CD 是 `AGENTS.md` 的自动执行器，不是产品决策者、下一阶段�
 
 ## Phase A：工程质量门
 
-状态：已配置；Windows 完整本地质量门已通过，远端 Windows/Ubuntu CI 待验证。
+状态：已通过；Windows 完整本地质量门、远端 Windows/Ubuntu CI 和原始零 annotations 均已有证据。
 
 在最小插件骨架建立的同一批次实施：
 
@@ -46,10 +46,11 @@ Phase A 不创建 Release，不提交社区目录，也不批准 Phase B。
 - manifest/package/versions 一致性与构建资产检查。
 - 仓库边界、禁止文件、敏感路径和凭据模式检查。
 - workflow 命令与 package scripts 的覆盖自检。
+- Node 24 action runtime 版本固定与防止退回 Node 20 runtime 的自检。
 
 ## Phase B：治理与架构门
 
-状态：固定身份、非官方声明、桌面端范围和发布边界的最小契约已配置；远端 CI 待验证。
+状态：固定身份、非官方声明、桌面端范围和发布边界的最小契约已通过本地与远端 CI。
 
 计划覆盖：
 
@@ -126,4 +127,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-完成 Batch 0A 的完整本地质量门、隔离 Vault 加载/禁用验收、GitHub 公共仓库推送，以及远端 SHA、CI 成功和原始零 annotations 核验。Phase C 的健康检查、假运行时、完整协议、取消和 Vault 安全项继续标记为延期，未通过。
+Batch 0A 已完成完整本地质量门、隔离 Vault 加载/禁用验收、GitHub 公共仓库推送，以及远端 SHA、CI 成功和原始零 annotations 核验。下一批仍需单独批准；Phase C 的健康检查、假运行时、完整协议、取消和 Vault 安全项继续标记为延期，未通过。

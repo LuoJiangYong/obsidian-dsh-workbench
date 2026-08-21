@@ -51,7 +51,7 @@
 | 计划中 | DSH 健康检查、运行时适配器、流式会话、取消、Vault Bridge |
 | 未实现 | DSH 连接、网络访问、子进程管理、Vault 读取和写入、凭据存储 |
 | 已通过真实宿主验收 | 隔离测试 Vault 中的发现、启用、重载、命令打开、DOM、截图、错误检查和禁用；测试安装已清理 |
-| 待验证 | 远端 SHA、远端 CI 和原始 annotations |
+| 已通过远端验证 | `main` 远端 SHA 与本地一致；Windows 与 Ubuntu Phase A 成功；2 个 check-run 的原始 annotations 合计为 0 |
 | 延期，未通过 | Windows DSH 进程生命周期、真实协议能力、Vault 安全矩阵、Release 自动化、社区提交 |
 | 当前阻塞 | 无；后续阶段仍需逐批批准和对应真实环境证据 |
 
@@ -67,3 +67,6 @@
 - `.dsh-workbench` DOM 数量为 1，显示内容与当前未连接 DSH、健康检查未实现、Vault 未启用和仅桌面端的事实一致。
 - 启用、重载和禁用后的插件错误均为 0；附加调试器后的错误级控制台消息为 0。
 - 插件禁用后，隔离 Vault 中的三个临时构建资产和空插件目录已清理；这些内容可由生产构建恢复。
+- 首次远端 CI 的两个 job 虽然成功，但各产生 1 条 Node 20 action runtime 弃用 annotation，因此未被视为完成。
+- `actions/checkout` 与 `actions/setup-node` 升级为 Node 24 runtime 的当前版本并固定到完整提交 SHA；CI 自检同时加入防回退断言。
+- 修正提交 `7656e15c60eef25b802fe21f2359217351ec94be` 的远端 SHA 与本地一致，Windows 与 Ubuntu job 均成功，两个 check-run 的原始 annotations 合计为 0。

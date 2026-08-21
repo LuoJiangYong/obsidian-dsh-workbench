@@ -17,7 +17,7 @@
 
 | 边界 | 当前事实 | 是否已占位 |
 | --- | --- | --- |
-| GitHub 仓库 | 已创建公开仓库 `LuoJiangYong/obsidian-dsh-workbench`，首次推送待完成 | 是，仅指 GitHub 仓库名 |
+| GitHub 仓库 | 已创建公开仓库 `LuoJiangYong/obsidian-dsh-workbench`，`main` 首次推送与 CI 已完成 | 是，仅指 GitHub 仓库名 |
 | Obsidian 社区显示名 | 官方社区目录精确匹配为 0 | 否 |
 | Obsidian 社区插件 ID | 官方社区目录精确匹配为 0 | 否 |
 | GitHub Release | 未创建 | 不适用 |

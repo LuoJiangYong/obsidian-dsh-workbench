@@ -77,6 +77,7 @@ npm run verify
 - 隔离测试 Vault 中完成插件发现、启用、重载、命令打开和禁用。
 - Workbench DOM 唯一匹配；重载与禁用后的插件错误和错误级控制台消息均为零。
 - 测试插件目录已在禁用后清理，构建资产可由 `npm run build` 重建。
+- GitHub Actions 的 Windows 与 Ubuntu Phase A 均成功，原始 check-run annotations 合计为 0。
 - 这些证据只证明原生插件基线，不证明 DSH 或 Vault 功能可用。
 
 ## 开发治理
