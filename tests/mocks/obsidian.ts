@@ -12,6 +12,8 @@ export interface CommandRegistration {
 export class MockElement {
   readonly children: MockElement[] = [];
   readonly classes = new Set<string>();
+  disabled = false;
+  private readonly eventListeners = new Map<string, Array<() => void | Promise<void>>>();
   text = '';
 
   addClass(className: string): void {
@@ -36,6 +38,16 @@ export class MockElement {
     this.text = '';
   }
 
+  addEventListener(type: string, callback: () => void | Promise<void>): void {
+    const listeners = this.eventListeners.get(type) ?? [];
+    listeners.push(callback);
+    this.eventListeners.set(type, listeners);
+  }
+
+  async click(): Promise<void> {
+    for (const listener of this.eventListeners.get('click') ?? []) await listener();
+  }
+
   allText(): string[] {
     return [this.text, ...this.children.flatMap((child) => child.allText())]
       .filter((value) => value.length > 0);
@@ -52,6 +64,7 @@ export class MockElement {
 
 export class WorkspaceLeaf {
   readonly app: App;
+  view: unknown;
   viewState: ViewState | undefined;
 
   constructor(app: App) {
@@ -60,6 +73,8 @@ export class WorkspaceLeaf {
 
   async setViewState(viewState: ViewState): Promise<void> {
     this.viewState = viewState;
+    const creator = mockObsidian.views.get(viewState.type);
+    if (creator && !this.view) this.view = creator(this);
   }
 }
 
@@ -105,16 +120,22 @@ export class App {
 export const mockObsidian = {
   commands: [] as CommandRegistration[],
   lastApp: undefined as App | undefined,
+  loadedData: null as unknown,
   notices: [] as string[],
   ribbonCallbacks: [] as Array<() => void>,
+  savedData: [] as unknown[],
+  settingTabs: [] as PluginSettingTab[],
   views: new Map<string, (leaf: WorkspaceLeaf) => unknown>(),
 };
 
 export function resetMockObsidian(): void {
   mockObsidian.commands.length = 0;
   mockObsidian.lastApp = undefined;
+  mockObsidian.loadedData = null;
   mockObsidian.notices.length = 0;
   mockObsidian.ribbonCallbacks.length = 0;
+  mockObsidian.savedData.length = 0;
+  mockObsidian.settingTabs.length = 0;
   mockObsidian.views.clear();
 }
 
@@ -134,8 +155,30 @@ export class Plugin {
     return new MockElement();
   }
 
+  addSettingTab(settingTab: PluginSettingTab): void {
+    mockObsidian.settingTabs.push(settingTab);
+  }
+
+  async loadData(): Promise<unknown> {
+    return mockObsidian.loadedData;
+  }
+
   registerView(type: string, creator: (leaf: WorkspaceLeaf) => unknown): void {
     mockObsidian.views.set(type, creator);
+  }
+
+  async saveData(data: unknown): Promise<void> {
+    mockObsidian.savedData.push(data);
+  }
+}
+
+export class PluginSettingTab {
+  readonly app: App;
+  readonly plugin: Plugin;
+
+  constructor(app: App, plugin: Plugin) {
+    this.app = app;
+    this.plugin = plugin;
   }
 }
 

@@ -21,7 +21,12 @@ assert(typeof manifest.description === 'string', 'manifest description 缺失');
 assert(manifest.description.length <= 250, 'manifest description 超过 250 字符');
 assert(manifest.description.endsWith('.'), 'manifest description 必须以句点结尾');
 assert(readme.includes(expected.unofficialStatement), 'README 缺少非官方声明');
-assert(readme.includes('DSH 路径配置与健康检查 | 尚未实现'), 'README 误报健康检查状态');
+assert(
+  readme.includes('DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收'),
+  'README 误报健康检查状态',
+);
+assert(readme.includes('DSH 会话、流式事件与取消 | 尚未实现'), 'README 误报会话状态');
+assert(readme.includes('当前健康检查精确支持 DSH `0.1.1-rc.1`'), 'README 缺少目标 DSH 版本');
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');
 
 await access('main.js');

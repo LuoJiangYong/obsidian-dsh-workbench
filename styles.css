@@ -46,6 +46,18 @@
   text-align: right;
 }
 
+.dsh-workbench__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-2);
+}
+
+.dsh-workbench__actions-hint {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
 .dsh-workbench__boundary {
   margin-top: var(--size-4-4);
 }

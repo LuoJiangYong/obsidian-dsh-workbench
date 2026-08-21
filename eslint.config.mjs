@@ -22,6 +22,7 @@ export default defineConfig(
             'eslint.config.mjs',
             'esbuild.config.mjs',
             'scripts/*.mjs',
+            'tests/fixtures/*.mjs',
           ],
         },
         tsconfigRootDir: import.meta.dirname,
@@ -40,6 +41,13 @@ export default defineConfig(
           enforceCamelCaseLower: true,
         },
       ],
+    },
+  },
+  {
+    files: ['tests/**/*.{ts,mjs}'],
+    rules: {
+      'obsidianmd/no-global-this': 'off',
+      'obsidianmd/prefer-window-timers': 'off',
     },
   },
 );
