@@ -19,6 +19,16 @@ for (const command of requiredCommands) {
 assert(workflow.includes('ubuntu-latest'), 'CI 缺少 Ubuntu job');
 assert(workflow.includes('windows-latest'), 'CI 缺少 Windows job');
 assert(workflow.includes("node-version: '24'"), 'CI 必须固定 Node 24');
+assert(
+  /uses: actions\/checkout@[0-9a-f]{40} # v7\.0\.1/.test(workflow),
+  'CI 必须固定已核验的 actions/checkout v7.0.1 提交',
+);
+assert(
+  /uses: actions\/setup-node@[0-9a-f]{40} # v7\.0\.0/.test(workflow),
+  'CI 必须固定已核验的 actions/setup-node v7.0.0 提交',
+);
+assert(!workflow.includes('actions/checkout@v4'), 'CI 禁止退回 Node 20 runtime 的 checkout v4');
+assert(!workflow.includes('actions/setup-node@v4'), 'CI 禁止退回 Node 20 runtime 的 setup-node v4');
 
 for (const script of ['typecheck', 'lint', 'test', 'build', 'verify']) {
   assert(typeof packageJson.scripts?.[script] === 'string', `package scripts 缺少 ${script}`);
