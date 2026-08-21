@@ -40,6 +40,10 @@ jobs:
       - name: 单元与契约测试
         run: npm test
 
+      - name: Windows DSH 进程与 shim 专项测试
+        if: runner.os == 'Windows'
+        run: npm run test:runtime
+
       - name: 生产构建
         run: npm run build
 

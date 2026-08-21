@@ -121,5 +121,6 @@ Hermes 方法论把 CI 视为宪法执行器；本项目进一步规定：
 ## 当前状态
 
 - `AGENTS.md`：已建立；基础宪法与 AI 代码开发原则分别经用户于 2026-08-21 明确批准。
-- 完整 CI：尚未建立，必须在插件骨架批次同步建立 Phase A，并为当前实际能力标明其余阶段状态。
-- 运行时、Vault Bridge、Release 和社区提交：尚未实现或验证。
+- 完整 CI：Phase A 已建立并通过；Batch 0B 已为 Windows DSH shim、超时和进程树清理增加显式专项门。Phase C/D 仍只部分建立。
+- 运行时：DSH 路径设置和只读健康检查已实现并通过隔离 Vault 验收；会话、真实取消、权限回路和生产 bridge 未实现。
+- Vault Bridge、Release 和社区提交：尚未实现或验证。

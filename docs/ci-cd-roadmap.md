@@ -63,7 +63,7 @@ Phase B 只证明治理与架构契约一致，不证明运行时已经可用。
 
 ## Phase C：运行时与 Vault 安全门
 
-状态：延期，未通过。
+状态：部分建立，整体未通过。
 
 进入运行时和 Vault Bridge 实现后逐项建立：
 
@@ -76,7 +76,15 @@ Phase B 只证明治理与架构契约一致，不证明运行时已经可用。
 - base hash 冲突不覆盖。
 - stderr、错误和日志脱敏。
 
-进入本阶段前，必须根据 P0 结果更新测试矩阵和 workflow，不得照搬当前规划中的推测接口。
+Batch 0B 已建立其中的只读健康检查子集：
+
+- 固定 `--version`，拒绝附加参数、相对路径、Windows `.ps1` 和 Shell 元字符。
+- 精确目标版本 `0.1.1-rc.1`；其他版本明确显示不支持，不增加兼容分支。
+- 假运行时覆盖 PATH 裸命令、绝对路径、Windows `.cmd` shim、无效输出、超时、stderr 限长脱敏、`dispose` 与进程树清理。
+- Windows matrix 增加显式 `npm run test:runtime` 专项步骤；完整 `npm test` 仍在 Windows 与 Ubuntu 运行。
+- SDK、ACP 与薄 bridge 的 P0 评估已形成唯一 ADR，生产 bridge 仍未实现。
+
+这些证据不证明真实会话、协议握手、mid-turn cancel、权限回路或 Vault 安全门通过，因此 Phase C 整体保持未通过。
 
 ## Phase D：隔离 Vault 与发布门
 
@@ -94,7 +102,7 @@ Phase B 只证明治理与架构契约一致，不证明运行时已经可用。
 
 Phase D 未通过时不得创建公开 Release 或提交社区目录。
 
-当前只完成了 Phase D 中与 Batch 0A 对应的最小隔离 Vault 安装、加载、重载、DOM、错误检查和禁用冒烟；DSH 健康检查、完整发布矩阵和发布资产验收均未实现，因此 Phase D 整体仍是延期，未通过。
+当前已完成 Phase D 中与 Batch 0A 对应的最小加载/禁用冒烟，以及 Batch 0B 的设置读回、真实健康检查、错误恢复、超时和禁用进程清理验收。测试插件目录和临时运行时均已清理。完整会话、Vault 安全矩阵和发布资产验收仍未实现，因此 Phase D 整体仍是延期，未通过。
 
 ## Phase E：Release Automation
 
@@ -127,4 +135,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-Batch 0A 已完成完整本地质量门、隔离 Vault 加载/禁用验收、GitHub 公共仓库推送，以及远端 SHA、CI 成功和原始零 annotations 核验。下一批仍需单独批准；Phase C 的健康检查、假运行时、完整协议、取消和 Vault 安全项继续标记为延期，未通过。
+Batch 0B 已完成只读健康检查、P0 路线决策和隔离 Vault 验收。Windows 专项 CI 已接入；远端 CI 与原始 annotations 由本批提交后的 GitHub 检查确认。完整协议、真实取消、权限回路与 Vault 安全仍属于后续独立批次。

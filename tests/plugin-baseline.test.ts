@@ -23,6 +23,7 @@ describe('原生 Workbench 插件基线', () => {
 
     expect(mockObsidian.views.has(VIEW_TYPE_WORKBENCH)).toBe(true);
     expect(mockObsidian.ribbonCallbacks).toHaveLength(1);
+    expect(mockObsidian.settingTabs).toHaveLength(1);
     expect(mockObsidian.commands).toEqual([
       expect.objectContaining({ id: 'open-workbench', name: '打开工作台' }),
     ]);
@@ -60,14 +61,31 @@ describe('原生 Workbench 插件基线', () => {
     expect(content.allText()).toEqual(expect.arrayContaining([
       'DeepSeek Harness Workbench',
       '尚未连接 DSH',
-      '尚未实现',
+      '尚未检测',
       '未启用',
       '仅桌面端',
-      '本版本不读取或写入 Vault，不启动 DSH，也不使用网络。',
+      '检查 DSH',
+      '本版本只在手动检查时执行固定的 --version；不读取或写入 Vault，不启动会话，也不使用模型网络。',
     ]));
 
     await view.onClose();
     expect(content.allText()).toEqual([]);
+  });
+
+  it('加载并保存经过校验的 DSH 命令设置', async () => {
+    mockObsidian.loadedData = { dshCommand: '  dsh  ' };
+    const PluginConstructor = DeepSeekHarnessWorkbenchPlugin as unknown as ConstructablePlugin;
+    const plugin = new PluginConstructor();
+
+    await plugin.onload();
+    expect(plugin.settings).toEqual({ dshCommand: 'dsh' });
+
+    const absoluteCommand = process.platform === 'win32'
+      ? 'C:\\Tools\\dsh.cmd'
+      : '/opt/deepseek/dsh';
+    await plugin.updateDshCommand(absoluteCommand);
+    expect(plugin.settings).toEqual({ dshCommand: absoluteCommand });
+    expect(mockObsidian.savedData).toEqual([{ dshCommand: absoluteCommand }]);
   });
 
 });

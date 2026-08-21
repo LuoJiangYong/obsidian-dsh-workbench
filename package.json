@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
+    "test:runtime": "vitest run tests/dsh-settings.test.ts tests/dsh-health.test.ts",
     "build": "node esbuild.config.mjs production",
     "verify:release-state": "node scripts/verify-release-state.mjs",
     "verify:boundaries": "node scripts/verify-repo-boundaries.mjs",

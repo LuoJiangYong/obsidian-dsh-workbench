@@ -29,6 +29,7 @@ https://github.com/LuoJiangYong/obsidian-dsh-workbench
     '@lezer/highlight',
     '@lezer/lr',
     ...builtinModules,
+    ...builtinModules.map((moduleName) => `node:${moduleName}`),
   ],
   format: 'cjs',
   logLevel: 'info',

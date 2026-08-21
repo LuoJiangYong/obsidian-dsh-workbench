@@ -33,14 +33,34 @@ describe('发布与治理契约', () => {
     expect(versions[manifest.version]).toBe(manifest.minAppVersion);
   });
 
-  it('README 如实声明非官方身份和未实现能力', async () => {
+  it('README 如实声明非官方身份、只读健康检查与未实现能力', async () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| DSH 路径配置与健康检查 | 尚未实现 |');
+    expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |');
+    expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
+    expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
+    expect(readme).toContain('| DSH 会话、流式事件与取消 | 尚未实现 |');
     expect(readme).toContain('| Vault 读取与写入 | 未启用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('- 不采集客户端遥测。');
+  });
+
+  it('P0 评估只接受一个生产运行时 ADR', async () => {
+    const adr = await readFile(
+      path.join(repositoryRoot, 'docs', 'architecture', 'ADR-001-runtime-integration.md'),
+      'utf8',
+    );
+    const assessment = await readFile(
+      path.join(repositoryRoot, 'docs', 'architecture', 'p0-runtime-route-assessment.md'),
+      'utf8',
+    );
+
+    expect(adr).toContain('状态：已接受');
+    expect(adr).toContain('未来生产集成只采用一条薄 `obsidian-bridge` 路线');
+    expect(adr).toContain('不把官方 SDK 或 ACP 作为第二条生产 fallback');
+    expect(assessment).toContain('| 薄 bridge |');
+    expect(assessment).toContain('健康检查成功只表示目标命令可执行');
   });
 
   it('CI 路线图保持 Release 自动化未获批准', async () => {
