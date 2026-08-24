@@ -12,7 +12,7 @@ import {
 } from '../src/managed-bridge-process';
 
 const fixturePath = path.join(process.cwd(), 'tests', 'fixtures', 'fake-dsh.mjs');
-const bridgePath = path.join(process.cwd(), 'obsidian-bridge.mjs');
+let bridgePath = '';
 let temporaryRoot = '';
 let fakeCommand = '';
 
@@ -22,6 +22,8 @@ beforeAll(async () => {
     setTimeout: globalThis.setTimeout,
   });
   temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'managed-bridge-test-'));
+  bridgePath = path.join(temporaryRoot, 'obsidian-bridge.mjs');
+  await writeFile(bridgePath, 'export {};\n', 'utf8');
   fakeCommand = path.join(temporaryRoot, process.platform === 'win32' ? 'dsh.cmd' : 'dsh');
   if (process.platform === 'win32') {
     await writeFile(fakeCommand, `@echo off\r\n"${process.execPath}" "${fixturePath}" %*\r\n`, 'utf8');
