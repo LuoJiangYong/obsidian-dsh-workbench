@@ -81,6 +81,13 @@ Batch 4 才允许精确加入 rc.2 bridge 依赖和 lockfile，选择不修改�
 
 当前可以依据固定 tag 的公开 seam 进入 Batch 3；仍不得对用户声称 rc.2 已安装、正式 bridge 已实现、Windows 生命周期已通过或“新建任务”已可运行。
 
+## GitHub 实施证据
+
+- 实现提交：`d456a807215775e16da97ad60e388be2925249c2`。
+- [CI run 32708553927](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32708553927) 的 `Phase A (ubuntu-latest)` 与 `Phase A (windows-latest)` 均为 `success`。
+- 两个 check-run 的 `output.annotations_count` 均为 `0`；逐个读取原始 annotations API 后数组长度也均为 `0`，合计 `0`。
+- `origin/main` 已读回为该实现提交；该 CI 只证明源码证据契约在双平台通过，不改变“生产兼容未通过”的结论。
+
 ## 官方固定来源
 
 - [DeepSeek Harness `dsh-v0.1.1-rc.2`](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.1.1-rc.2)

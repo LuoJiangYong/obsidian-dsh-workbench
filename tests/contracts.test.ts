@@ -233,6 +233,9 @@ describe('发布与治理契约', () => {
     expect(spike).toContain('源码能力已验证');
     expect(spike).toContain('Windows 真实 rc.2 运行未验证');
     expect(spike).toContain('Batch 2 结论：协议可行，生产兼容未通过');
+    expect(spike).toContain('`d456a807215775e16da97ad60e388be2925249c2`');
+    expect(spike).toContain('CI run 32708553927');
+    expect(spike).toContain('原始 annotations API 后数组长度也均为 `0`');
     expect(matrix).toContain('| `0.1.1-rc.1` | 健康检查 | 已实现并验证 |');
     expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge | 源码能力已验证，生产兼容未通过 |');
     expect(matrix).toContain('新版本只产生“待验证候选”');
@@ -241,6 +244,7 @@ describe('发布与治理契约', () => {
     expect(assessment).toContain('Batch 2 已把该 API 从 P0 推断推进为固定 tag 源码证据');
     expect(roadmap).toContain('Batch 2 已建立 rc.2 固定 tag 的源码能力证据与兼容矩阵');
     expect(roadmap).toContain('不证明 rc.2 Windows 真实运行、正式握手或进程清理通过');
+    expect(roadmap).toContain('CI run 32708553927');
   });
 
   it('CI 路线图保持 Release 自动化未获批准', async () => {

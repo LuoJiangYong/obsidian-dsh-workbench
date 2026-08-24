@@ -93,6 +93,8 @@ Batch 0B 已建立其中的只读健康检查子集：
 
 Batch 2 已建立 rc.2 固定 tag 的源码能力证据与兼容矩阵，确认 `ctx.agents.create`/owned dispose、完整 `session/event`、真实 Agent cancel、一次性 approval 和 fail-closed 默认结果可供后续薄 bridge 使用。治理契约由双平台完整 `npm test` 执行；这不证明 rc.2 Windows 真实运行、正式握手或进程清理通过，Phase C 整体仍未通过。
 
+Batch 2 实现提交 `d456a807215775e16da97ad60e388be2925249c2` 已通过远端 [CI run 32708553927](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32708553927) 的 Ubuntu 与 Windows job；两个 check-run 的声明 annotations 与原始 annotations 数组合计均为 `0`。
+
 这些证据不证明真实会话、协议握手、mid-turn cancel、权限回路或 Vault 安全门通过，因此 Phase C 整体保持未通过。
 
 ## Phase D：隔离 Vault 与发布门
