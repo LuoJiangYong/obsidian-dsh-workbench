@@ -247,6 +247,33 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('CI run 32708553927');
   });
 
+  it('Batch 3 固定 bridge 协议 v1 与假 bridge 的能力边界', async () => {
+    const [protocol, client, tests, roadmap, readme] = await Promise.all([
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'bridge-protocol-v1.md'),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'src', 'bridge-protocol-client.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'tests', 'bridge-protocol.test.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    ]);
+
+    expect(protocol).toContain('协议版本：`1`');
+    expect(protocol).toContain('`seq` 是 bridge 为每个 session 生成的连续协议序号');
+    expect(protocol).toContain('只有显式 `ignorable: true` 的未知事件');
+    expect(protocol).toContain('`turn/cancel` 的 `{ accepted: true }` 只表示 bridge 已接收请求');
+    expect(protocol).toContain('随后 transport EOF 才进入 `closed`');
+    expect(protocol).toContain('不证明 rc.2 可运行、真实模型、Windows 隐藏窗口');
+    expect(client).toContain("'handshake_mismatch'");
+    expect(client).toContain("'event_sequence'");
+    expect(tests).toContain('bridge 协议 v1 与假 bridge');
+    expect(tests).toContain('未知 ignorable 事件只推进 seq');
+    expect(tests).toContain('只有取消终态才建立 cancelled');
+    expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
+    expect(readme).toContain('| bridge 协议 v1 与假 bridge | 已实现并进入双平台契约测试；不等于正式 bridge 或真实 DSH 已通过 |');
+  });
+
   it('CI 路线图保持 Release 自动化未获批准', async () => {
     const roadmap = await readFile(
       path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'),

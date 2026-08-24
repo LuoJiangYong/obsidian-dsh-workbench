@@ -17,6 +17,7 @@
 | ribbon 与中央标签页命令入口 | 已实现；已通过既有隔离 Vault 运行验收 |
 | 可选右侧快速助手容器 | 当前真实空状态已实现并通过既有验收；`v2` 定义为可选，产品标题不携带发布阶段 |
 | DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |
+| bridge 协议 v1 与假 bridge | 已实现并进入双平台契约测试；不等于正式 bridge 或真实 DSH 已通过 |
 | DSH 会话、流式事件与取消 | 尚未实现 |
 | Vault 读取与写入 | 未启用 |
 | GitHub Release | 未创建 |
@@ -72,7 +73,7 @@ npm run verify
 
 当前健康检查精确支持 DSH `0.1.1-rc.1`；其他版本会明确显示不受支持，不做兼容 fallback。后续若加入外部 DSH 会话，网络、进程、凭据和数据流向必须在功能进入前更新本文档与设置界面，并经过新的批准批次。
 
-正式生产 bridge 仍未实现。后续 bridge 实现或兼容批次以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选，当前已核验候选为 `0.1.1-rc.2`；固定 tag 的 Agent/session/approval 源码能力已完成审计，但 Windows 真实运行与生产兼容仍未通过。实现时必须精确锁定版本、tag、commit、bridge 与 lockfile，并通过握手、协议、Windows 进程和隔离 Vault 等相应门禁。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
+正式生产 bridge 仍未实现。后续 bridge 实现或兼容批次以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选，当前已核验候选为 `0.1.1-rc.2`；固定 tag 的 Agent/session/approval 源码能力已完成审计，项目 bridge 协议 v1 与假 bridge 已实现，但 Windows 真实运行与生产兼容仍未通过。实现时必须精确锁定版本、tag、commit、bridge 与 lockfile，并通过握手、协议、Windows 进程和隔离 Vault 等相应门禁。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
 
 ## 平台与身份
 

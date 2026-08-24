@@ -4,6 +4,7 @@ const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
 const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
 const pluginBaseline = await readFile('tests/plugin-baseline.test.ts', 'utf8');
 const governanceContracts = await readFile('tests/contracts.test.ts', 'utf8');
+const bridgeProtocolTests = await readFile('tests/bridge-protocol.test.ts', 'utf8');
 
 const requiredCommands = [
   'npm ci',
@@ -80,9 +81,24 @@ for (const newTaskContract of [
 ]) {
   assert(governanceContracts.includes(newTaskContract), `治理契约缺少新建任务 v1 规则：${newTaskContract}`);
 }
+for (const bridgeProtocolContract of [
+  'bridge 协议 v1 与假 bridge',
+  '完成精确握手并固定 initialize 请求',
+  '拒绝事件 seq 缺口、重复和未知 required 事件',
+  '未知 ignorable 事件只推进 seq',
+  '权限请求只允许当前 session/turn/request 的一次性决定',
+  '只有取消终态才建立 cancelled',
+  '正常 shutdown 必须先收到响应再由 EOF 建立 closed',
+  '意外 EOF 与请求超时都使连接失败且拒绝后续请求',
+]) {
+  assert(
+    bridgeProtocolTests.includes(bridgeProtocolContract),
+    `bridge 协议测试缺少契约：${bridgeProtocolContract}`,
+  );
+}
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、Ardot v2、新建任务 v1 宿主与 bridge 演进契约、Windows DSH 专项门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、Ardot v2、新建任务 v1、bridge 协议假运行时与 Windows DSH 专项门已接入。',
 );
 
 function assert(condition, message) {

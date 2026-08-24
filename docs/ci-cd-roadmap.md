@@ -95,6 +95,8 @@ Batch 2 已建立 rc.2 固定 tag 的源码能力证据与兼容矩阵，确认 
 
 Batch 2 实现提交 `d456a807215775e16da97ad60e388be2925249c2` 已通过远端 [CI run 32708553927](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32708553927) 的 Ubuntu 与 Windows job；两个 check-run 的声明 annotations 与原始 annotations 数组合计均为 `0`。
 
+Batch 3 已实现 bridge 协议 v1、严格入站校验、client 状态约束与假 bridge，覆盖精确握手、response 关联、session/turn/seq、未知 required/ignorable 事件、权限一次性、cancel 确认、唯一终态、业务错误、shutdown/EOF 与超时。`verify:ci-coverage` 明确校验这些用例仍由双平台完整 `npm test` 执行；正式 bridge 与 Windows rc.2 仍未通过。
+
 这些证据不证明真实会话、协议握手、mid-turn cancel、权限回路或 Vault 安全门通过，因此 Phase C 整体保持未通过。
 
 ## Phase D：隔离 Vault 与发布门
@@ -148,4 +150,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 2 已形成 rc.2 源码能力证据与兼容矩阵；它通过远端 CI 与原始零 annotations 后才进入 Batch 3 的最小协议和假 bridge。该连续授权不包括 Release、社区提交、Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 3 已实现最小协议和假 bridge；通过远端 CI 与原始零 annotations 后进入 Batch 4 的正式 bridge 与 Windows 受管生命周期。该连续授权不包括 Release、社区提交、Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。

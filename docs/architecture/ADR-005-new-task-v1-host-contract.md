@@ -36,12 +36,14 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 - [新建任务 v1 需求基线](../requirements/new-task-v1.md) 是本 ADR 的详细验收契约。
 - 当前正式 bridge 候选是 DSH `0.1.1-rc.2`；其状态是“源码能力已验证，生产兼容未通过”。当前代码仍只验证健康检查 `0.1.1-rc.1`，两者均须如实展示。
 - [Batch 2 能力尖峰](./batch-2-bridge-capability-spike.md)与[运行时兼容矩阵](./runtime-compatibility-matrix.md)记录了上游 seam、证据指纹和自动演进门。
+- [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭和 fail-closed 行为；当前只通过假 bridge。
 - 数量和字节上限必须在实现批次以测量证据确定；本 ADR 不设占位常数。
 - `DESIGN.md`、ADR-003 和 ADR-004 已检查：本批不改变获批页面、布局、导航、图标或响应式规则，无需修改。
 - 后续 bridge 打包、自动监测 workflow、实现源码、运行验收、Release 与社区提交仍受各自边界约束；当前连续目标只授权 Batch 3–10，不授权 Release 或社区提交。
 
 ## 验证
 
-- `tests/contracts.test.ts` 固定模式、只读 Vault、外部工作区、单终态、真实取消、`rc.1`/`rc.2` 状态分层和只读自动演进边界。
+- `tests/contracts.test.ts` 固定模式、只读 Vault、外部工作区、单终态、真实取消、`rc.1`/`rc.2` 状态分层、协议状态和只读自动演进边界。
+- `tests/bridge-protocol.test.ts` 固定精确握手、session/turn/seq、一次性权限、cancel 确认、唯一终态、shutdown/EOF 和超时。
 - `scripts/verify-ci-coverage.mjs` 确认上述治理契约由双平台完整 `npm test` 执行。
 - 当前批次只验证文档契约一致性，不声称真实 bridge、DSH 会话、Windows 运行或隔离 Vault 产品验收通过。
