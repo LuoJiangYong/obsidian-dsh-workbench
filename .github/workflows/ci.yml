@@ -40,12 +40,20 @@ jobs:
       - name: 单元与契约测试
         run: npm test
 
+      - name: 生产构建
+        run: npm run build
+
+      - name: 安装精确锁定的 DSH rc.2 运行夹具
+        if: runner.os == 'Windows'
+        run: npm run prepare:runtime-fixture
+
       - name: Windows DSH 进程与 shim 专项测试
         if: runner.os == 'Windows'
         run: npm run test:runtime
 
-      - name: 生产构建
-        run: npm run build
+      - name: Windows DSH rc.2 正式 bridge 运行验收
+        if: runner.os == 'Windows'
+        run: npm run test:bridge:runtime
 
       - name: 治理与仓库边界验证
         run: npm run verify

@@ -5,7 +5,7 @@ import esbuild from 'esbuild';
 
 const production = process.argv[2] === 'production';
 
-const context = await esbuild.context({
+const shared = {
   banner: {
     js: `/*
 由 esbuild 生成。源代码见：
@@ -13,6 +13,15 @@ https://github.com/LuoJiangYong/obsidian-dsh-workbench
 */`,
   },
   bundle: true,
+  logLevel: 'info',
+  minify: production,
+  sourcemap: production ? false : 'inline',
+  target: 'es2021',
+  treeShaking: true,
+};
+
+const pluginContext = await esbuild.context({
+  ...shared,
   entryPoints: ['src/main.ts'],
   external: [
     'obsidian',
@@ -32,17 +41,23 @@ https://github.com/LuoJiangYong/obsidian-dsh-workbench
     ...builtinModules.map((moduleName) => `node:${moduleName}`),
   ],
   format: 'cjs',
-  logLevel: 'info',
-  minify: production,
   outfile: 'main.js',
-  sourcemap: production ? false : 'inline',
-  target: 'es2021',
-  treeShaking: true,
+});
+
+const bridgeContext = await esbuild.context({
+  ...shared,
+  entryPoints: ['src/obsidian-bridge.ts'],
+  external: [
+    ...builtinModules,
+    ...builtinModules.map((moduleName) => `node:${moduleName}`),
+  ],
+  format: 'esm',
+  outfile: 'obsidian-bridge.mjs',
 });
 
 if (production) {
-  await context.rebuild();
-  await context.dispose();
+  await Promise.all([pluginContext.rebuild(), bridgeContext.rebuild()]);
+  await Promise.all([pluginContext.dispose(), bridgeContext.dispose()]);
 } else {
-  await context.watch();
+  await Promise.all([pluginContext.watch(), bridgeContext.watch()]);
 }

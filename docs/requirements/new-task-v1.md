@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：已批准的实现输入，尚未实现
+- 状态：已批准的实现输入；正式 bridge 子集已实现，完整“新建任务”仍在实施
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -9,7 +9,7 @@
 
 用户在 Obsidian 中只通过“新建任务”开始一次 DeepSeek Harness 工作：选择“对话”或“任务执行”，明确提交内容与上下文，观察真实执行状态，在需要时审阅权限并真正取消当前 turn。失败、取消、完成和运行时终止不得互相冒充。
 
-本文件冻结 v1 的产品与宿主契约，不授权当前批次实现 UI、运行时、bridge、Vault 访问、外部依赖更新、Release 或社区提交。
+本文件冻结 v1 的产品与宿主契约。当前连续 Goal 已授权按 Batch 2–10 实施协议、bridge、UI、只读上下文与外部工作区任务；仍不授权 Vault 写入、DSH 自动安装/更新、Release 或社区提交。
 
 ## 模式与入口
 
@@ -75,11 +75,11 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 候选是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 2 已完成固定 tag 源码能力审计，但 Windows 真实运行与生产兼容未通过；这不表示 bridge 已实现或当前插件已支持。
+- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0` 并通过本地 Windows 真实加载、握手、Agent session、mid-turn cancel 与清理；当前产品 UI 尚未启动该路径，兼容矩阵也尚未完成隔离 Vault 与用户验收。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件只读健康检查仍精确支持 `0.1.1-rc.1`；它与正式 bridge 候选 `0.1.1-rc.2` 是两条不同状态，不得合并为“已支持 rc.2”。
-- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束和假 bridge；真实 DSH、Windows 进程与产品 UI 仍未通过。
+- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；本地真实 DSH 已通过，远端 CI 与产品 UI 仍待后续证据。
 
 ## 自动同步演进计划
 

@@ -13,12 +13,15 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "test:runtime": "vitest run tests/dsh-settings.test.ts tests/dsh-health.test.ts",
+    "test:runtime": "vitest run tests/dsh-settings.test.ts tests/dsh-health.test.ts tests/managed-bridge-process.test.ts",
+    "test:bridge:runtime": "vitest run tests/real-dsh-bridge.test.ts",
+    "prepare:runtime-fixture": "npm ci --prefix tests/runtime-fixture",
     "build": "node esbuild.config.mjs production",
     "verify:release-state": "node scripts/verify-release-state.mjs",
     "verify:boundaries": "node scripts/verify-repo-boundaries.mjs",
     "verify:ci-coverage": "node scripts/verify-ci-coverage.mjs",
-    "verify": "npm run verify:release-state && npm run verify:boundaries && npm run verify:ci-coverage"
+    "verify:bridge-artifact": "node scripts/verify-bridge-artifact.mjs",
+    "verify": "npm run verify:release-state && npm run verify:boundaries && npm run verify:ci-coverage && npm run verify:bridge-artifact"
   },
   "keywords": [
     "obsidian",

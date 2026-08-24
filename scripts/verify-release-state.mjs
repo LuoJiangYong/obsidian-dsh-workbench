@@ -25,7 +25,10 @@ assert(
   readme.includes('DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收'),
   'README 误报健康检查状态',
 );
-assert(readme.includes('DSH 会话、流式事件与取消 | 尚未实现'), 'README 误报会话状态');
+assert(
+  readme.includes('DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 产品入口、上下文与任务执行尚未接通'),
+  'README 会话能力边界漂移',
+);
 assert(readme.includes('当前健康检查精确支持 DSH `0.1.1-rc.1`'), 'README 缺少目标 DSH 版本');
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');
 

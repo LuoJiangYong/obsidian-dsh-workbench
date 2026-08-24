@@ -41,12 +41,15 @@ const gitignore = await readFile('.gitignore', 'utf8');
 if (!gitignore.split(/\r?\n/u).includes('main.js')) {
   failures.push('.gitignore 必须忽略 main.js');
 }
+if (!gitignore.split(/\r?\n/u).includes('obsidian-bridge.mjs')) {
+  failures.push('.gitignore 必须忽略 obsidian-bridge.mjs');
+}
 
 if (isGitRepository()) {
   const tracked = execFileSync('git', ['ls-files'], { encoding: 'utf8' })
     .split(/\r?\n/u)
     .filter(Boolean);
-  for (const forbiddenTrackedFile of ['main.js', '.env']) {
+  for (const forbiddenTrackedFile of ['main.js', 'obsidian-bridge.mjs', '.env']) {
     if (tracked.includes(forbiddenTrackedFile)) {
       failures.push(`禁止跟踪构建或凭据文件：${forbiddenTrackedFile}`);
     }

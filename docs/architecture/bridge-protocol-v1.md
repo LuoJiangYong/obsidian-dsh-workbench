@@ -3,14 +3,14 @@
 - 协议版本：`1`
 - 目标 bridge 版本：`0.1.0`
 - 目标 DSH：`0.1.1-rc.2`
-- 当前状态：协议类型、严格校验器、client 状态约束与假 bridge 已实现并验证
-- 未通过：正式 bridge、stdio 传输、真实 DSH、Windows 生命周期、产品 UI
+- 当前状态：协议、正式 bridge、NDJSON、受管进程与本地 Windows DSH `0.1.1-rc.2` 真实运行已实现并验证
+- 未通过：远端实现提交 CI 证据、Obsidian 产品 UI、只读上下文、外部工作区权限与隔离 Vault 运行验收
 
 ## 目标与边界
 
 协议 v1 只服务首发“新建任务”的对话与任务执行共同运行时需求。它不是通用 DSH API，不复制 DSH session 日志，不提供 SDK/ACP/CLI fallback，也不读取 Vault、接受任意 Shell 或保存凭据。
 
-Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 才实现 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing；因此本文件冻结 frame 形状和语义，但不声称子进程传输已通过。
+Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；这仍不表示 Obsidian 产品入口或隔离 Vault 已通过。
 
 ## 精确握手
 
@@ -131,6 +131,9 @@ client 第一个请求固定为：
 - `src/bridge-protocol-client.ts`：请求匹配、连接/session/turn 状态、seq、权限、取消、EOF 与超时。
 - `tests/fakes/fake-bridge.ts`：不启动外部进程的可控 transport。
 - `tests/bridge-protocol.test.ts`：假 bridge 行为矩阵，由 Windows/Ubuntu 的完整 `npm test` 执行。
+- `src/obsidian-bridge.ts`：正式 Cordis plugin、DSH 事件窄投影、Agent 所有权与一次性权限回路。
+- `src/bridge-ndjson-transport.ts` 与 `src/managed-bridge-process.ts`：1 MiB 封闭 framing、精确版本预检、隔离 `DSH_HOME`、隐藏启动、正常退出与强制清理。
+- `tests/real-dsh-bridge.test.ts`：独立精确锁定 rc.2，真实加载 artifact、创建 Agent、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
 - 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 
-这些测试证明项目协议在可控 transport 上成立；不证明 rc.2 可运行、真实模型、Windows 隐藏窗口、进程清理、Vault 或 Obsidian UI 通过。
+Batch 4 本地证据已经证明 rc.2 artifact 加载、环回模型请求、mid-turn cancel、Windows 隐藏进程、正常/强制关闭与清理；远端 CI 证据将在实现提交后补录。它不证明真实外部模型账号、Vault、Obsidian UI 或发布验收通过。

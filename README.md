@@ -12,13 +12,13 @@
 | --- | --- |
 | Ardot UI 用户审阅真相 | 已更新为 `v2`；含新建任务、合并后的运行、宽屏/窄屏、Light/Dark 与可选快速助手；产品画板不显示开发进度或发布门文案 |
 | 新建任务 | `v2` 首发设计目标；运行代码尚未实现对话、任务执行或上下文 |
-| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI 治理契约；仍是规划输入，未实现运行行为 |
+| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge 子集已实现，产品 UI、上下文与任务执行仍在实施 |
 | 中央 Workbench 与当前内部导航 | 已实现；已通过既有隔离 Vault 运行与视觉验收，仍为分离的“概览”“运行状态” |
 | ribbon 与中央标签页命令入口 | 已实现；已通过既有隔离 Vault 运行验收 |
 | 可选右侧快速助手容器 | 当前真实空状态已实现并通过既有验收；`v2` 定义为可选，产品标题不携带发布阶段 |
 | DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |
-| bridge 协议 v1 与假 bridge | 已实现并进入双平台契约测试；不等于正式 bridge 或真实 DSH 已通过 |
-| DSH 会话、流式事件与取消 | 尚未实现 |
+| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地 Windows 已由 DSH `0.1.1-rc.2` 真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；尚未接入产品 UI |
+| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 产品入口、上下文与任务执行尚未接通 |
 | Vault 读取与写入 | 未启用 |
 | GitHub Release | 未创建 |
 | Obsidian 社区提交 | 尚未进行 |
@@ -47,9 +47,13 @@ npm run lint
 npm test
 npm run build
 npm run verify
+
+# 仅开发/CI：安装独立的精确 rc.2 运行夹具并执行真实 bridge 验收
+npm run prepare:runtime-fixture
+npm run test:bridge:runtime
 ```
 
-构建后，把 `main.js`、`manifest.json` 和 `styles.css` 复制到隔离 Vault 的：
+构建同时生成 `main.js` 与 `obsidian-bridge.mjs`。后续运行时接入验收需要把二者连同 `manifest.json`、`styles.css` 复制到隔离 Vault 的：
 
 ```text
 .obsidian/plugins/deepseek-harness-workbench/
@@ -70,10 +74,13 @@ npm run verify
 - 不采集客户端遥测。
 - 不保存 API Key、Token 或其他凭据。
 - 插件不安装或更新 DSH、Node、Python 或其他外部依赖。
+- 仓库内 `tests/runtime-fixture` 只供开发与 Windows CI 精确复现 rc.2，不由插件安装，不进入用户 DSH profile 或 Release 运行依赖。
 
-当前健康检查精确支持 DSH `0.1.1-rc.1`；其他版本会明确显示不受支持，不做兼容 fallback。后续若加入外部 DSH 会话，网络、进程、凭据和数据流向必须在功能进入前更新本文档与设置界面，并经过新的批准批次。
+当前健康检查精确支持 DSH `0.1.1-rc.1`；其他版本会明确显示不受支持，不做兼容 fallback。该设置页路径与正式 bridge 的 rc.2 路径相互独立，当前 `main.ts` 尚未启动后者，因此现有 Obsidian UI 仍不会发起模型请求。
 
-正式生产 bridge 仍未实现。后续 bridge 实现或兼容批次以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选，当前已核验候选为 `0.1.1-rc.2`；固定 tag 的 Agent/session/approval 源码能力已完成审计，项目 bridge 协议 v1 与假 bridge 已实现，但 Windows 真实运行与生产兼容仍未通过。实现时必须精确锁定版本、tag、commit、bridge 与 lockfile，并通过握手、协议、Windows 进程和隔离 Vault 等相应门禁。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
+正式 `obsidian-bridge` 已实现为独立 ESM artifact：只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容；插件侧只用固定 `--profile headless --patch <隔离 overlay>` 参数启动用户已配置的 DSH，设置独立于 Vault 和用户 profile 的 `DSH_HOME`，关闭时先请求协议退出，超时后终止整棵进程树。bridge/协议/DSH/artifact 哈希均精确锁定；本地 Windows rc.2 真实验收已通过，远端 CI 证据在当前实现提交后补录。产品 UI、只读 Vault 上下文、外部工作区权限和隔离 Vault 运行验收仍属于后续批次，因此矩阵尚未进入 `supported`。
+
+后续兼容批次继续以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
 
 ## 平台与身份
 
@@ -104,7 +111,7 @@ npm run verify
 - Workbench 同时显示 `DSH 可执行（0.1.1-rc.1）` 与“尚未连接 DSH”，没有把健康检查冒充为会话连接。
 - 真实宿主中，10 秒超时和插件禁用分别终止了临时假运行时的 runner 与 child；插件错误和错误级控制台消息均为 0。
 - 测试插件目录、临时假运行时和测试设置已清理；没有读取或写入 Vault 内容。
-- P0 只接受薄 `obsidian-bridge` 作为未来生产路线；SDK 与 ACP 不作为并行 fallback，生产 bridge 仍未实现。
+- P0 只接受薄 `obsidian-bridge` 作为未来生产路线；SDK 与 ACP 不作为并行 fallback；在 Batch 0B 当时生产 bridge 尚未实现。
 
 ## Workbench 壳层批次验收
 

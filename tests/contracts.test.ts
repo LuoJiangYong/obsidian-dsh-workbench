@@ -33,7 +33,7 @@ describe('发布与治理契约', () => {
     expect(versions[manifest.version]).toBe(manifest.minAppVersion);
   });
 
-  it('README 如实声明非官方身份、只读健康检查与未实现能力', async () => {
+  it('README 如实声明非官方身份、正式 bridge 与产品未接通边界', async () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
@@ -43,7 +43,7 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |');
     expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
     expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
-    expect(readme).toContain('| DSH 会话、流式事件与取消 | 尚未实现 |');
+    expect(readme).toContain('| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 产品入口、上下文与任务执行尚未接通 |');
     expect(readme).toContain('| Vault 读取与写入 | 未启用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('当前状态是`仅设计已更新，运行代码未同步`');
@@ -184,15 +184,15 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('整个 Vault 不得成为 DSH 默认可写 `cwd`');
     expect(requirements).toContain('每个 turn 只能产生一个终态');
     expect(requirements).toContain('`failed(runtime_terminated)`');
-    expect(requirements).toContain('当前核验到的正式 bridge 候选是 `0.1.1-rc.2`');
-    expect(requirements).toContain('不表示 bridge 已实现或当前插件已支持');
+    expect(requirements).toContain('当前核验到的正式 bridge 目标是 `0.1.1-rc.2`');
+    expect(requirements).toContain('当前产品 UI 尚未启动该路径');
     expect(requirements).toContain('插件自动安装或更新 DSH');
     expect(hostContract).toContain('状态：已接受');
     expect(hostContract).toContain('只读 `--version` 健康检查');
     expect(hostContract).toContain('当前代码仍只验证健康检查 `0.1.1-rc.1`');
     expect(assessment).toContain('正式 bridge 最新预发布策略');
     expect(assessment).toContain('待验证候选');
-    expect(roadmap).toContain('监测 workflow 与正式 bridge 均未获实现批准');
+    expect(roadmap).toContain('监测 workflow 尚未实现');
     expect(releaseStatus).toContain('Release 成功不自动授权社区提交');
     expect(releaseStatus).toContain('只有社区目录接受并发布后');
   });
@@ -237,7 +237,7 @@ describe('发布与治理契约', () => {
     expect(spike).toContain('CI run 32708553927');
     expect(spike).toContain('原始 annotations API 后数组长度也均为 `0`');
     expect(matrix).toContain('| `0.1.1-rc.1` | 健康检查 | 已实现并验证 |');
-    expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge | 源码能力已验证，生产兼容未通过 |');
+    expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge | `windows_runtime_passed`；尚未 `supported` |');
     expect(matrix).toContain('新版本只产生“待验证候选”');
     expect(matrix).toContain('不得自动安装或更新用户 DSH');
     expect(matrix).toContain('不得自动合并、Release 或提交社区目录');
@@ -264,7 +264,7 @@ describe('发布与治理契约', () => {
     expect(protocol).toContain('只有显式 `ignorable: true` 的未知事件');
     expect(protocol).toContain('`turn/cancel` 的 `{ accepted: true }` 只表示 bridge 已接收请求');
     expect(protocol).toContain('随后 transport EOF 才进入 `closed`');
-    expect(protocol).toContain('不证明 rc.2 可运行、真实模型、Windows 隐藏窗口');
+    expect(protocol).toContain('Batch 4 本地证据已经证明 rc.2 artifact 加载');
     expect(client).toContain("'handshake_mismatch'");
     expect(client).toContain("'event_sequence'");
     expect(tests).toContain('bridge 协议 v1 与假 bridge');
@@ -273,7 +273,38 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
     expect(roadmap).toContain('39023169811fc591be5fe33fde05662fbbc9657e');
     expect(roadmap).toContain('CI run 32711052033');
-    expect(readme).toContain('| bridge 协议 v1 与假 bridge | 已实现并进入双平台契约测试；不等于正式 bridge 或真实 DSH 已通过 |');
+    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地 Windows 已由 DSH `0.1.1-rc.2` 真实加载');
+  });
+
+  it('Batch 4 固定正式 bridge artifact、rc.2 夹具与 Windows 运行边界', async () => {
+    const [manifest, fixture, protocol, matrix, roadmap, runtimeTest] = await Promise.all([
+      readJson<{
+        artifactSha256: string;
+        bridgeVersion: string;
+        dshIntegrity: string;
+        dshVersion: string;
+        protocolVersion: string;
+      }>('bridge-build-manifest.json'),
+      readJson<{ dependencies: Record<string, string> }>('tests/runtime-fixture/package.json'),
+      readFile(path.join(repositoryRoot, 'docs', 'architecture', 'bridge-protocol-v1.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs', 'architecture', 'runtime-compatibility-matrix.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'tests', 'real-dsh-bridge.test.ts'), 'utf8'),
+    ]);
+
+    expect(manifest).toMatchObject({
+      bridgeVersion: '0.1.0',
+      protocolVersion: '1',
+      dshVersion: '0.1.1-rc.2',
+      artifactSha256: '1cf83b3e977ed5b5da6ca5c59a5d42ceb70d67e475ce3b8dec0279a5b27139d6',
+    });
+    expect(manifest.dshIntegrity).toMatch(/^sha512-/u);
+    expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.1.1-rc.2');
+    expect(protocol).toContain('正式 bridge、NDJSON、受管进程');
+    expect(matrix).toContain('`windows_runtime_passed`；尚未 `supported`');
+    expect(roadmap).toContain('环回模型请求后的 mid-turn cancel');
+    expect(runtimeTest).toContain('真实加载 artifact');
+    expect(runtimeTest).toContain('payload: { outcome: \'cancelled\' }');
   });
 
   it('CI 路线图保持 Release 自动化未获批准', async () => {

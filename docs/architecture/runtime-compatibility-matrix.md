@@ -9,10 +9,10 @@
 | DSH | 消费路径 | 状态 | bridge/协议 | 证据边界 |
 | --- | --- | --- | --- | --- |
 | `0.1.1-rc.1` | 健康检查 | 已实现并验证 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
-| `0.1.1-rc.2` | 正式 bridge | 源码能力已验证，生产兼容未通过 | bridge/协议待 Batch 3/4 精确锁定 | 固定 tag 已证明 Agent/session/approval seam；Windows 真实运行、握手、取消、清理与隔离 Vault 均未通过 |
+| `0.1.1-rc.2` | 正式 bridge | `windows_runtime_passed`；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `1cf83b3e977ed5b5da6ca5c59a5d42ceb70d67e475ce3b8dec0279a5b27139d6` | 本地 Windows 已通过真实加载、握手、Agent session、mid-turn cancel、正常/强制清理；产品接入与隔离 Vault 未通过 |
 | 其他版本 | 无 | 不支持 | 无 fallback | 不尝试、不中和、不静默降级 |
 
-健康检查与正式 bridge 是两个独立消费路径。`rc.1` 健康检查通过不能推出 rc.2 bridge 兼容；rc.2 源码能力通过也不能改变当前设置页的健康检查目标。
+健康检查与正式 bridge 是两个独立消费路径。`rc.1` 健康检查通过不能推出 rc.2 bridge 兼容；rc.2 已通过的 bridge 运行门也不能改变当前设置页健康检查目标，或冒充产品 UI 与隔离 Vault 已通过。
 
 ## 兼容晋级状态机
 

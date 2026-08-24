@@ -11,9 +11,9 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 
 [P0 运行时路线评估](./p0-runtime-route-assessment.md) 已把官方契约证据、本机实测、假运行时测试和推断分开记录。
 
-[Batch 2 能力证据尖峰](./batch-2-bridge-capability-spike.md)进一步针对 `dsh-v0.1.1-rc.2` 固定 tag 读取公开 Agent、session、approval seam：关键源码能力已经验证，但正式 bridge、Windows 运行和进程清理仍未通过。
+[Batch 2 能力证据尖峰](./batch-2-bridge-capability-spike.md)针对 `dsh-v0.1.1-rc.2` 固定 tag 读取公开 Agent、session、approval seam；Batch 4 已在这些 seam 上实现正式 bridge，并通过本地 Windows 真实运行与进程清理。
 
-[bridge 协议 v1](./bridge-protocol-v1.md)已固定精确握手、session/turn/seq、一次性权限、取消确认、shutdown、EOF 与单终态；当前实现只通过假 bridge，不是正式 DSH 运行证据。
+[bridge 协议 v1](./bridge-protocol-v1.md)已固定精确握手、session/turn/seq、一次性权限、取消确认、shutdown、EOF 与单终态；正式 artifact 已由 rc.2 真实加载，产品 UI 与隔离 Vault 仍未通过。
 
 ## 决定
 
@@ -44,7 +44,7 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 成本与约束：
 
 - 项目必须维护 bridge/DSH 精确版本矩阵、协议契约测试和上游漂移审计。
-- 协议与假 bridge 已覆盖握手漂移、乱序、超时、取消、权限和 EOF；生产 bridge 进入前仍必须补真实 rc.2 握手、关闭和 Windows 进程测试。
+- 协议、假 bridge、正式 bridge 与真实 rc.2 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭和 Windows 进程树清理；产品接入仍必须补隔离 Vault 与最终 UI 验收。
 - 需要单独的批准批次选择 bridge 的部署与打包方式；本 ADR 不授权自动安装或修改用户 DSH profile。
 - 当前连续目标已授权 Batch 3/4 在保持“不自动安装、不修改用户 DSH profile”的前提下完成协议、部署与 Windows 验证；Release 和社区提交仍未授权。
 
@@ -57,4 +57,4 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 
 ## 后续激活门
 
-Batch 3 只把本 ADR 推进到“协议与假 bridge 已实现”。只有 Batch 4 进一步提交真实 DSH 验收、Windows 生命周期证据、CI 覆盖和隐私披露，才能表述为“生产 bridge 已实现”。
+Batch 4 已把本 ADR 推进到“生产 bridge 已实现并完成本地 Windows rc.2 运行验收”。这不等于“新建任务”已交付，也不授权 Release、社区提交或 Vault 写入。

@@ -7,6 +7,7 @@ export default defineConfig(
     '.git',
     'coverage',
     'main.js',
+    'obsidian-bridge.mjs',
     'node_modules',
     'package-lock.json',
   ]),
