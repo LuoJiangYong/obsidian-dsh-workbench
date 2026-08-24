@@ -72,7 +72,7 @@ npm run verify
 
 当前健康检查精确支持 DSH `0.1.1-rc.1`；其他版本会明确显示不受支持，不做兼容 fallback。后续若加入外部 DSH 会话，网络、进程、凭据和数据流向必须在功能进入前更新本文档与设置界面，并经过新的批准批次。
 
-正式生产 bridge 仍未实现。后续 bridge 实现或兼容批次以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选，当前已核验候选为 `0.1.1-rc.2`；实现时必须精确锁定版本、tag、commit、bridge 与 lockfile，并通过握手、协议、Windows 进程和隔离 Vault 等相应门禁。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
+正式生产 bridge 仍未实现。后续 bridge 实现或兼容批次以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选，当前已核验候选为 `0.1.1-rc.2`；固定 tag 的 Agent/session/approval 源码能力已完成审计，但 Windows 真实运行与生产兼容仍未通过。实现时必须精确锁定版本、tag、commit、bridge 与 lockfile，并通过握手、协议、Windows 进程和隔离 Vault 等相应门禁。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
 
 ## 平台与身份
 

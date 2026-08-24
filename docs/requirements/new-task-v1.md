@@ -75,14 +75,14 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 候选是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。这只是规划基线，不表示 bridge 已实现或当前插件已支持。
+- 当前核验到的正式 bridge 候选是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 2 已完成固定 tag 源码能力审计，但 Windows 真实运行与生产兼容未通过；这不表示 bridge 已实现或当前插件已支持。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件只读健康检查仍精确支持 `0.1.1-rc.1`；它与正式 bridge 候选 `0.1.1-rc.2` 是两条不同状态，不得合并为“已支持 rc.2”。
 
 ## 自动同步演进计划
 
-后续可单独批准一个只读的上游监测批次：定时比较 GitHub 最新预发布、npm dist-tag 与仓库兼容矩阵，发现新版本后创建或更新 issue、兼容性提案或 draft PR。自动化不得：
+后续只读上游监测按[运行时兼容矩阵](../architecture/runtime-compatibility-matrix.md)规划：定时比较 GitHub 最新预发布、npm dist-tag 与仓库兼容矩阵，发现新版本后创建或更新 issue、兼容性提案或 draft PR。监测 workflow 尚未实现；自动化不得：
 
 - 修改用户本机或插件中的 DSH 安装；
 - 自动合并兼容矩阵、自动发布插件或自动提交 Obsidian 社区目录；

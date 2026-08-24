@@ -197,6 +197,52 @@ describe('发布与治理契约', () => {
     expect(releaseStatus).toContain('只有社区目录接受并发布后');
   });
 
+  it('Batch 2 固定 rc.2 官方能力证据、兼容矩阵与生产未通过边界', async () => {
+    const [spike, matrix, assessment, roadmap] = await Promise.all([
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'batch-2-bridge-capability-spike.md',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'runtime-compatibility-matrix.md',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'p0-runtime-route-assessment.md'),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
+    ]);
+
+    expect(spike).toContain('上游 tag：`dsh-v0.1.1-rc.2`');
+    expect(spike).toContain('`b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`');
+    expect(spike).toContain('`ctx.agents.create`');
+    expect(spike).toContain('`agent.cancel({ kind: \'user\' })`');
+    expect(spike).toContain('`agent.whenIdle()`');
+    expect(spike).toContain('`approval/request`');
+    expect(spike).toContain('源码能力已验证');
+    expect(spike).toContain('Windows 真实 rc.2 运行未验证');
+    expect(spike).toContain('Batch 2 结论：协议可行，生产兼容未通过');
+    expect(matrix).toContain('| `0.1.1-rc.1` | 健康检查 | 已实现并验证 |');
+    expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge | 源码能力已验证，生产兼容未通过 |');
+    expect(matrix).toContain('新版本只产生“待验证候选”');
+    expect(matrix).toContain('不得自动安装或更新用户 DSH');
+    expect(matrix).toContain('不得自动合并、Release 或提交社区目录');
+    expect(assessment).toContain('Batch 2 已把该 API 从 P0 推断推进为固定 tag 源码证据');
+    expect(roadmap).toContain('Batch 2 已建立 rc.2 固定 tag 的源码能力证据与兼容矩阵');
+    expect(roadmap).toContain('不证明 rc.2 Windows 真实运行、正式握手或进程清理通过');
+  });
+
   it('CI 路线图保持 Release 自动化未获批准', async () => {
     const roadmap = await readFile(
       path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'),

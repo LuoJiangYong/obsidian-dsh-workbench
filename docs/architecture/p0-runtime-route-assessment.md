@@ -75,7 +75,7 @@ Workbench 后续需要一条生产运行时路线，同时满足：受管子进�
 
 ## 路线 C：薄 `obsidian-bridge`
 
-薄 bridge 是一个加载在 DSH Cordis composition 内的专用插件，只暴露 Workbench 当前需要的窄协议，不复制 Agent、session、permission 或持久化实现。可行性来自官方 SDK server 与 ACP bridge 均通过 Cordis `ctx.agents` 对外适配这一事实；具体 API 仍是 P0 推断，尚未运行验证。
+薄 bridge 是一个加载在 DSH Cordis composition 内的专用插件，只暴露 Workbench 当前需要的窄协议，不复制 Agent、session、permission 或持久化实现。可行性最初来自官方 SDK server 与 ACP bridge 均通过 Cordis `ctx.agents` 对外适配这一事实；Batch 2 已把该 API 从 P0 推断推进为固定 tag 源码证据，详见[能力尖峰](./batch-2-bridge-capability-spike.md)。证据确认 `ctx.agents.create`、`AgentHandle.dispose`、完整 `session/event`、`agent.cancel`/`whenIdle` 和 `approval/request` seam；rc.2 本机/Windows 运行仍未验证。
 
 后续生产实现的最小能力门必须同时包括：
 
@@ -87,7 +87,7 @@ Workbench 后续需要一条生产运行时路线，同时满足：受管子进�
 
 它不应：读取 Vault、接受任意 Shell、直接保存凭据、复制 DSH session 日志，或同时维护 SDK/ACP 两套生产传输。
 
-结论：这是唯一能在单一窄协议内同时保留事件、取消、权限和生命周期语义的候选。代价是项目必须维护协议、版本握手和对上游漂移的测试。
+结论：这是唯一能在单一窄协议内同时保留事件、取消、权限和生命周期语义的候选。固定 tag 源码已证明关键 seam 存在；代价是项目必须维护协议、版本握手和对上游漂移的测试，且必须在 Batch 4 完成真实 rc.2 Windows 生命周期验收。
 
 ## P0 结论
 
@@ -97,11 +97,11 @@ Workbench 后续需要一条生产运行时路线，同时满足：受管子进�
 | ACP | 仅已提交消息 | 是 | 是 | fresh session、连接级关闭 | 不选为生产主路线 |
 | 薄 bridge | 可按窄契约提供 | 可按 Agent 语义提供 | 可按窄契约提供 | 可显式设计 | 选为唯一生产路线，待单独批次实现 |
 
-唯一架构决定见 [ADR-001](./ADR-001-runtime-integration.md)。Batch 0B 实现的 `--version` 健康检查与生产传输解耦；健康检查成功只表示目标命令可执行，不表示已连接、已认证或会话可用。
+唯一架构决定见 [ADR-001](./ADR-001-runtime-integration.md)，版本状态见[运行时兼容矩阵](./runtime-compatibility-matrix.md)。Batch 0B 实现的 `--version` 健康检查与生产传输解耦；健康检查成功只表示目标命令可执行，不表示已连接、已认证或会话可用。
 
 ## 官方来源
 
-- [DSH TypeScript SDK client](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/sdk/client/README.md)
-- [DSH SDK protocol](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/sdk/protocol/README.md)
-- [DSH SDK JSON-RPC server](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/sdk/server/README.md)
-- [DSH ACP bridge](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/acp/acp/README.md)
+- [DSH TypeScript SDK client](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.1-rc.2/packages/sdk/client/README.md)
+- [DSH SDK protocol](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.1-rc.2/packages/sdk/protocol/README.md)
+- [DSH SDK JSON-RPC server](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.1-rc.2/packages/sdk/server/README.md)
+- [DSH ACP bridge](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.1-rc.2/packages/acp/acp/README.md)

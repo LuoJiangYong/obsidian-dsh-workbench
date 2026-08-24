@@ -91,6 +91,8 @@ Batch 0B 已建立其中的只读健康检查子集：
 
 正式 bridge 的版本演进门已冻结为：每个实现或兼容批次重新读取 GitHub 最新预发布与 npm dist-tag，以一致结果建立待验证候选并精确锁定；当前候选为 `0.1.1-rc.2`。计划中的上游监测只允许生成 issue、兼容提案或 draft PR，不得自动安装/更新 DSH、自动合并、自动发布或自动提交社区目录。监测 workflow 与正式 bridge 均未获实现批准。
 
+Batch 2 已建立 rc.2 固定 tag 的源码能力证据与兼容矩阵，确认 `ctx.agents.create`/owned dispose、完整 `session/event`、真实 Agent cancel、一次性 approval 和 fail-closed 默认结果可供后续薄 bridge 使用。治理契约由双平台完整 `npm test` 执行；这不证明 rc.2 Windows 真实运行、正式握手或进程清理通过，Phase C 整体仍未通过。
+
 这些证据不证明真实会话、协议握手、mid-turn cancel、权限回路或 Vault 安全门通过，因此 Phase C 整体保持未通过。
 
 ## Phase D：隔离 Vault 与发布门
@@ -144,4 +146,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-当前批准批次只冻结新建任务 v1 的输入、上下文快照、外部工作区、权限、状态、取消、错误、bridge 最新预发布候选、自动演进和社区发布路线。对应治理测试与 CI 覆盖自检已更新；运行源码、正式 bridge、上游监测 workflow、隔离 Vault v1 验收和最终用户 UI 验收均未实施。下一实现批次必须从已冻结契约中选择一个新的最小结果并重新批准，不能直接进入发布。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 2 已形成 rc.2 源码能力证据与兼容矩阵；它通过远端 CI 与原始零 annotations 后才进入 Batch 3 的最小协议和假 bridge。该连续授权不包括 Release、社区提交、Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。

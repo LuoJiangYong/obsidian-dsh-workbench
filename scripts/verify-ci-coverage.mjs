@@ -70,6 +70,7 @@ for (const ardotContract of [
 }
 for (const newTaskContract of [
   '新建任务 v1 固定宿主边界、真实取消、最新预发布候选与只读自动演进',
+  'Batch 2 固定 rc.2 官方能力证据、兼容矩阵与生产未通过边界',
   '发送动作建立不可变上下文快照',
   '整个 Vault 不得成为 DSH 默认可写 `cwd`',
   '每个 turn 只能产生一个终态',
