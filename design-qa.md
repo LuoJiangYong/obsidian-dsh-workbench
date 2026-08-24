@@ -156,5 +156,6 @@ final result: passed
 - 新建任务图标来自官方 Lucide `icons/circle-plus.svg`，SHA-256 为 `6FA978530075DF975AD05E2742896A1950B74C2B133A0D208891B038A4A41C17`；Ardot 组件为 `12:555`。
 - 六个产品画板和同屏 QA 已在移除开发/发布文案、应用浅灰禁用态并更新嵌入式新建任务截图后逐张复核。Ardot 布局诊断报告的承载底/图标叠放、活动导航背景叠放、宿主标题栏留白、任务输入留白和窄屏说明区留白均与截图一致，属于有意结构。
 - 截图未发现文字裁切、横向溢出、错误层级、错误主题 token 或剩余 P0、P1、P2 视觉问题。
+- 治理实现提交 `f3fa2402431868519164e65ebded27aa9bfe8f6a` 的远端 [CI run 32700464511](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32700464511) 已通过 Ubuntu 与 Windows；两个 check run 的原始 annotations 合计为 `0`。
 
 Ardot v2 design-only final result: passed
