@@ -155,6 +155,48 @@ describe('发布与治理契约', () => {
     expect(assessment).toContain('健康检查成功只表示目标命令可执行');
   });
 
+  it('新建任务 v1 固定宿主边界、真实取消、最新预发布候选与只读自动演进', async () => {
+    const [requirements, hostContract, assessment, roadmap, releaseStatus] = await Promise.all([
+      readFile(path.join(repositoryRoot, 'docs', 'requirements', 'new-task-v1.md'), 'utf8'),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'ADR-005-new-task-v1-host-contract.md',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'p0-runtime-route-assessment.md'),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'release', 'name-and-community-claim-status.md'),
+        'utf8',
+      ),
+    ]);
+
+    expect(requirements).toContain('v1 发布门必须真实实现“对话”和“任务执行”');
+    expect(requirements).toContain('“代码协作”不属于当前社区首发门');
+    expect(requirements).toContain('发送动作建立不可变上下文快照');
+    expect(requirements).toContain('整个 Vault 不得成为 DSH 默认可写 `cwd`');
+    expect(requirements).toContain('每个 turn 只能产生一个终态');
+    expect(requirements).toContain('`failed(runtime_terminated)`');
+    expect(requirements).toContain('当前核验到的正式 bridge 候选是 `0.1.1-rc.2`');
+    expect(requirements).toContain('不表示 bridge 已实现或当前插件已支持');
+    expect(requirements).toContain('插件自动安装或更新 DSH');
+    expect(hostContract).toContain('状态：已接受');
+    expect(hostContract).toContain('只读 `--version` 健康检查');
+    expect(hostContract).toContain('当前代码仍只验证健康检查 `0.1.1-rc.1`');
+    expect(assessment).toContain('正式 bridge 最新预发布策略');
+    expect(assessment).toContain('待验证候选');
+    expect(roadmap).toContain('监测 workflow 与正式 bridge 均未获实现批准');
+    expect(releaseStatus).toContain('Release 成功不自动授权社区提交');
+    expect(releaseStatus).toContain('只有社区目录接受并发布后');
+  });
+
   it('CI 路线图保持 Release 自动化未获批准', async () => {
     const roadmap = await readFile(
       path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'),

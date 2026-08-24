@@ -12,6 +12,7 @@
 | --- | --- |
 | Ardot UI 用户审阅真相 | 已更新为 `v2`；含新建任务、合并后的运行、宽屏/窄屏、Light/Dark 与可选快速助手；产品画板不显示开发进度或发布门文案 |
 | 新建任务 | `v2` 首发设计目标；运行代码尚未实现对话、任务执行或上下文 |
+| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI 治理契约；仍是规划输入，未实现运行行为 |
 | 中央 Workbench 与当前内部导航 | 已实现；已通过既有隔离 Vault 运行与视觉验收，仍为分离的“概览”“运行状态” |
 | ribbon 与中央标签页命令入口 | 已实现；已通过既有隔离 Vault 运行验收 |
 | 可选右侧快速助手容器 | 当前真实空状态已实现并通过既有验收；`v2` 定义为可选，产品标题不携带发布阶段 |
@@ -70,6 +71,8 @@ npm run verify
 - 插件不安装或更新 DSH、Node、Python 或其他外部依赖。
 
 当前健康检查精确支持 DSH `0.1.1-rc.1`；其他版本会明确显示不受支持，不做兼容 fallback。后续若加入外部 DSH 会话，网络、进程、凭据和数据流向必须在功能进入前更新本文档与设置界面，并经过新的批准批次。
+
+正式生产 bridge 仍未实现。后续 bridge 实现或兼容批次以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选，当前已核验候选为 `0.1.1-rc.2`；实现时必须精确锁定版本、tag、commit、bridge 与 lockfile，并通过握手、协议、Windows 进程和隔离 Vault 等相应门禁。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
 
 ## 平台与身份
 
@@ -133,6 +136,8 @@ npm run verify
 - CI/CD 路线图：[docs/ci-cd-roadmap.md](./docs/ci-cd-roadmap.md)
 - P0 运行时路线评估：[docs/architecture/p0-runtime-route-assessment.md](./docs/architecture/p0-runtime-route-assessment.md)
 - 生产运行时 ADR：[docs/architecture/ADR-001-runtime-integration.md](./docs/architecture/ADR-001-runtime-integration.md)
+- 新建任务 v1 需求：[docs/requirements/new-task-v1.md](./docs/requirements/new-task-v1.md)
+- 新建任务 v1 宿主契约 ADR：[docs/architecture/ADR-005-new-task-v1-host-contract.md](./docs/architecture/ADR-005-new-task-v1-host-contract.md)
 
 ## License
 

@@ -1,6 +1,6 @@
 # 名称、仓库与社区占位状态
 
-核验日期：2026-08-21
+核验日期：2026-08-24
 
 ## 固定身份
 
@@ -26,6 +26,19 @@
 目标仓库地址为 `https://github.com/LuoJiangYong/obsidian-dsh-workbench`，已通过 GitHub API 回读确认为公开仓库。GitHub 仓库名占位与 Obsidian 社区名称或插件 ID 占位互不等价。
 
 社区目录查重结果只证明核验时没有精确冲突，不产生保留权或占位权。创建 GitHub 仓库、提交 `manifest.json`、构建 `main.js` 或创建 Release，也都不等于 Obsidian 社区 ID 已占位。
+
+## 社区发布路线
+
+社区发布是两个彼此独立、都需要单独批准的外部动作：
+
+1. **GitHub Release**：在 Phase A-D、首发“新建任务”功能门、隔离 Vault 运行验收和最终 UI 用户验收全部通过后，复核 tag、`manifest.json.version`、`package.json.version`、`versions.json` 与构建资产一致，再创建不可变 Release 并附加 `main.js`、`manifest.json` 和可选 `styles.css`。
+2. **Obsidian 社区提交**：在提交当天重新检查 `community.obsidian.md` 目录中的名称与 ID，使用已绑定的 GitHub 账号发起插件提交；接受对默认分支 HEAD、GitHub Release 资产和审阅分支的自动扫描及人工审阅。只有社区目录接受并发布后，名称和 ID 才能标记为“已占位”。
+
+Release 成功不自动授权社区提交；社区扫描或审阅结果也不能反向修改 Release、仓库或用户环境。任何自动 Release、自动社区提交、自动修复扫描结果或绕过人工审批的流程均未批准。
+
+## 首发产品门
+
+首个社区发布功能固定为“新建任务”，且必须真实实现“对话”和“任务执行”、上下文快照、外部工作区边界、权限请求、真实取消和明确错误状态。“代码协作”不属于当前首发门；Vault 写入、任意 Shell、DSH 自动安装/更新和移动端明确排除。设计、治理测试、CI 或 GitHub Release 任一单项通过都不能替代最终 Obsidian 运行验收和用户批准。
 
 ## 本批次禁止动作
 

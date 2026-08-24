@@ -68,9 +68,20 @@ for (const ardotContract of [
 ]) {
   assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
 }
+for (const newTaskContract of [
+  '新建任务 v1 固定宿主边界、真实取消、最新预发布候选与只读自动演进',
+  '发送动作建立不可变上下文快照',
+  '整个 Vault 不得成为 DSH 默认可写 `cwd`',
+  '每个 turn 只能产生一个终态',
+  '当前核验到的正式 bridge 候选是 `0.1.1-rc.2`',
+  '插件自动安装或更新 DSH',
+  'Release 成功不自动授权社区提交',
+]) {
+  assert(governanceContracts.includes(newTaskContract), `治理契约缺少新建任务 v1 规则：${newTaskContract}`);
+}
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、Ardot v2 新建任务首发门与产品 UI 浅灰禁用态契约、Windows DSH 专项门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、Ardot v2、新建任务 v1 宿主与 bridge 演进契约、Windows DSH 专项门已接入。',
 );
 
 function assert(condition, message) {
