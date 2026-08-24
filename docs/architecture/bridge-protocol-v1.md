@@ -131,5 +131,6 @@ client 第一个请求固定为：
 - `src/bridge-protocol-client.ts`：请求匹配、连接/session/turn 状态、seq、权限、取消、EOF 与超时。
 - `tests/fakes/fake-bridge.ts`：不启动外部进程的可控 transport。
 - `tests/bridge-protocol.test.ts`：假 bridge 行为矩阵，由 Windows/Ubuntu 的完整 `npm test` 执行。
+- 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 
 这些测试证明项目协议在可控 transport 上成立；不证明 rc.2 可运行、真实模型、Windows 隐藏窗口、进程清理、Vault 或 Obsidian UI 通过。

@@ -95,7 +95,7 @@ Batch 2 已建立 rc.2 固定 tag 的源码能力证据与兼容矩阵，确认 
 
 Batch 2 实现提交 `d456a807215775e16da97ad60e388be2925249c2` 已通过远端 [CI run 32708553927](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32708553927) 的 Ubuntu 与 Windows job；两个 check-run 的声明 annotations 与原始 annotations 数组合计均为 `0`。
 
-Batch 3 已实现 bridge 协议 v1、严格入站校验、client 状态约束与假 bridge，覆盖精确握手、response 关联、session/turn/seq、未知 required/ignorable 事件、权限一次性、cancel 确认、唯一终态、业务错误、shutdown/EOF 与超时。`verify:ci-coverage` 明确校验这些用例仍由双平台完整 `npm test` 执行；正式 bridge 与 Windows rc.2 仍未通过。
+Batch 3 已实现 bridge 协议 v1、严格入站校验、client 状态约束与假 bridge，覆盖精确握手、response 关联、session/turn/seq、未知 required/ignorable 事件、权限一次性、cancel 确认、唯一终态、业务错误、shutdown/EOF 与超时。实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)；Ubuntu check `97382324601` 与 Windows check `97382324697` 均成功，声明 annotations 与原始 annotations 数组合计均为 `0`。`verify:ci-coverage` 明确校验这些用例仍由双平台完整 `npm test` 执行；正式 bridge 与 Windows rc.2 仍未通过。
 
 这些证据不证明真实会话、协议握手、mid-turn cancel、权限回路或 Vault 安全门通过，因此 Phase C 整体保持未通过。
 

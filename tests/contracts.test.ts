@@ -271,6 +271,8 @@ describe('发布与治理契约', () => {
     expect(tests).toContain('未知 ignorable 事件只推进 seq');
     expect(tests).toContain('只有取消终态才建立 cancelled');
     expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
+    expect(roadmap).toContain('39023169811fc591be5fe33fde05662fbbc9657e');
+    expect(roadmap).toContain('CI run 32711052033');
     expect(readme).toContain('| bridge 协议 v1 与假 bridge | 已实现并进入双平台契约测试；不等于正式 bridge 或真实 DSH 已通过 |');
   });
 
