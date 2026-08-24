@@ -109,3 +109,52 @@ Workbench 壳层运行实现 final result: passed
 5. Ardot 布局诊断只报告有意的图标/承载底叠放、活动态背景叠放和内容区域留白；截图复核确认均为设计结构，不是遮挡、裁切或缺失。未发现剩余 P0、P1 或 P2 视觉问题。
 
 final result: passed
+
+## Ardot UI 真相 v2
+
+### 批次结果与实现差异
+
+- Ardot 文件 ID：`718186366720195`；页面 `UI 真相 v2`（`12:1`）。
+- 设计系统与交互状态：`12:2`。
+- 新建任务宽屏浅色：`12:41`；运行宽屏浅色：`12:120`。
+- 新建任务与快速助手：`12:191`；新建任务宽屏深色：`12:275`。
+- 新建任务 `700px` Workbench 容器：`12:360`。
+- 参考截图与 v2 同屏 QA：`12:530`。
+- `UI 真相 v1`（`0:1`）保留为历史与失败回退基线，没有覆盖或删除。
+- 本批结果是`仅设计已更新，运行代码未同步`。当前源码仍使用 Lucide `bot`，仍渲染分离的“概览”“运行状态”和禁用“助手”；没有实现 DSH 对话、任务执行、上下文或 Vault 能力。
+
+### v2 画板证据
+
+- 设计系统与交互状态：`docs/assets/design-qa/ardot-ui-truth-v2/design-system.png`，`1440 × 900`。
+- 新建任务宽屏浅色：`docs/assets/design-qa/ardot-ui-truth-v2/new-task-wide-light.png`，`1440 × 912`。
+- 运行宽屏浅色：`docs/assets/design-qa/ardot-ui-truth-v2/run-wide-light.png`，`1440 × 912`。
+- 新建任务与快速助手：`docs/assets/design-qa/ardot-ui-truth-v2/new-task-with-quick-assistant.png`，`1440 × 912`。
+- 新建任务宽屏深色：`docs/assets/design-qa/ardot-ui-truth-v2/new-task-wide-dark.png`，`1440 × 912`。
+- 新建任务 `700px` 容器：`docs/assets/design-qa/ardot-ui-truth-v2/new-task-narrow-700.png`，`1440 × 1040`；实际 Obsidian + Workbench 画面为 `744 × 912`。
+
+### 同屏参考比较
+
+- 对照证据：`docs/assets/design-qa/ardot-ui-truth-v2/comparison-reference-v2.png`，`1440 × 900`。
+- 左侧为用户提供的 WorkBuddy 新建任务参考，右侧为 Ardot v2 新建任务宽屏浅色；两张原图具有相同宽高比，并在对照画板中统一为 `650 × 412` 可视槽。
+- 参考图只提供“新建任务在导航首位、产品自有左导航、中央任务输入”的空间关系。v2 没有复制 WorkBuddy 品牌、账号、最近任务、第三方入口、模型名称或机器人装饰。
+- v2 只保留任务输入与执行前确认等产品语义；暂不可用导航使用浅灰文字与图标，不显示开发阶段、发布批次或治理审批文案。运行实现差异继续单独记录在本文档，不进入产品画板。
+- 由于运行代码未同步 v2，本批没有制造“Ardot ↔ Obsidian v2 运行实现”比较，也没有声明最终用户 UI 验收通过。
+
+### 需求核对
+
+1. “新建任务”在所有宽屏导航中位于第一项；在 `700px` 容器中是紧凑选择器的当前页。
+2. “概览”和“运行状态”合并为“运行”，汇总四项概览真值和四项只读运行状态，位于功能导航最后。
+3. 左上角名称严格为三行：`DeepSeek`、`Harness`、`Workbench`。
+4. 右侧快速助手标题只显示“快速助手”，展示健康、当前上下文和快捷提问，不承担主对话。
+5. 各产品画板均不显示“首发”“规划中”“尚未实现”等开发或发布文案；暂不可用导航只使用浅灰禁用态，不添加状态徽标。
+6. 社区发布门仍由 `AGENTS.md`、`DESIGN.md` 和 ADR 管理，没有进入 Ardot 或插件产品界面。
+7. 浅色、深色、宽屏、快速助手组合和 `700px` 容器均有明确画板；没有使用假历史任务、假回复或假 Vault 数据。
+
+### 资产与布局诊断
+
+- DeepSeek 鲸鱼继续使用 `@deepseek-ai/dsh-web-frontend@0.1.1-rc.1/dist/favicon.svg`，SHA-256 为 `C61A62A9D47D8660F9CFE08AAC6775FF0476F7D6C5053F7659C1F8493FD6D814`。
+- 新建任务图标来自官方 Lucide `icons/circle-plus.svg`，SHA-256 为 `6FA978530075DF975AD05E2742896A1950B74C2B133A0D208891B038A4A41C17`；Ardot 组件为 `12:555`。
+- 六个产品画板和同屏 QA 已在移除开发/发布文案、应用浅灰禁用态并更新嵌入式新建任务截图后逐张复核。Ardot 布局诊断报告的承载底/图标叠放、活动导航背景叠放、宿主标题栏留白、任务输入留白和窄屏说明区留白均与截图一致，属于有意结构。
+- 截图未发现文字裁切、横向溢出、错误层级、错误主题 token 或剩余 P0、P1、P2 视觉问题。
+
+Ardot v2 design-only final result: passed

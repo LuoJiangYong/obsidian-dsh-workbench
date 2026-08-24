@@ -58,15 +58,19 @@ for (const uiContract of [
   assert(pluginBaseline.includes(uiContract), `插件基线缺少 UI 契约：${uiContract}`);
 }
 for (const ardotContract of [
-  'Ardot 固定用户审阅 UI 真相、鲸鱼基线和同步演进门',
+  'Ardot v2 固定新建任务首位、运行置底、三行品牌、浅灰禁用态和社区首发门',
   'https://ardot.tencent.com/file/718186366720195',
   '必须同步演进 Ardot',
+  'UI 真相 v2',
+  '首个 Obsidian 社区插件发布功能固定为“新建任务”',
+  '不显示“首发”“规划中”“尚未实现”等开发阶段、发布批次或治理审批文案',
+  '文字与图标采用浅灰禁用态，不显示额外状态徽标',
 ]) {
   assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、Ardot 审阅真相与 Windows DSH 专项门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、Ardot v2 新建任务首发门与产品 UI 浅灰禁用态契约、Windows DSH 专项门已接入。',
 );
 
 function assert(condition, message) {

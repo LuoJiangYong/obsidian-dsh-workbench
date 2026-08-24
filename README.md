@@ -10,19 +10,22 @@
 
 | 能力 | 状态 |
 | --- | --- |
-| Ardot UI 用户审阅真相 | 已建立 `v1`；含设计系统、宽屏/窄屏、Light/Dark、运行状态与可选快速助手 |
-| 中央 Workbench 与内部导航 | 已实现；已通过本批隔离 Vault 运行与视觉验收 |
-| ribbon 与中央标签页命令入口 | 已实现；已通过本批隔离 Vault 运行验收 |
-| 可选右侧快速助手容器 | 已实现真实空状态；已通过本批隔离 Vault 运行与视觉验收 |
+| Ardot UI 用户审阅真相 | 已更新为 `v2`；含新建任务、合并后的运行、宽屏/窄屏、Light/Dark 与可选快速助手；产品画板不显示开发进度或发布门文案 |
+| 新建任务 | `v2` 首发设计目标；运行代码尚未实现对话、任务执行或上下文 |
+| 中央 Workbench 与当前内部导航 | 已实现；已通过既有隔离 Vault 运行与视觉验收，仍为分离的“概览”“运行状态” |
+| ribbon 与中央标签页命令入口 | 已实现；已通过既有隔离 Vault 运行验收 |
+| 可选右侧快速助手容器 | 当前真实空状态已实现并通过既有验收；`v2` 定义为可选，产品标题不携带发布阶段 |
 | DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |
 | DSH 会话、流式事件与取消 | 尚未实现 |
 | Vault 读取与写入 | 未启用 |
 | GitHub Release | 未创建 |
 | Obsidian 社区提交 | 尚未进行 |
 
-当前 ribbon 和“打开工作台”命令打开或复用一个中央 Workbench 标签页。标签页内的插件自有左导航只开放“概览”和“运行状态”；助手、项目、专家/Skill/连接器、自动化、资料库和领域工作台均明确标记为“规划中”。
+当前 ribbon 和“打开工作台”命令打开或复用一个中央 Workbench 标签页。实时运行代码的插件自有左导航仍只开放“概览”和“运行状态”；助手、项目、专家/Skill/连接器、自动化、资料库和领域工作台均明确标记为“规划中”。
 
-最新获用户批准的 [Ardot UI 真相 v1](https://ardot.tencent.com/file/718186366720195)是产品 UI 的用户审阅基线。设计中的 Obsidian ribbon、活动标签页、Workbench 左上角和快速助手均使用 DeepSeek 鲸鱼图标；当前运行代码尚未同步该图标，仍使用 Lucide `bot`，不得把设计更新表述为已实现。
+最新获用户批准的 [Ardot UI 真相 v2](https://ardot.tencent.com/file/718186366720195)是产品 UI 的用户审阅基线：导航首位为“新建任务”，中间保留暂不可用模块的浅灰禁用入口，原“概览”和“运行状态”合并为导航最后的“运行”；左上角品牌固定为 `DeepSeek` / `Harness` / `Workbench` 三行。产品画板不显示“首发”“规划中”“尚未实现”等开发进度、发布批次或治理审批文案。设计中的 Obsidian ribbon、活动标签页、Workbench 左上角和快速助手均使用 DeepSeek 鲸鱼图标；当前运行代码尚未同步该图标和 v2 导航，仍使用 Lucide `bot` 与旧页面结构。当前状态是`仅设计已更新，运行代码未同步`。
+
+“新建任务”承担未来的 DeepSeek Harness 主对话、任务执行、上下文和权限审阅。它是首个 Obsidian 社区插件发布功能：只有完整实现、双平台 CI 与隔离 Vault 运行验收通过，并获得用户对最终 Obsidian 运行 UI 的明确验收后，才允许进入社区发布审批。Ardot、CI 或 GitHub Release 单独通过都不能越过此门。
 
 运行状态只提供手动 `--version` 健康检查；可选右侧快速助手当前只展示健康状态、上下文空态和快捷提问不可用说明，不提供聊天输入、发送、停止或模型选择。DSH 命令可在插件设置中配置为 PATH 裸命令或受支持扩展名的绝对路径。
 
@@ -108,12 +111,22 @@ npm run verify
 - 宽屏浅色、宽屏深色、`700px` 窄容器和右侧快速助手截图通过同屏参考比较；设计验收结果为 `passed`。
 - Obsidian 错误缓冲与错误级控制台消息均为 0；没有读取或写入 Vault 内容。
 
+## Ardot UI 真相 v2 设计批次
+
+- 页面 `UI 真相 v2`（`12:1`）保留六个产品画板：设计系统与交互状态、新建任务浅色、运行浅色、新建任务与快速助手、新建任务深色和 `700px` 新建任务。
+- `06 参考截图与 v2 对照 QA`（`12:530`）把用户参考截图和 v2 新建任务放在同一画板比较；只继承导航首位、左导航和中央任务输入的结构关系，不复制第三方品牌、账号、模型或历史任务。
+- 左上角固定三行 `DeepSeek`、`Harness`、`Workbench`；“新建任务”采用官方 Lucide `circle-plus.svg`，鲸鱼继续来自已锁定的 DeepSeek Harness Web 前端资产。
+- “运行”合并概览真值与只读健康检查并置于导航最后；右侧快速助手保持可选；暂不可用导航只用浅灰文字与图标表达，不显示额外状态徽标。
+- 本批没有修改 `src/`、`styles.css` 或运行协议；运行实现和最终用户 UI 验收明确延期到新的获批批次。
+- 画板截图和同屏 QA 证据保存在 `docs/assets/design-qa/ardot-ui-truth-v2/`，结论记录在 `design-qa.md`。
+
 ## 开发治理
 
 - 项目开发宪法：[AGENTS.md](./AGENTS.md)
 - UI 用户审阅真相：[Ardot `DeepSeek Harness Workbench · UI 真相`](https://ardot.tencent.com/file/718186366720195)
 - UI 文字契约：[DESIGN.md](./DESIGN.md)
 - Ardot 权威 ADR：[docs/architecture/ADR-003-ardot-ui-authority.md](./docs/architecture/ADR-003-ardot-ui-authority.md)
+- 新建任务与首发门 ADR：[docs/architecture/ADR-004-new-task-first-release-gate.md](./docs/architecture/ADR-004-new-task-first-release-gate.md)
 - Workbench 壳层 ADR：[docs/architecture/ADR-002-workbench-shell.md](./docs/architecture/ADR-002-workbench-shell.md)
 - 设计验收：[design-qa.md](./design-qa.md)
 - 开发宪法评估：[docs/governance/development-constitution-assessment.md](./docs/governance/development-constitution-assessment.md)
