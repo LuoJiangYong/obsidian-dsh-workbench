@@ -75,11 +75,11 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0` 并通过本地 Windows 真实加载、握手、Agent session、mid-turn cancel 与清理；当前产品 UI 尚未启动该路径，兼容矩阵也尚未完成隔离 Vault 与用户验收。
+- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；当前产品 UI 尚未启动该路径，兼容矩阵也尚未完成隔离 Vault 与用户验收。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件只读健康检查仍精确支持 `0.1.1-rc.1`；它与正式 bridge 候选 `0.1.1-rc.2` 是两条不同状态，不得合并为“已支持 rc.2”。
-- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；本地真实 DSH 已通过，远端 CI 与产品 UI 仍待后续证据。
+- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过 CI `32717711862` 的 Ubuntu/Windows job 与原始零 annotations，产品 UI 仍待后续批次。
 
 ## 自动同步演进计划
 

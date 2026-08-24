@@ -264,7 +264,7 @@ describe('发布与治理契约', () => {
     expect(protocol).toContain('只有显式 `ignorable: true` 的未知事件');
     expect(protocol).toContain('`turn/cancel` 的 `{ accepted: true }` 只表示 bridge 已接收请求');
     expect(protocol).toContain('随后 transport EOF 才进入 `closed`');
-    expect(protocol).toContain('Batch 4 本地证据已经证明 rc.2 artifact 加载');
+    expect(protocol).toContain('Batch 4 最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664`');
     expect(client).toContain("'handshake_mismatch'");
     expect(client).toContain("'event_sequence'");
     expect(tests).toContain('bridge 协议 v1 与假 bridge');
@@ -273,7 +273,7 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
     expect(roadmap).toContain('39023169811fc591be5fe33fde05662fbbc9657e');
     expect(roadmap).toContain('CI run 32711052033');
-    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地 Windows 已由 DSH `0.1.1-rc.2` 真实加载');
+    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地与 Windows CI 已由 DSH `0.1.1-rc.2` 真实加载');
   });
 
   it('Batch 4 固定正式 bridge artifact、rc.2 夹具与 Windows 运行边界', async () => {
@@ -301,8 +301,13 @@ describe('发布与治理契约', () => {
     expect(manifest.dshIntegrity).toMatch(/^sha512-/u);
     expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.1.1-rc.2');
     expect(protocol).toContain('正式 bridge、NDJSON、受管进程');
+    expect(protocol).toContain('CI run 32717711862');
+    expect(protocol).toContain('Ubuntu check `97402381390`、Windows check `97402381253`');
+    expect(protocol).toContain('两个原始 annotations 数组均为 `[]`');
     expect(matrix).toContain('`windows_runtime_passed`；尚未 `supported`');
     expect(roadmap).toContain('环回模型请求后的 mid-turn cancel');
+    expect(roadmap).toContain('CI `32717476733` 在干净检出中揭示进程单测依赖未跟踪构建产物');
+    expect(roadmap).toContain('最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664`');
     expect(runtimeTest).toContain('真实加载 artifact');
     expect(runtimeTest).toContain('payload: { outcome: \'cancelled\' }');
   });

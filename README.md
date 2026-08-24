@@ -17,7 +17,7 @@
 | ribbon 与中央标签页命令入口 | 已实现；已通过既有隔离 Vault 运行验收 |
 | 可选右侧快速助手容器 | 当前真实空状态已实现并通过既有验收；`v2` 定义为可选，产品标题不携带发布阶段 |
 | DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |
-| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地 Windows 已由 DSH `0.1.1-rc.2` 真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；尚未接入产品 UI |
+| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地与 Windows CI 已由 DSH `0.1.1-rc.2` 真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；尚未接入产品 UI |
 | DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 产品入口、上下文与任务执行尚未接通 |
 | Vault 读取与写入 | 未启用 |
 | GitHub Release | 未创建 |
@@ -78,7 +78,7 @@ npm run test:bridge:runtime
 
 当前健康检查精确支持 DSH `0.1.1-rc.1`；其他版本会明确显示不受支持，不做兼容 fallback。该设置页路径与正式 bridge 的 rc.2 路径相互独立，当前 `main.ts` 尚未启动后者，因此现有 Obsidian UI 仍不会发起模型请求。
 
-正式 `obsidian-bridge` 已实现为独立 ESM artifact：只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容；插件侧只用固定 `--profile headless --patch <隔离 overlay>` 参数启动用户已配置的 DSH，设置独立于 Vault 和用户 profile 的 `DSH_HOME`，关闭时先请求协议退出，超时后终止整棵进程树。bridge/协议/DSH/artifact 哈希均精确锁定；本地 Windows rc.2 真实验收已通过，远端 CI 证据在当前实现提交后补录。产品 UI、只读 Vault 上下文、外部工作区权限和隔离 Vault 运行验收仍属于后续批次，因此矩阵尚未进入 `supported`。
+正式 `obsidian-bridge` 已实现为独立 ESM artifact：只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容；插件侧只用固定 `--profile headless --patch <隔离 overlay>` 参数启动用户已配置的 DSH，设置独立于 Vault 和用户 profile 的 `DSH_HOME`，关闭时先请求协议退出，超时后终止整棵进程树。bridge/协议/DSH/artifact 哈希均精确锁定；最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862) 的 Ubuntu 与 Windows job，两个原始 annotations 数组均为 `[]`。产品 UI、只读 Vault 上下文、外部工作区权限和隔离 Vault 运行验收仍属于后续批次，因此矩阵尚未进入 `supported`。
 
 后续兼容批次继续以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
 

@@ -3,8 +3,8 @@
 - 协议版本：`1`
 - 目标 bridge 版本：`0.1.0`
 - 目标 DSH：`0.1.1-rc.2`
-- 当前状态：协议、正式 bridge、NDJSON、受管进程与本地 Windows DSH `0.1.1-rc.2` 真实运行已实现并验证
-- 未通过：远端实现提交 CI 证据、Obsidian 产品 UI、只读上下文、外部工作区权限与隔离 Vault 运行验收
+- 当前状态：协议、正式 bridge、NDJSON、受管进程与本地/远端 Windows DSH `0.1.1-rc.2` 真实运行已实现并验证
+- 未通过：Obsidian 产品 UI、只读上下文、外部工作区权限与隔离 Vault 运行验收
 
 ## 目标与边界
 
@@ -136,4 +136,4 @@ client 第一个请求固定为：
 - `tests/real-dsh-bridge.test.ts`：独立精确锁定 rc.2，真实加载 artifact、创建 Agent、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
 - 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 
-Batch 4 本地证据已经证明 rc.2 artifact 加载、环回模型请求、mid-turn cancel、Windows 隐藏进程、正常/强制关闭与清理；远端 CI 证据将在实现提交后补录。它不证明真实外部模型账号、Vault、Obsidian UI 或发布验收通过。
+Batch 4 最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)：Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。本地及远端证据证明 rc.2 artifact 加载、环回模型请求、mid-turn cancel、Windows 隐藏进程、正常/强制关闭与清理；它不证明真实外部模型账号、Vault、Obsidian UI 或发布验收通过。
