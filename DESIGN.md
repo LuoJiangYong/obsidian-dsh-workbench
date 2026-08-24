@@ -1,8 +1,18 @@
 # DeepSeek Harness Workbench 设计规范
 
-状态：已批准，作为本仓库 UI 设计权威。
+状态：已批准。最新获用户批准的 [Ardot 设计项目](https://ardot.tencent.com/file/718186366720195)是用户审阅的产品 UI 界面真相；本文件是其稳定文字契约与实现镜像。
 
-本文件只记录稳定的产品布局、视觉规则与真实状态表达。逐批视觉验收证据记录在 `design-qa.md`；实时能力以源码、测试和运行读回为准。
+Ardot 负责页面、布局、状态、图标、文案层级和响应式外观的审阅真相；本文件负责把已批准设计转写成可测试规则。源码、测试、CI 和运行读回仍是“是否已经实现并可用”的能力真相，Ardot 画板不得被解释为功能已经交付。逐批视觉验收证据记录在 `design-qa.md`。
+
+## 0. Ardot 审阅基线
+
+- 项目：`DeepSeek Harness Workbench · UI 真相`
+- 文件 ID：`718186366720195`
+- 用户审阅版本：`v1`，批准日期 `2026-08-24`
+- 页面：`UI 真相 v1`（`0:1`）
+- 画板：`00 设计系统与同步协议`（`2:31`）、`01 概览 宽屏浅色`（`2:32`）、`02 运行状态 宽屏浅色`（`2:265`）、`03 运行状态与快速助手 宽屏浅色`（`2:368`）、`04 概览 宽屏深色`（`2:452`）、`05 运行状态 700px 容器`（`2:36`）
+
+只有最新获用户批准的 Ardot 版本可以授权实现同步；未批准草稿、实验副本和导出截图都不能单独改变产品能力或开发范围。
 
 ## 1. 产品定位
 
@@ -12,13 +22,13 @@ DeepSeek Harness Workbench 是 Obsidian 内的中央智能体工作台，不是�
 
 ## 2. 参考层级
 
-设计判断依次参考：
+视觉与布局判断依次参考：
 
-1. 本文件和已接受的架构 ADR。
-2. 当前仓库的真实源码、测试、构建与 Obsidian 运行结果。
-3. Trend Radar 仓库 `DESIGN.md` 中已经验证的 Obsidian 原生工作台规则。
-4. 用户提供的 WorkBuddy 截图，仅参考“产品自有左导航 + 主内容区”的信息架构，不复制品牌、角色、任务数据、聊天输入、模型选择或其他未实现能力。
-5. Ardot 的功能型 Web App 指南，用于校准主区域层级、渐进披露、系统状态可见性和响应式结构。
+1. 最新获用户批准的 Ardot 审阅版本。
+2. 本文件和已接受的架构 ADR。
+3. 当前仓库的真实源码、测试、构建与 Obsidian 运行结果，用于判断实现差异和能力真相。
+4. Trend Radar 仓库 `DESIGN.md` 中已经验证的 Obsidian 原生工作台规则。
+5. 用户提供的 WorkBuddy 截图，仅参考“产品自有左导航 + 主内容区”的信息架构，不复制品牌、角色、任务数据、聊天输入、模型选择或其他未实现能力。
 
 参考图与本插件能力冲突时，能力真相优先；不得为了视觉完整度制造可点击但不可用的功能或虚构数据。
 
@@ -69,7 +79,9 @@ DeepSeek Harness Workbench 是 Obsidian 内的中央智能体工作台，不是�
 ## 5. 视觉语言
 
 - 使用 Obsidian 语义变量：`--background-primary`、`--background-secondary`、`--background-modifier-border`、`--background-modifier-hover`、`--interactive-accent`、`--text-normal`、`--text-muted` 和 `--text-faint`。
-- 使用 Obsidian 内置 Lucide 图标；图标辅助识别但不替代文字标签。
+- 插件身份图标使用 DeepSeek Harness Web 前端 `@deepseek-ai/dsh-web-frontend@0.1.1-rc.1/dist/favicon.svg` 的鲸鱼矢量，源文件 SHA-256 为 `C61A62A9D47D8660F9CFE08AAC6775FF0476F7D6C5053F7659C1F8493FD6D814`。Ardot 中用于 Obsidian ribbon、活动标签页、Workbench 左上角和快速助手；深色模式以白色承载底保证黑色原始矢量的对比度，不重绘品牌图形。
+- 其他功能图标使用 Obsidian 内置 Lucide 图标；图标辅助识别但不替代文字标签。
+- 鲸鱼图标只表示与 DeepSeek Harness 的兼容关系，不构成官方产品或官方背书。当前运行代码仍使用 Lucide `bot` 作为插件图标；本批仅更新 Ardot 审阅真相，运行实现同步明确延期到新的获批批次。
 - 保持原生字体栈，不引入品牌字体或独立网页皮肤。
 - 垂直方向紧凑、横向留白充足；默认主内容内边距为上 `24px`、水平 `28px`、下 `32px`。
 - 结构以平面边框和背景分区为主，使用 `--radius-s`，不使用大面积渐变、浮夸阴影、玻璃拟态或装饰插画。
@@ -98,13 +110,16 @@ DeepSeek Harness Workbench 是 Obsidian 内的中央智能体工作台，不是�
 
 ## 8. 变更同步
 
-修改 Workbench 布局、页面、导航、图标、状态文案或响应式规则时，必须同步检查：
+修改 Workbench 布局、页面、导航、图标、状态文案或响应式规则时，必须先在 Ardot 中形成可审阅变化并获得用户批准，再在同一实现批次同步检查：
 
+- Ardot 项目中的最新用户审阅版本、页面/画板 ID 和设计系统说明；
 - `src/main.ts`、相关 ItemView 和状态模型；
 - `styles.css`；
 - 插件基线测试、治理契约测试与 Obsidian mock；
 - `README.md`、架构 ADR 和 `design-qa.md`；
 - `scripts/verify-ci-coverage.mjs` 与 GitHub Actions 是否实际执行对应测试；
 - 宽屏、窄屏、浅色、深色、键盘与错误状态的隔离 Vault 验收需求。
+
+若代码、文档或运行结果暂时未同步 Ardot，必须把差异标记为`仅设计已更新，运行代码未同步`或`实现领先，Ardot 未同步`，不得把两者都称为当前真相。UI 批次的 CI 必须执行治理契约测试，校验 Ardot 链接、审阅版本和同步规则仍然存在；视觉像素本身由 `design-qa.md` 的同视口截图比较验收。
 
 未经新的明确批准，不把规划入口升级为可用能力，也不增加公共模块注册框架。
