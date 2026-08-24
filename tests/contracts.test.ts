@@ -55,7 +55,7 @@ describe('发布与治理契约', () => {
       'utf8',
     );
 
-    expect(design).toContain('状态：已批准，作为本仓库 UI 设计权威。');
+    expect(design).toContain('用户审阅的产品 UI 界面真相');
     expect(design).toContain('中央 Workbench 标签页');
     expect(design).toContain('桌面宽屏导航宽度固定为 `194px`');
     expect(design).toContain('快速助手是独立、按需打开的 Obsidian 右侧视图');
@@ -63,6 +63,33 @@ describe('发布与治理契约', () => {
     expect(adr).toContain('状态：已接受');
     expect(adr).toContain("调用 `workspace.getLeaf('tab')`");
     expect(adr).toContain('不建立公共模块注册器、动态加载器或数据协议');
+  });
+
+  it('Ardot 固定用户审阅 UI 真相、鲸鱼基线和同步演进门', async () => {
+    const [agents, design, readme, designQa, adr] = await Promise.all([
+      readFile(path.join(repositoryRoot, 'AGENTS.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'design-qa.md'), 'utf8'),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'ADR-003-ardot-ui-authority.md'),
+        'utf8',
+      ),
+    ]);
+    const ardotUrl = 'https://ardot.tencent.com/file/718186366720195';
+
+    expect(agents).toContain(ardotUrl);
+    expect(agents).toContain('最新获用户批准版本，是用户审阅的产品 UI 界面真相');
+    expect(agents).toContain('必须同步演进 Ardot');
+    expect(design).toContain(ardotUrl);
+    expect(design).toContain('未批准草稿');
+    expect(design).toContain('`05 运行状态 700px 容器`（`2:36`）');
+    expect(design).toContain('当前运行代码仍使用 Lucide `bot`');
+    expect(readme).toContain('当前运行代码尚未同步该图标');
+    expect(adr).toContain('状态：已接受');
+    expect(adr).toContain('同一 Ardot 项目持续演进');
+    expect(designQa).toContain('Ardot UI 真相 v1');
+    expect(designQa.trimEnd()).toMatch(/final result: passed$/u);
   });
 
   it('P0 评估只接受一个生产运行时 ADR', async () => {

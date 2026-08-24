@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
 const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
 const pluginBaseline = await readFile('tests/plugin-baseline.test.ts', 'utf8');
+const governanceContracts = await readFile('tests/contracts.test.ts', 'utf8');
 
 const requiredCommands = [
   'npm ci',
@@ -56,8 +57,17 @@ for (const uiContract of [
 ]) {
   assert(pluginBaseline.includes(uiContract), `插件基线缺少 UI 契约：${uiContract}`);
 }
+for (const ardotContract of [
+  'Ardot 固定用户审阅 UI 真相、鲸鱼基线和同步演进门',
+  'https://ardot.tencent.com/file/718186366720195',
+  '必须同步演进 Ardot',
+]) {
+  assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
+}
 
-console.debug('CI 覆盖验证通过：双平台 Phase A、Workbench UI 契约与 Windows DSH 专项门已接入。');
+console.debug(
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、Ardot 审阅真相与 Windows DSH 专项门已接入。',
+);
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);

@@ -10,6 +10,7 @@
 
 | 能力 | 状态 |
 | --- | --- |
+| Ardot UI 用户审阅真相 | 已建立 `v1`；含设计系统、宽屏/窄屏、Light/Dark、运行状态与可选快速助手 |
 | 中央 Workbench 与内部导航 | 已实现；已通过本批隔离 Vault 运行与视觉验收 |
 | ribbon 与中央标签页命令入口 | 已实现；已通过本批隔离 Vault 运行验收 |
 | 可选右侧快速助手容器 | 已实现真实空状态；已通过本批隔离 Vault 运行与视觉验收 |
@@ -20,6 +21,8 @@
 | Obsidian 社区提交 | 尚未进行 |
 
 当前 ribbon 和“打开工作台”命令打开或复用一个中央 Workbench 标签页。标签页内的插件自有左导航只开放“概览”和“运行状态”；助手、项目、专家/Skill/连接器、自动化、资料库和领域工作台均明确标记为“规划中”。
+
+最新获用户批准的 [Ardot UI 真相 v1](https://ardot.tencent.com/file/718186366720195)是产品 UI 的用户审阅基线。设计中的 Obsidian ribbon、活动标签页、Workbench 左上角和快速助手均使用 DeepSeek 鲸鱼图标；当前运行代码尚未同步该图标，仍使用 Lucide `bot`，不得把设计更新表述为已实现。
 
 运行状态只提供手动 `--version` 健康检查；可选右侧快速助手当前只展示健康状态、上下文空态和快捷提问不可用说明，不提供聊天输入、发送、停止或模型选择。DSH 命令可在插件设置中配置为 PATH 裸命令或受支持扩展名的绝对路径。
 
@@ -108,7 +111,9 @@ npm run verify
 ## 开发治理
 
 - 项目开发宪法：[AGENTS.md](./AGENTS.md)
-- UI 设计权威：[DESIGN.md](./DESIGN.md)
+- UI 用户审阅真相：[Ardot `DeepSeek Harness Workbench · UI 真相`](https://ardot.tencent.com/file/718186366720195)
+- UI 文字契约：[DESIGN.md](./DESIGN.md)
+- Ardot 权威 ADR：[docs/architecture/ADR-003-ardot-ui-authority.md](./docs/architecture/ADR-003-ardot-ui-authority.md)
 - Workbench 壳层 ADR：[docs/architecture/ADR-002-workbench-shell.md](./docs/architecture/ADR-002-workbench-shell.md)
 - 设计验收：[design-qa.md](./design-qa.md)
 - 开发宪法评估：[docs/governance/development-constitution-assessment.md](./docs/governance/development-constitution-assessment.md)

@@ -1,4 +1,4 @@
-# Workbench 壳层设计验收
+# Workbench 壳层与 Ardot UI 真相设计验收
 
 状态：已通过
 
@@ -6,7 +6,8 @@
 
 - 结构参考：`docs/assets/design-reference/workbuddy-structure.png`，`2880 × 1824`。
 - Obsidian 原生参考：`docs/assets/design-reference/trend-radar-overview-wide-light.png`，`1396 × 889`。
-- 设计权威：`DESIGN.md`。
+- 用户审阅 UI 真相：[Ardot `DeepSeek Harness Workbench · UI 真相`](https://ardot.tencent.com/file/718186366720195)。
+- 稳定文字契约：`DESIGN.md`。
 
 WorkBuddy 参考图只用于内部左导航和主内容区的空间关系；Trend Radar 参考图用于 Obsidian 宿主中的实际几何、语义 token 和状态真值表达。参考图中的任务数据、聊天输入、模型选择和品牌装饰不属于本批实现目标。
 
@@ -66,5 +67,45 @@ WorkBuddy 参考图只用于内部左导航和主内容区的空间关系；Tren
 - 快速助手没有输入、发送、停止或模型选择控件。
 - 规划项全部禁用；可用导航可在概览和运行状态之间切换。
 - 最终 Obsidian 错误缓冲为 `0`，错误级控制台消息为 `0`。
+
+Workbench 壳层运行实现 final result: passed
+
+## Ardot UI 真相 v1
+
+### 审阅范围与状态
+
+- Ardot 文件 ID：`718186366720195`；页面 `UI 真相 v1`（`0:1`）。
+- 设计系统与同步协议：`2:31`。
+- 概览宽屏浅色：`2:32`；运行状态宽屏浅色：`2:265`。
+- 运行状态与可选快速助手：`2:368`；概览宽屏深色：`2:452`。
+- `700px` Workbench 容器：`2:36`。
+- 本批只建立用户审阅 UI 真相和治理同步契约；运行代码的插件图标仍为 Lucide `bot`，同步实现明确延期，未冒充已经交付。
+
+### Ardot 画板证据
+
+- 设计系统：`docs/assets/design-qa/ardot-ui-truth/design-system.png`，`1440 × 900`。
+- 概览宽屏浅色：`docs/assets/design-qa/ardot-ui-truth/overview-wide-light.png`，`1440 × 912`。
+- 运行状态宽屏浅色：`docs/assets/design-qa/ardot-ui-truth/runtime-wide-light.png`，`1440 × 912`。
+- 快速助手宽屏浅色：`docs/assets/design-qa/ardot-ui-truth/quick-assistant-wide-light.png`，`1440 × 912`。
+- 概览宽屏深色：`docs/assets/design-qa/ardot-ui-truth/overview-wide-dark.png`，`1440 × 912`。
+- `700px` 容器画板：`docs/assets/design-qa/ardot-ui-truth/runtime-narrow-700.png`，`1440 × 1040`；其中实际 Obsidian + Workbench 画面为 `744 × 912`。
+
+### 同视口比较证据
+
+以下比较左侧为当前隔离 Vault 运行实现，右侧为 Ardot 审阅真相；宽屏两侧均统一为 `1440 × 912`。窄屏两侧均裁取左侧 `44px` Ribbon + `700px` Workbench，尺寸为 `744 × 912`。
+
+- 概览浅色：`docs/assets/design-qa/ardot-ui-truth/comparison-overview-light.png`。
+- 运行状态浅色：`docs/assets/design-qa/ardot-ui-truth/comparison-runtime-light.png`。
+- 可选快速助手：`docs/assets/design-qa/ardot-ui-truth/comparison-assistant-light.png`。
+- 概览深色：`docs/assets/design-qa/ardot-ui-truth/comparison-overview-dark.png`。
+- `700px` 运行状态：`docs/assets/design-qa/ardot-ui-truth/comparison-runtime-narrow.png`。
+
+### 比较结论与修复
+
+1. Ardot 保留当前实现的 Obsidian ribbon、中央标签页、`194px` 内部左导航、单一主内容和按需右侧快速助手结构；规划模块继续禁用，没有制造任务、阅读、资讯或聊天假数据。
+2. DeepSeek Harness Web 前端鲸鱼 SVG 以原始矢量写入组件，SHA-256 为 `C61A62A9D47D8660F9CFE08AAC6775FF0476F7D6C5053F7659C1F8493FD6D814`，并用于 Ribbon、活动标签页、Workbench 左上角和快速助手。
+3. 首次深色画板检查发现黑色鲸鱼和部分图标在深色表面上对比不足。鲸鱼改用白色承载底且不重绘原始矢量；通用矢量图标改为 Light/Dark 语义色。复核截图中四个鲸鱼位置和功能图标均清晰。
+4. `700px` 容器隐藏固定内部左导航，使用紧凑页面选择器；状态列表、主操作、安全边界和图例全部保留，无横向滚动需求。
+5. Ardot 布局诊断只报告有意的图标/承载底叠放、活动态背景叠放和内容区域留白；截图复核确认均为设计结构，不是遮挡、裁切或缺失。未发现剩余 P0、P1 或 P2 视觉问题。
 
 final result: passed
