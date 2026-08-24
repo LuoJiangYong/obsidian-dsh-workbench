@@ -55,6 +55,8 @@ Phase A 不创建 Release，不提交社区目录，也不批准 Phase B。
 
 状态：固定身份、非官方声明、桌面端范围、Ardot v2 UI 权威和发布边界的最小契约已接入本地与双平台 CI。治理实现提交 `f3fa2402431868519164e65ebded27aa9bfe8f6a` 已通过远端 [CI run 32700464511](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32700464511) 的 Ubuntu 与 Windows job，原始 annotations 合计为 `0`。
 
+新建任务 v1 需求、宿主状态、正式 bridge 最新预发布候选、自动演进边界和社区发布路线的治理实现提交 `516903d171a34196b2b48d4793a441db0ba1570d` 已通过远端 [CI run 32705249728](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32705249728) 的 Ubuntu 与 Windows job；两个 check-run 的声明 annotations 和原始 annotations 数组合计均为 `0`。该证据只证明治理契约一致，不证明正式 bridge 或“新建任务”运行实现通过。
+
 计划覆盖：
 
 - 固定显示名、插件 ID、仓库名、非官方声明和 `isDesktopOnly: true`。
