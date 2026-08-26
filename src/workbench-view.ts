@@ -18,45 +18,15 @@ const NEW_TASK_HEADING = '今天想让 DeepSeek Harness 做什么？';
 const NEW_TASK_PLACEHOLDER = '描述目标，@ 引用上下文，/ 调用 Skill 或命令';
 
 type WorkbenchSectionId = 'new-task' | 'run';
-type DisabledNavigationId =
-  | 'projects'
-  | 'integrations'
-  | 'automation'
-  | 'library'
-  | 'domain-workbenches';
-
-type WorkbenchNavigationItem =
-  | {
-      readonly availability: 'available';
-      readonly icon: IconName;
-      readonly id: WorkbenchSectionId;
-      readonly label: string;
-    }
-  | {
-      readonly availability: 'disabled';
-      readonly icon: IconName;
-      readonly id: DisabledNavigationId;
-      readonly label: string;
-    };
+type WorkbenchNavigationItem = {
+  readonly icon: IconName;
+  readonly id: WorkbenchSectionId;
+  readonly label: string;
+};
 
 const WORKBENCH_NAVIGATION: readonly WorkbenchNavigationItem[] = Object.freeze([
-  { availability: 'available', icon: 'circle-plus', id: 'new-task', label: '新建任务' },
-  { availability: 'disabled', icon: 'folder-kanban', id: 'projects', label: '项目' },
-  {
-    availability: 'disabled',
-    icon: 'blocks',
-    id: 'integrations',
-    label: '专家 · Skill · 连接器',
-  },
-  { availability: 'disabled', icon: 'alarm-clock', id: 'automation', label: '自动化' },
-  { availability: 'disabled', icon: 'library-big', id: 'library', label: '资料库' },
-  {
-    availability: 'disabled',
-    icon: 'panels-top-left',
-    id: 'domain-workbenches',
-    label: '领域工作台',
-  },
-  { availability: 'available', icon: 'activity', id: 'run', label: '运行' },
+  { icon: 'circle-plus', id: 'new-task', label: '新建任务' },
+  { icon: 'activity', id: 'run', label: '运行' },
 ]);
 
 interface WorkbenchViewOptions {
@@ -139,12 +109,6 @@ export class WorkbenchView extends ItemView {
       setIcon(iconEl, item.icon);
       buttonEl.createSpan({ cls: 'dsh-navigation__label', text: item.label });
 
-      if (item.availability === 'disabled') {
-        buttonEl.disabled = true;
-        buttonEl.setAttr('aria-disabled', 'true');
-        continue;
-      }
-
       buttonEl.addEventListener('click', () => {
         this.activeSection = item.id;
         this.render();
@@ -160,8 +124,7 @@ export class WorkbenchView extends ItemView {
       attr: { 'aria-label': '选择工作台页面' },
     });
     for (const item of WORKBENCH_NAVIGATION) {
-      const optionEl = selectEl.createEl('option', { text: item.label, value: item.id });
-      optionEl.disabled = item.availability === 'disabled';
+      selectEl.createEl('option', { text: item.label, value: item.id });
     }
     selectEl.value = this.activeSection;
     selectEl.addEventListener('change', () => {

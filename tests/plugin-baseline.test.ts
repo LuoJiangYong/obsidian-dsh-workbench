@@ -54,7 +54,7 @@ describe('原生 Workbench 插件基线', () => {
     expect(mockObsidian.lastApp?.workspace.requestedLeafTypes).toEqual(['tab']);
   });
 
-  it('按 Ardot v2 默认渲染新建任务，并把不可用动作保持为真实禁用态', async () => {
+  it('按用户反馈渲染精简导航和胶囊模式，并把不可用动作保持为真实禁用态', async () => {
     const PluginConstructor = DeepSeekHarnessWorkbenchPlugin as unknown as ConstructablePlugin;
     const plugin = new PluginConstructor();
     await plugin.onload();
@@ -74,11 +74,6 @@ describe('原生 Workbench 插件基线', () => {
       'Harness',
       'Workbench',
       '新建任务',
-      '项目',
-      '专家 · Skill · 连接器',
-      '自动化',
-      '资料库',
-      '领域工作台',
       '运行',
       '与 DeepSeek Harness 对话，定义任务、选择上下文，并在执行前审阅权限与变更边界。',
       '今天想让 DeepSeek Harness 做什么？',
@@ -94,11 +89,16 @@ describe('原生 Workbench 插件基线', () => {
       '发送前展示上下文、权限和拟变更内容，并允许用户取消。',
     ]));
     expect(content.allText().join('\n')).not.toMatch(/规划中|尚未实现|首发/);
+    expect(content.allText().join('\n')).not.toMatch(/项目|专家 · Skill · 连接器|自动化|资料库|领域工作台/u);
 
     const navigationItems = content.findAllByClass('dsh-navigation__item');
-    expect(navigationItems).toHaveLength(7);
-    expect(navigationItems.slice(1, 6).every((item) => item.disabled)).toBe(true);
+    expect(navigationItems).toHaveLength(2);
+    expect(navigationItems.every((item) => !item.disabled)).toBe(true);
     expect(navigationItems[0]?.attributes.get('aria-current')).toBe('page');
+
+    const mobileOptions = content.findAllByTag('option');
+    expect(mobileOptions).toHaveLength(2);
+    expect(mobileOptions.every((item) => !item.disabled)).toBe(true);
 
     const modeButtons = content.findAllByClass('dsh-new-task-mode__button');
     expect(modeButtons).toHaveLength(3);
@@ -121,7 +121,7 @@ describe('原生 Workbench 插件基线', () => {
     await rerenderedComposer.trigger('input');
     expect(content.findAllByClass('dsh-new-task-composer__send')[0]?.disabled).toBe(true);
 
-    await content.findAllByClass('dsh-navigation__item')[6]?.click();
+    await content.findAllByClass('dsh-navigation__item')[1]?.click();
     expect(content.allText()).toEqual(expect.arrayContaining([
       '运行',
       '汇总当前能力、外部运行时和安全边界；健康检查成功不表示会话已经建立。',

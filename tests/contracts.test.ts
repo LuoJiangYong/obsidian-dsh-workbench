@@ -38,15 +38,17 @@ describe('发布与治理契约', () => {
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
     expect(readme).toContain('| 新建任务 | Ardot `v2` 宿主 UI 与确定性状态骨架已实现并通过单元测试；真实发送、对话、上下文和任务执行尚未接通 |');
-    expect(readme).toContain('| 中央 Workbench 与当前内部导航 | Ardot `v2` 导航已实现：新建任务首位、运行置底、五个中间入口真实禁用；Batch 5A 隔离 Vault 运行验收已通过 |');
+    expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 正在重新验收 |');
     expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；显示健康、上下文空态和两个真实禁用的快捷提问，不承担主对话 |');
-    expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试和隔离 Vault 运行验收 |');
+    expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试与双平台 CI；原隔离 Vault 运行证据已撤回，专用 Vault 待重新验收 |');
+    expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试与双平台 CI，专用隔离 Vault 待重新验收 |');
     expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
     expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
     expect(readme).toContain('| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口已实现，但模型调用链、上下文与任务执行尚未接通 |');
     expect(readme).toContain('| Vault 读取与写入 | 未启用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
-    expect(readme).toContain('宿主 UI 已同步，真实模型连接和最终用户 UI 验收尚未完成');
+    expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
+    expect(readme).toContain('真实模型连接和最终用户 UI 验收尚未完成');
     expect(readme).toContain('- 不采集客户端遥测。');
   });
 
@@ -69,7 +71,7 @@ describe('发布与治理契约', () => {
     expect(adr).toContain('不建立公共模块注册器、动态加载器或数据协议');
   });
 
-  it('Ardot v2 固定新建任务首位、运行置底、三行品牌、浅灰禁用态和社区首发门', async () => {
+  it('Ardot v2 固定用户审阅真相、AI 只读边界、插件反馈差异和社区首发门', async () => {
     const [agents, design, readme, designQa, adr, releaseGateAdr] = await Promise.all([
       readFile(path.join(repositoryRoot, 'AGENTS.md'), 'utf8'),
       readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
@@ -93,7 +95,8 @@ describe('发布与治理契约', () => {
 
     expect(agents).toContain(ardotUrl);
     expect(agents).toContain('最新获用户批准版本，是用户审阅的产品 UI 界面真相');
-    expect(agents).toContain('必须同步演进 Ardot');
+    expect(agents).toContain('Ardot 是用户审阅和完善 UI 的专属界面，AI 默认只读');
+    expect(agents).toContain('除非用户对当前批次明确要求修改 Ardot');
     expect(agents).toContain('不显示“首发”“规划中”“尚未实现”等开发阶段、发布批次或治理审批文案');
     expect(agents).toContain('尚未开放但需要保留的导航项必须使用浅灰文字与图标');
     expect(agents).toContain('首个 Obsidian 社区插件发布功能固定为“新建任务”');
@@ -106,22 +109,23 @@ describe('发布与治理契约', () => {
     expect(design).toContain('`06 参考截图与 v2 对照 QA`（`12:530`）');
     expect(design).toContain('第一行 `DeepSeek`、第二行 `Harness`、第三行 `Workbench`');
     expect(design).toContain('产品界面不得展示开发阶段、发布门或治理审批');
-    expect(design).toContain('文字与图标采用浅灰禁用态，不显示额外状态徽标');
+    expect(design).toContain('未实现模块不在插件导航中渲染');
+    expect(design).toContain('模式分段控件在插件中使用左右半圆胶囊边界');
     expect(design).toContain('首个 Obsidian 社区插件发布功能固定为“新建任务”');
     expect(design).toContain('当前实现已注册同一鲸鱼 path 几何');
-    expect(readme).toContain('Obsidian ribbon、活动标签页、Workbench 左上角和快速助手已使用同一 DeepSeek 鲸鱼几何');
+    expect(readme).toContain('Obsidian ribbon、活动标签页、Workbench 左上角和快速助手继续使用同一 DeepSeek 鲸鱼几何');
     expect(adr).toContain('状态：已接受');
     expect(adr).toContain('当前批准基线为页面 `UI 真相 v2`（`12:1`）');
     expect(adr).toContain('同一 Ardot 项目持续演进');
     expect(releaseGateAdr).toContain('“新建任务”固定为 Workbench 内部导航第一个功能');
     expect(releaseGateAdr).toContain('原“概览”和“运行状态”合并为“运行”，固定在功能导航最后');
     expect(releaseGateAdr).toContain('发布门和实现差异只记录在治理文档、测试、CI 与验收证据中');
-    expect(releaseGateAdr).toContain('当前源码与单元测试已同步新导航、新建任务宿主页面、确定性状态骨架和快速助手');
+    expect(releaseGateAdr).toContain('当前源码与单元测试已同步只含“新建任务 / 运行”的导航');
     expect(designQa).toContain('Ardot UI 真相 v2');
     expect(designQa).toContain('Ardot 组件为 `12:555`');
     expect(designQa).toContain('各产品画板均不显示“首发”“规划中”“尚未实现”等开发或发布文案');
     expect(designQa).toContain('Ardot v2 design-only final result: passed');
-    expect(designQa.trimEnd()).toMatch(/Batch 5A host UI implementation result: passed; final Obsidian UI user acceptance: pending$/u);
+    expect(designQa.trimEnd()).toMatch(/Batch 5A dedicated Vault remediation result: pending; final Obsidian UI user acceptance: pending$/u);
 
     for (const asset of [
       'design-system.png',
@@ -139,7 +143,7 @@ describe('发布与治理契约', () => {
     }
   });
 
-  it('Batch 5A 固定新建任务宿主 UI、禁用边界与隔离 Vault 证据', async () => {
+  it('Batch 5A 固定插件反馈 UI、禁用边界与专用 Vault 重验收门', async () => {
     const [main, workbench, quickAssistant, newTaskState, styles, designQa] = await Promise.all([
       readFile(path.join(repositoryRoot, 'src', 'main.ts'), 'utf8'),
       readFile(path.join(repositoryRoot, 'src', 'workbench-view.ts'), 'utf8'),
@@ -152,11 +156,11 @@ describe('发布与治理契约', () => {
     expect(main).toContain('addIcon(');
     expect(main).toContain('transform="scale(2)"');
     expect(workbench.indexOf("id: 'new-task'"))
-      .toBeLessThan(workbench.indexOf("id: 'projects'"));
-    expect(workbench.indexOf("id: 'domain-workbenches'"))
       .toBeLessThan(workbench.indexOf("id: 'run'"));
+    expect(workbench).not.toMatch(/id: '(?:projects|integrations|automation|library|domain-workbenches)'/u);
     expect(workbench).toContain("private activeSection: WorkbenchSectionId = 'new-task'");
-    expect(workbench).toContain("buttonEl.setAttr('aria-disabled', 'true')");
+    expect(workbench).toContain("attr: { type: 'button', 'aria-disabled': 'true' }");
+    expect(workbench).toContain('disabledModeEl.disabled = true');
     expect(workbench).toContain('canSubmitNewTask(this.newTaskState)');
     expect(workbench).not.toMatch(/text:\s*['`](?:首发|规划中|尚未实现)/u);
     expect(quickAssistant).toContain("promptEl.disabled = true");
@@ -167,24 +171,16 @@ describe('发布与治理契约', () => {
     expect(newTaskState).toContain("'awaiting_permission'");
     expect(styles).toContain('@container dsh-workbench-view (max-width: 760px)');
     expect(styles).toContain('.dsh-workbench-sidebar {');
-    expect(designQa).toContain('clientWidth = 700`、`scrollWidth = 700');
-    expect(designQa).toContain('受管 `obsidian-bridge.mjs` Node 进程均为 `0`');
+    expect(styles).toContain('border-radius: 999px;');
+    expect(styles).toContain('.dsh-workbench-view button.dsh-new-task-mode__button:first-child');
+    expect(styles).toContain('.dsh-workbench-view button.dsh-new-task-mode__button:last-child');
+    expect(designQa).toContain('D:\\codex workspace\\_test-vaults\\obsidian-dsh-workbench-evidence');
+    expect(designQa).toContain('原 Batch 5A 运行截图和 DOM 读回使用了');
+    expect(designQa).toContain('已撤回');
     expect(designQa).toContain('c8f6922b1a44e5bc0fdb325fce183e95b85320d1');
     expect(designQa).toContain('CI run 32919119819');
     expect(designQa).toContain('Ubuntu check `98028935782`、Windows check `98028935888`');
 
-    for (const asset of [
-      'new-task-wide-light.png',
-      'new-task-with-quick-assistant.png',
-      'run-wide-light.png',
-      'new-task-wide-dark.png',
-      'new-task-narrow-700.png',
-    ]) {
-      const bytes = await readFile(
-        path.join(repositoryRoot, 'docs', 'assets', 'design-qa', 'new-task-host-ui', asset),
-      );
-      expect(bytes.byteLength).toBeGreaterThan(100_000);
-    }
   });
 
   it('P0 评估只接受一个生产运行时 ADR', async () => {

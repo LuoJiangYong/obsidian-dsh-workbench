@@ -196,12 +196,13 @@
 
 .dsh-new-task-mode {
   background: var(--background-secondary);
-  border-radius: calc(var(--radius-s) + 2px);
+  border-radius: 999px;
   display: grid;
   gap: 4px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 0 auto 20px;
   max-width: 472px;
+  overflow: hidden;
   padding: 4px;
 }
 
@@ -211,6 +212,14 @@
   box-shadow: none;
   color: var(--text-muted);
   min-height: 36px;
+}
+
+.dsh-workbench-view button.dsh-new-task-mode__button:first-child {
+  border-radius: 999px 0 0 999px;
+}
+
+.dsh-workbench-view button.dsh-new-task-mode__button:last-child {
+  border-radius: 0 999px 999px 0;
 }
 
 .dsh-workbench-view button.dsh-new-task-mode__button.is-active {

@@ -1,6 +1,8 @@
 # Workbench 壳层与 Ardot UI 真相设计验收
 
-状态：已通过
+状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回，专用 Vault 重验收进行中
+
+> `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据。相关截图只保留为历史工件，不再支撑“已通过”结论；Ardot 设计审阅证据不受影响。当前有效运行结论只以后文专用 `obsidian-dsh-workbench-evidence` Vault 修正批次为准。
 
 ## 视觉来源
 
@@ -13,7 +15,7 @@ WorkBuddy 参考图只用于内部左导航和主内容区的空间关系；Tren
 
 ## 实现目标与环境
 
-- 宿主：隔离测试 Vault `obsidian-trend-radar-evidence`，Obsidian `1.13.7`，安装器 `1.12.7`。
+- 原宿主：误用 `obsidian-trend-radar-evidence`，该环境属于另一个插件，以下运行证据已撤回；Obsidian 版本读回为 `1.13.7`，安装器 `1.12.7`。
 - 安装资产：仓库构建的 `main.js`、`manifest.json`、`styles.css`，复制后 SHA-256 逐项一致。
 - 宽屏：浏览器内容区 `1440 × 912` CSS px，设备像素比 `2`；Workbench 内容区 `1396 × 834` CSS px。
 - 几何读回：本地导航 `194px`；主内容 padding `24px 28px 32px`。
@@ -160,42 +162,24 @@ final result: passed
 
 Ardot v2 design-only final result: passed
 
-## Batch 5A：Ardot v2 宿主 UI 实现同步
+## Batch 5A：宿主 UI 证据撤回与专用 Vault 修正
 
 ### 范围与真相
 
 - 日期：`2026-08-26`；Ardot 文件仍为 `718186366720195`，用户审阅页面仍为 `UI 真相 v2`（`12:1`）。
-- 本批实现并验证默认“新建任务”、置底“运行”、五个禁用入口、三行品牌、鲸鱼图标、宽窄与 Light/Dark、可选快速助手和确定性内存状态。
-- “对话”和“任务执行”只切换宿主状态；“代码协作”、附件、上下文、权限和发送保持原生禁用。没有启动正式 bridge、读取 Vault、持久化草稿或发起模型请求。
-- Ardot `12:41`、`12:120`、`12:191`、`12:280`、`12:362` / `12:367` 和 `12:536` 已重新逐张读取与截图复核；批准设计完整，无需修改 Ardot。
+- Ardot 是用户审阅和完善 UI 的界面，AI 默认只读。本次用户反馈只授权修改插件：未实现模块不在插件导航中渲染，模式分段控件使用左右半圆胶囊边界；Ardot 未修改。
+- “对话”和“任务执行”仍只切换宿主状态；“代码协作”、附件、上下文、权限和发送保持原生禁用。没有启动正式 bridge、读取 Vault、持久化草稿或发起模型请求。
 
-### 隔离 Vault 证据
+### 已撤回的运行证据
 
-隔离 Vault：`D:\codex workspace\_test-vaults\obsidian-trend-radar-evidence`。只写入测试插件目录，不写入笔记内容。
+- 原 Batch 5A 运行截图和 DOM 读回使用了 `D:\codex workspace\_test-vaults\obsidian-trend-radar-evidence`。该 Vault 属于另一个插件，不能作为本插件隔离验收环境。
+- 原截图、唯一视图、禁用语义、reload 复位、`700px`、Light/Dark、错误缓冲和进程残留读回全部从本插件验收结论中撤回；仓库中的五张截图必须由专用 Vault 证据覆盖后才恢复有效。
+- 原实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 与 [CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819) 的代码门仍有效：Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。CI 成功不替代运行验收。
 
-- 宽屏浅色：`docs/assets/design-qa/new-task-host-ui/new-task-wide-light.png`，`2880 × 1824`。
-- 新建任务与快速助手：`docs/assets/design-qa/new-task-host-ui/new-task-with-quick-assistant.png`，`2880 × 1824`。
-- 运行宽屏浅色：`docs/assets/design-qa/new-task-host-ui/run-wide-light.png`，`2880 × 1824`。
-- 新建任务宽屏深色：`docs/assets/design-qa/new-task-host-ui/new-task-wide-dark.png`，`2880 × 1824`。
-- 新建任务 `700px` 容器：`docs/assets/design-qa/new-task-host-ui/new-task-narrow-700.png`，`2880 × 1824`。
+### 修正验收门
 
-首次批量截图出现 Electron 合成帧滞后一状态的问题，因此该组文件被拒绝并覆盖。最终每张证据都在目标状态 DOM 读回后先执行一次稳定化截图，再执行正式截图；文件名、页面、主题、右侧视图和容器宽度已逐张对应。
+- 专用 Vault 固定为 `D:\codex workspace\_test-vaults\obsidian-dsh-workbench-evidence`，每个 Obsidian CLI 命令必须显式指定该 Vault。
+- 重新验收只显示“新建任务 / 运行”的宽屏导航与窄屏选择器、左右半圆模式控件、代码协作及 composer 动作禁用、快速助手、Light/Dark、`700px` 无溢出、reload 复位、零笔记写入、零错误和零残留受管进程。
+- 五张 `docs/assets/design-qa/new-task-host-ui/` 截图必须全部由专用 Vault 重新捕获并逐张视觉复核；在此之前不能声称 Batch 5A 隔离 Vault 运行验收通过。
 
-### 运行读回
-
-- Workbench 连续打开后 DOM 数量为 `1`；快速助手连续打开后 DOM 数量为 `1`。
-- 导航依次为“新建任务”、五个中间禁用入口、“运行”；五个入口全部 `disabled`，活动页使用 `aria-current="page"`。
-- “代码协作”、三个 composer 工具和发送按钮均 `disabled`；输入非空草稿后发送仍不可执行。
-- 模式与草稿在当前 ItemView 内确定性更新；插件 reload 后恢复“对话”与空草稿，发送保持禁用，没有隐式持久化。
-- `700px` 容器读回：`clientWidth = 700`、`scrollWidth = 700`、固定侧栏 `display: none`、紧凑选择器 `display: flex`、composer 页脚 `flex-direction: row`。
-- 深色模式品牌承载底读回为 `rgb(255, 255, 255)`；鲸鱼 path 实际边界为 `19.34 × 14.53px`，匹配 Ardot `20px` 图标容器比例。
-- 产品区域没有“首发”“规划中”“尚未实现”；Obsidian 错误缓冲、错误级控制台消息和受管 `obsidian-bridge.mjs` Node 进程均为 `0`。
-
-### 视觉结论与边界
-
-- 宽屏浅色、深色、快速助手组合、运行和 `700px` 五个状态均未发现文字裁切、水平溢出、错误主题 token、不可读图标或剩余 P0 / P1 / P2 视觉问题。
-- 当前结论是`宿主 UI 已实现并完成隔离 Vault 运行验收`；真实对话、上下文、权限与任务执行仍未实现，最终 Obsidian UI 用户验收必须在后续完整功能批次重新执行。
-- 实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 已通过远端 [CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819)：Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。
-- 运行验收结束后已禁用测试插件；Workbench、快速助手与对应 leaf 的读回数量均为 `0`，四个可重建插件资产已移除，隔离 Vault 笔记内容未写入。
-
-Batch 5A host UI implementation result: passed; final Obsidian UI user acceptance: pending
+Batch 5A dedicated Vault remediation result: pending; final Obsidian UI user acceptance: pending

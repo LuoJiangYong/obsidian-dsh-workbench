@@ -47,7 +47,7 @@ Phase A 不创建 Release，不提交社区目录，也不批准 Phase B。
 - 仓库边界、禁止文件、敏感路径和凭据模式检查。
 - workflow 命令与 package scripts 的覆盖自检。
 - 中央 Workbench 标签页复用、内部导航、运行状态切换和按需右侧快速助手由插件基线测试覆盖；`verify:ci-coverage` 明确校验这些用例仍属于双平台完整 `npm test`。
-- Ardot v2 的新建任务首位、运行置底、三行品牌、浅灰禁用态、产品 UI 不显示开发/发布文案、设计/实现差异和首个社区发布门由治理契约覆盖；`verify:ci-coverage` 明确校验该契约仍属于双平台完整 `npm test`。
+- Ardot v2 文件与画板 ID、AI 默认只读边界、插件只显示“新建任务 / 运行”、未实现模块不渲染、左右半圆模式控件、产品 UI 不显示开发/发布文案、设计/实现差异和首个社区发布门由治理契约覆盖；`verify:ci-coverage` 明确校验该契约仍属于双平台完整 `npm test`。
 - 新建任务 v1 的模式、只读 Vault、外部工作区、单终态、真实取消、正式 bridge 最新预发布候选与自动演进边界由治理契约覆盖；这只证明需求基线一致，不证明运行实现通过。
 - Node 24 action runtime 版本固定与防止退回 Node 20 runtime 的自检。
 
@@ -99,7 +99,7 @@ Batch 3 已实现 bridge 协议 v1、严格入站校验、client 状态约束与
 
 Batch 4 已实现正式 `obsidian-bridge`、NDJSON、受管进程与独立 rc.2 运行夹具。本地 Windows 真实验收覆盖 artifact 加载、精确握手、Agent session、环回模型请求后的 mid-turn cancel、session close、正常退出；假进程专项覆盖 `.cmd` shim、隐藏窗口、超时强制终止整棵进程树、限长脱敏诊断。正式 artifact 版本、协议、DSH npm integrity、字节数和 SHA-256 由构建清单与 `verify:bridge-artifact` 固定。首个实现提交 `f04dfd07d2648b0c9152d9354b91e94d3ce87902` 的 CI `32717476733` 在干净检出中揭示进程单测依赖未跟踪构建产物；最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664` 改为临时 artifact，并通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)。Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。
 
-Batch 5A 已实现 Ardot v2 的默认“新建任务”、置底“运行”、五个真实禁用入口、可选快速助手、宽窄/Light/Dark 与确定性内存状态；隔离 Vault 运行验收覆盖唯一视图、禁用语义、reload 复位、`700px` 无溢出、深色图标和零残留受管进程。实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 已通过远端 [CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819)；Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。
+Batch 5A 原实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 的代码与双平台 CI 证据有效：[CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819) 的 Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。原运行截图误用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，已撤回。`2026-08-26` 用户反馈要求插件只渲染“新建任务 / 运行”并使用左右半圆模式控件；Ardot 保持用户审阅原状、AI 只读，专用 `obsidian-dsh-workbench-evidence` Vault 的运行验收正在重建。
 
 这些证据分别证明正式 bridge 和 Obsidian 宿主 UI，但尚未证明两者已接通，也不证明只读 Vault 上下文、外部工作区权限、完整会话或最终用户 UI 验收通过，因此 Phase C 整体仍是“部分建立”。
 
@@ -119,7 +119,7 @@ Batch 5A 已实现 Ardot v2 的默认“新建任务”、置底“运行”、�
 
 Phase D 未通过时不得创建公开 Release 或提交社区目录。
 
-当前已完成 Phase D 中与 Batch 0A 对应的最小加载/禁用冒烟、Batch 0B 的设置读回与真实健康检查，以及 Batch 5A 默认“新建任务”、置底“运行”、宽窄/Light/Dark 和可选快速助手的隔离 Vault 运行与视觉验收。完整会话、Vault 安全矩阵、最终用户 UI 和发布资产验收仍未完成，因此 Phase D 整体未通过。
+Phase D 中既有代码门仍有效，但此前使用 `obsidian-trend-radar-evidence` 的本插件运行与视觉证据已经撤回；必须在专用 `obsidian-dsh-workbench-evidence` Vault 重新完成加载/禁用、设置读回、健康检查、默认“新建任务”、精简导航、宽窄/Light/Dark 和可选快速助手验收。完整会话、Vault 安全矩阵、最终用户 UI 和发布资产验收仍未完成，因此 Phase D 整体未通过。
 
 Ardot v2 进一步把“新建任务”固定为首个社区发布功能。它的完整实现、相应 CI、隔离 Vault 运行验收和用户对最终运行 UI 的明确验收，都是进入社区发布审批的前置条件；设计稿通过不改变 Phase D 的`延期，未通过`状态。
 
@@ -154,4 +154,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A 已完成 Ardot v2 宿主 UI、隔离 Vault 验收、远端双平台 CI 与原始零 annotations；下一步按既定顺序进入 Batch 5B/6，不把宿主 UI 验收冒充真实模型会话或最终用户 UI 验收。该连续授权不包括 Release、社区提交、Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A 代码门与远端双平台 CI 保持有效，但误用 Vault 的运行证据已撤回；当前必须先完成插件反馈修正和专用 Vault 重验收，再进入 Batch 5B/6。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。

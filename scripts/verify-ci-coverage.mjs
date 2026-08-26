@@ -82,19 +82,21 @@ assert(
 );
 for (const uiContract of [
   '在中央标签页打开并复用 Workbench 视图',
-  '按 Ardot v2 默认渲染新建任务，并把不可用动作保持为真实禁用态',
+  '按用户反馈渲染精简导航和胶囊模式，并把不可用动作保持为真实禁用态',
   '只在显式请求时打开并复用右侧快速助手真实空状态',
 ]) {
   assert(pluginBaseline.includes(uiContract), `插件基线缺少 UI 契约：${uiContract}`);
 }
 for (const ardotContract of [
-  'Ardot v2 固定新建任务首位、运行置底、三行品牌、浅灰禁用态和社区首发门',
+  'Ardot v2 固定用户审阅真相、AI 只读边界、插件反馈差异和社区首发门',
   'https://ardot.tencent.com/file/718186366720195',
-  '必须同步演进 Ardot',
+  'Ardot 是用户审阅和完善 UI 的专属界面，AI 默认只读',
+  '除非用户对当前批次明确要求修改 Ardot',
   'UI 真相 v2',
   '首个 Obsidian 社区插件发布功能固定为“新建任务”',
   '不显示“首发”“规划中”“尚未实现”等开发阶段、发布批次或治理审批文案',
-  '文字与图标采用浅灰禁用态，不显示额外状态徽标',
+  '未实现模块不在插件导航中渲染',
+  '模式分段控件在插件中使用左右半圆胶囊边界',
 ]) {
   assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
 }
