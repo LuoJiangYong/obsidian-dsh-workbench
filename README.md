@@ -138,6 +138,7 @@ npm run test:bridge:runtime
 - 原“概览”和“运行状态”已合并为导航最后的“运行”；五个中间入口只显示浅灰禁用态，不显示开发或发布文案。
 - DeepSeek 鲸鱼 path 已用于 ribbon、活动标签页、Workbench 品牌和快速助手；当前 rc.2 夹具中的上游 SVG 与 Ardot 锁定的 rc.1 资产 SHA-256 相同。
 - 隔离 Vault 已验证宽屏浅色、快速助手组合、运行、宽屏深色和 `700px` 响应式；宿主错误、错误级控制台消息和受管 bridge Node 进程均为 `0`。
+- 实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 已通过远端 [CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819) 的 Ubuntu 与 Windows job；check `98028935782`、`98028935888` 的原始 annotations 均为 `[]`。
 - 该结果只证明宿主 UI 与状态骨架，不证明模型对话、上下文、权限或任务执行已可用，也不是最终用户 UI 验收。
 
 ## 开发治理

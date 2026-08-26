@@ -195,5 +195,7 @@ Ardot v2 design-only final result: passed
 
 - 宽屏浅色、深色、快速助手组合、运行和 `700px` 五个状态均未发现文字裁切、水平溢出、错误主题 token、不可读图标或剩余 P0 / P1 / P2 视觉问题。
 - 当前结论是`宿主 UI 已实现并完成隔离 Vault 运行验收`；真实对话、上下文、权限与任务执行仍未实现，最终 Obsidian UI 用户验收必须在后续完整功能批次重新执行。
+- 实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 已通过远端 [CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819)：Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。
+- 运行验收结束后已禁用测试插件；Workbench、快速助手与对应 leaf 的读回数量均为 `0`，四个可重建插件资产已移除，隔离 Vault 笔记内容未写入。
 
 Batch 5A host UI implementation result: passed; final Obsidian UI user acceptance: pending

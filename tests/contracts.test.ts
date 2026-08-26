@@ -169,6 +169,9 @@ describe('发布与治理契约', () => {
     expect(styles).toContain('.dsh-workbench-sidebar {');
     expect(designQa).toContain('clientWidth = 700`、`scrollWidth = 700');
     expect(designQa).toContain('受管 `obsidian-bridge.mjs` Node 进程均为 `0`');
+    expect(designQa).toContain('c8f6922b1a44e5bc0fdb325fce183e95b85320d1');
+    expect(designQa).toContain('CI run 32919119819');
+    expect(designQa).toContain('Ubuntu check `98028935782`、Windows check `98028935888`');
 
     for (const asset of [
       'new-task-wide-light.png',
