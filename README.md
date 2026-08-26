@@ -11,12 +11,12 @@
 | 能力 | 状态 |
 | --- | --- |
 | Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
-| 新建任务 | Ardot `v2` 宿主 UI 与确定性状态骨架已实现并通过单元测试；真实发送、对话、上下文和任务执行尚未接通 |
+| 新建任务 | Ardot `v2` 宿主 UI 与确定性状态骨架已实现，并通过专用隔离 Vault 验收；真实发送、对话、上下文和任务执行尚未接通 |
 | 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge 与宿主 UI 子集已实现，只读上下文与任务执行仍在实施 |
-| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 正在重新验收 |
-| ribbon 与中央标签页命令入口 | 已实现并通过本地测试与双平台 CI；原隔离 Vault 运行证据已撤回，专用 Vault 待重新验收 |
-| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；显示健康、上下文空态和两个真实禁用的快捷提问，不承担主对话 |
-| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试与双平台 CI，专用隔离 Vault 待重新验收 |
+| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
+| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
+| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；专用隔离 Vault 已验证唯一右侧视图、健康、上下文空态和两个真实禁用的快捷提问，不承担主对话 |
+| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收 |
 | 正式 bridge、协议 v1 与 NDJSON | 已实现；本地与 Windows CI 已由 DSH `0.1.1-rc.2` 真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；尚未接入产品 UI |
 | DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口已实现，但模型调用链、上下文与任务执行尚未接通 |
 | Vault 读取与写入 | 未启用 |
@@ -94,7 +94,7 @@ npm run test:bridge:runtime
 
 ## Batch 0A 验收
 
-> `2026-08-26` 证据纠正：下列历史批次中凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回，不能继续支撑本插件的隔离 Vault 通过结论；源码、本地测试和已核实的远端 CI 证据不受影响。当前运行结论只以专用 `obsidian-dsh-workbench-evidence` Vault 的重新验收为准。
+> `2026-08-26` 证据纠正：下列历史批次中凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回，不能继续支撑本插件的隔离 Vault 通过结论；源码、本地测试和已核实的远端 CI 证据不受影响。当前运行结论只以后文专用 `obsidian-dsh-workbench-evidence` Vault 的修正验收为准。
 
 - Windows 上从锁文件执行 `npm ci` 成功，依赖审计为 0 个已知漏洞。
 - 类型检查、ESLint 零警告、6 项测试、生产构建和仓库自检通过。
@@ -117,7 +117,7 @@ npm run test:bridge:runtime
 
 ## Workbench 壳层批次验收
 
-以下条目记录当时实现行为，但其中基于错误 Vault 的宿主运行读回已按上方纠正声明撤回，专用 Vault 重验收完成前不得据此声称当前运行通过。
+以下条目记录当时实现行为，但其中基于错误 Vault 的宿主运行读回已按上方纠正声明撤回，不再支撑当前结论；有效宿主证据只以后文 Batch 5A 专用 Vault 修正验收为准。
 
 - ribbon 和命令打开或复用中央 Workbench 标签页；连续打开后主工作区内只有一个 Workbench。
 - 插件自有 `194px` 左导航开放概览与运行状态，六个未来模块保持原生禁用并显示“规划中”。
@@ -141,9 +141,11 @@ npm run test:bridge:runtime
 - 空草稿、未连接运行时、未完成审阅或非空闲阶段任一成立时，发送都不可执行；当前上下文、权限与发送统一保持禁用。
 - 原“概览”和“运行状态”已合并为“运行”；按 `2026-08-26` 用户直接反馈，未实现的五个模块不在插件导航中渲染，模式分段控件使用左右半圆胶囊边界。
 - DeepSeek 鲸鱼 path 已用于 ribbon、活动标签页、Workbench 品牌和快速助手；当前 rc.2 夹具中的上游 SVG 与 Ardot 锁定的 rc.1 资产 SHA-256 相同。
-- 原 Batch 5A 代码与双平台 CI 证据仍有效；原运行截图误用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，现已撤回，不再作为本插件隔离 Vault 证据。专用 `obsidian-dsh-workbench-evidence` Vault 的重新验收与截图替换正在进行。
+- 原 Batch 5A 运行截图误用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，现已撤回，不再作为本插件隔离 Vault 证据；五张宿主截图已全部由专用 `obsidian-dsh-workbench-evidence` Vault 重新捕获并逐张复核。
 - 实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 已通过远端 [CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819) 的 Ubuntu 与 Windows job；check `98028935782`、`98028935888` 的原始 annotations 均为 `[]`。
-- 当前只证明宿主 UI 与状态骨架的代码门通过；专用 Vault 运行证据尚待重建，不证明模型对话、上下文、权限或任务执行已可用，也不是最终用户 UI 验收。
+- 插件反馈与证据纠正提交 `a41c93b43245c9b1cfb84c4adb243ef4217c8253` 已通过远端 [CI run 32963736114](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32963736114)；Ubuntu check `98161570546`、Windows check `98161570396` 均成功，两个原始 annotations 数组均为 `[]`。
+- 专用 Vault 已验证唯一 Workbench/快速助手、精简导航、左右半圆模式控件、reload 复位、真实健康检查、Light/Dark、`700px` 无溢出、零笔记写入、零错误和零残留受管进程；验收后插件已禁用，四个可重建资产已移除。
+- 当前证明宿主 UI 与状态骨架的代码门和专用 Vault 运行门通过；不证明模型对话、上下文、权限或任务执行已可用，也不是最终 Obsidian UI 用户验收。
 
 ## 开发治理
 

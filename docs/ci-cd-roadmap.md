@@ -99,7 +99,7 @@ Batch 3 已实现 bridge 协议 v1、严格入站校验、client 状态约束与
 
 Batch 4 已实现正式 `obsidian-bridge`、NDJSON、受管进程与独立 rc.2 运行夹具。本地 Windows 真实验收覆盖 artifact 加载、精确握手、Agent session、环回模型请求后的 mid-turn cancel、session close、正常退出；假进程专项覆盖 `.cmd` shim、隐藏窗口、超时强制终止整棵进程树、限长脱敏诊断。正式 artifact 版本、协议、DSH npm integrity、字节数和 SHA-256 由构建清单与 `verify:bridge-artifact` 固定。首个实现提交 `f04dfd07d2648b0c9152d9354b91e94d3ce87902` 的 CI `32717476733` 在干净检出中揭示进程单测依赖未跟踪构建产物；最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664` 改为临时 artifact，并通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)。Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。
 
-Batch 5A 原实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 的代码与双平台 CI 证据有效：[CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819) 的 Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。原运行截图误用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，已撤回。`2026-08-26` 用户反馈要求插件只渲染“新建任务 / 运行”并使用左右半圆模式控件；Ardot 保持用户审阅原状、AI 只读，专用 `obsidian-dsh-workbench-evidence` Vault 的运行验收正在重建。
+Batch 5A 原实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 的代码与双平台 CI 证据有效：[CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819) 的 Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。原运行截图误用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，已撤回。插件反馈与证据纠正提交 `a41c93b43245c9b1cfb84c4adb243ef4217c8253` 已通过 [CI run 32963736114](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32963736114)：Ubuntu check `98161570546`、Windows check `98161570396` 均成功，两个原始 annotations 数组均为 `[]`。Ardot 保持用户审阅原状、AI 只读；专用 `obsidian-dsh-workbench-evidence` Vault 已完成运行与视觉修正验收。
 
 这些证据分别证明正式 bridge 和 Obsidian 宿主 UI，但尚未证明两者已接通，也不证明只读 Vault 上下文、外部工作区权限、完整会话或最终用户 UI 验收通过，因此 Phase C 整体仍是“部分建立”。
 
@@ -119,7 +119,7 @@ Batch 5A 原实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 的代码与
 
 Phase D 未通过时不得创建公开 Release 或提交社区目录。
 
-Phase D 中既有代码门仍有效，但此前使用 `obsidian-trend-radar-evidence` 的本插件运行与视觉证据已经撤回；必须在专用 `obsidian-dsh-workbench-evidence` Vault 重新完成加载/禁用、设置读回、健康检查、默认“新建任务”、精简导航、宽窄/Light/Dark 和可选快速助手验收。完整会话、Vault 安全矩阵、最终用户 UI 和发布资产验收仍未完成，因此 Phase D 整体未通过。
+Phase D 中既有代码门仍有效；此前使用 `obsidian-trend-radar-evidence` 的本插件运行与视觉证据已经撤回，且已在专用 `obsidian-dsh-workbench-evidence` Vault 重新完成加载/禁用、健康检查、默认“新建任务”、精简导航、宽窄/Light/Dark 和可选快速助手验收。完整会话、Vault 安全矩阵、最终用户 UI 和发布资产验收仍未完成，因此 Phase D 整体未通过。
 
 Ardot v2 进一步把“新建任务”固定为首个社区发布功能。它的完整实现、相应 CI、隔离 Vault 运行验收和用户对最终运行 UI 的明确验收，都是进入社区发布审批的前置条件；设计稿通过不改变 Phase D 的`延期，未通过`状态。
 
@@ -154,4 +154,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A 代码门与远端双平台 CI 保持有效，但误用 Vault 的运行证据已撤回；当前必须先完成插件反馈修正和专用 Vault 重验收，再进入 Batch 5B/6。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A 的插件反馈修正、双平台 CI、原始零 annotations 与专用 Vault 修正验收均已通过；下一步在完成项目知识库同步后进入 Batch 6。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。

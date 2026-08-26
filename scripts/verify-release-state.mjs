@@ -22,7 +22,7 @@ assert(manifest.description.length <= 250, 'manifest description 超过 250 字�
 assert(manifest.description.endsWith('.'), 'manifest description 必须以句点结尾');
 assert(readme.includes(expected.unofficialStatement), 'README 缺少非官方声明');
 assert(
-  readme.includes('DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试与双平台 CI，专用隔离 Vault 待重新验收'),
+  readme.includes('DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收'),
   'README 误报健康检查状态',
 );
 assert(

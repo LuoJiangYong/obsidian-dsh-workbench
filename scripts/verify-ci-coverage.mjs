@@ -97,6 +97,7 @@ for (const ardotContract of [
   '不显示“首发”“规划中”“尚未实现”等开发阶段、发布批次或治理审批文案',
   '未实现模块不在插件导航中渲染',
   '模式分段控件在插件中使用左右半圆胶囊边界',
+  'Batch 5A 固定插件反馈 UI、禁用边界与专用 Vault 证据',
 ]) {
   assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
 }

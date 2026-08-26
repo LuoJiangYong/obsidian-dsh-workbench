@@ -1,8 +1,8 @@
 # Workbench 壳层与 Ardot UI 真相设计验收
 
-状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回，专用 Vault 重验收进行中
+状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回；专用 Vault 修正验收已通过，最终 Obsidian UI 用户验收待完整功能后执行
 
-> `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据。相关截图只保留为历史工件，不再支撑“已通过”结论；Ardot 设计审阅证据不受影响。当前有效运行结论只以后文专用 `obsidian-dsh-workbench-evidence` Vault 修正批次为准。
+> `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据；`docs/assets/design-qa/workbench-shell/` 只保留为历史工件，不再支撑“已通过”结论。Ardot 设计审阅证据不受影响；`docs/assets/design-qa/new-task-host-ui/` 五张截图已全部由专用 `obsidian-dsh-workbench-evidence` Vault 覆盖，当前有效运行结论只以后文修正批次为准。
 
 ## 视觉来源
 
@@ -173,13 +173,36 @@ Ardot v2 design-only final result: passed
 ### 已撤回的运行证据
 
 - 原 Batch 5A 运行截图和 DOM 读回使用了 `D:\codex workspace\_test-vaults\obsidian-trend-radar-evidence`。该 Vault 属于另一个插件，不能作为本插件隔离验收环境。
-- 原截图、唯一视图、禁用语义、reload 复位、`700px`、Light/Dark、错误缓冲和进程残留读回全部从本插件验收结论中撤回；仓库中的五张截图必须由专用 Vault 证据覆盖后才恢复有效。
+- 原截图、唯一视图、禁用语义、reload 复位、`700px`、Light/Dark、错误缓冲和进程残留读回全部从本插件验收结论中撤回；它们不参与下列修正结论。
 - 原实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 与 [CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819) 的代码门仍有效：Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。CI 成功不替代运行验收。
 
-### 修正验收门
+### 专用 Vault 有效运行证据
 
 - 专用 Vault 固定为 `D:\codex workspace\_test-vaults\obsidian-dsh-workbench-evidence`，每个 Obsidian CLI 命令必须显式指定该 Vault。
-- 重新验收只显示“新建任务 / 运行”的宽屏导航与窄屏选择器、左右半圆模式控件、代码协作及 composer 动作禁用、快速助手、Light/Dark、`700px` 无溢出、reload 复位、零笔记写入、零错误和零残留受管进程。
-- 五张 `docs/assets/design-qa/new-task-host-ui/` 截图必须全部由专用 Vault 重新捕获并逐张视觉复核；在此之前不能声称 Batch 5A 隔离 Vault 运行验收通过。
+- 宿主版本为 Obsidian `1.13.7`（installer `1.12.7`）。插件反馈与证据纠正提交为 `a41c93b43245c9b1cfb84c4adb243ef4217c8253`；[CI run 32963736114](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32963736114) 的 Ubuntu check `98161570546` 与 Windows check `98161570396` 均成功，两个原始 annotations 数组均为 `[]`。
+- `a41c93b` 生产构建与专用 Vault 部署资产 SHA-256 逐项一致：`main.js` 为 `E9E24FAA6BFAD7253AC4313FA88C1DDA7894284A079ED0CB22432B9D1C4F6367`，`manifest.json` 为 `81BDF8F237FA070C3F0DECCC9C09A21F4915196633072D892428E705060F25A6`，`obsidian-bridge.mjs` 为 `1CF83B3E977ED5B5DA6CA5C59A5D42CEB70D67E475CE3B8DEC0279A5B27139D6`，`styles.css` 为 `02FB08C4F93B2E3EEEA11202EC1C516EBC228F9A704CD350F585CE60AEFB33F2`。
+- 连续两次打开命令后 Workbench DOM 与 leaf 均为 `1`；宽屏导航精确为“新建任务 / 运行”，禁用导航数为 `0`，五个未实现模块在 Workbench 文本与紧凑选择器中均不存在。
+- 模式外框计算样式为 `border-radius: 999px`；首个按钮四角依次为 `999px / 0px / 0px / 999px`，最后按钮为 `0px / 999px / 999px / 0px`。对话与任务执行可切换，“代码协作”保持禁用；附件、上下文、权限和发送全部禁用。
+- 任务执行模式与内存草稿可在当前视图更新，发送仍禁用；plugin reload 后恢复“对话”、空草稿和禁用发送，Workbench 与 leaf 仍各为 `1`。
+- “运行”页真实执行固定 `dsh --version` 后显示 `DSH 可执行（0.1.1-rc.1）`，连接状态仍为“尚未连接 DSH”；受管 `obsidian-bridge.mjs` 进程为 `0`。
+- 快速助手连续打开后 DOM 与 leaf 均为 `1`，显示 `DSH 可执行（0.1.1-rc.1）`、`未选择笔记或工作范围`，两个快捷提问均为原生禁用。
+- `700px` 容器前置断言为 `clientWidth = 700`、`scrollWidth = 700`、固定侧栏 `display: none`、紧凑选择器 `display: flex`，选项仅“新建任务 / 运行”且均可用；composer footer 保持横向。测试 inline 宽度随后移除，宽屏恢复 `clientWidth = scrollWidth = 1396`。
+- 深色主题中品牌圆形承载底为 `rgb(255, 255, 255)`、图标颜色为 `rgb(0, 0, 0)`；验收结束前已恢复浅色。
 
-Batch 5A dedicated Vault remediation result: pending; final Obsidian UI user acceptance: pending
+### 专用 Vault 截图与视觉复核
+
+- `new-task-wide-light.png`：`2880 × 1824`，`165779` bytes，SHA-256 `6F79863879C0AB0E7A34B46CA54916802BDE9D3B5039EAF488AC5A413F2AD231`。
+- `new-task-with-quick-assistant.png`：`2880 × 1824`，`243563` bytes，SHA-256 `6575F08DFC2EE4E162CDCCB9A6A5FA08B56620C85CAEE88967B1EF3F46071F15`。
+- `run-wide-light.png`：`2880 × 1824`，`206174` bytes，SHA-256 `E85BB8DC0EBB197E5F5E8B6C5B647BFC7A667CB7E45B6D1D7B30AFCC39278242`。
+- `new-task-wide-dark.png`：`2880 × 1824`，`166010` bytes，SHA-256 `A86C987D3E58CC6A392BFBB8E7A089735F8140550C44C74C713754543533A336`。
+- `new-task-narrow-700.png`：`2880 × 1824`，`145406` bytes，SHA-256 `80014D474DFD159FE6D814D9DB76C4EF486782646AF31976F96372A1F25646B2`。
+- 每张截图均在目标 DOM 读回后先执行稳定化截图，再执行正式截图；两张因空宿主右侧栏或侧栏动画尚未完成而产生的中间截图均被拒绝并覆盖。五张最终图已逐张视觉复核，未发现文字裁切、横向溢出、错误主题 token 或剩余 P0 / P1 / P2 视觉问题。
+
+### 清理与边界
+
+- Vault 文件列表始终只有 `DeepSeek Harness Workbench 验收说明.md`；读回内容仍为隔离验收说明，没有写入任务、上下文或模型输出。
+- 验收结束后已禁用插件；Workbench、快速助手及对应 leaf 均为 `0`，Obsidian 错误缓冲与 error 级控制台消息均为 `0`，受管 bridge 进程为 `0`。
+- `main.js`、`manifest.json`、`obsidian-bridge.mjs`、`styles.css` 已通过 Obsidian adapter 逐项删除并读回不存在；五个稳定化临时截图已删除。
+- Ardot 未修改，只读核对；本批只更新插件实现差异、仓库契约、测试、CI 与专用 Vault 证据。
+
+Batch 5A dedicated Vault remediation result: passed; final Obsidian UI user acceptance: pending

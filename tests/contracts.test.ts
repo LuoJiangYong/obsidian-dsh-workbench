@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -37,11 +38,11 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | Ardot `v2` 宿主 UI 与确定性状态骨架已实现并通过单元测试；真实发送、对话、上下文和任务执行尚未接通 |');
-    expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 正在重新验收 |');
-    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；显示健康、上下文空态和两个真实禁用的快捷提问，不承担主对话 |');
-    expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试与双平台 CI；原隔离 Vault 运行证据已撤回，专用 Vault 待重新验收 |');
-    expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试与双平台 CI，专用隔离 Vault 待重新验收 |');
+    expect(readme).toContain('| 新建任务 | Ardot `v2` 宿主 UI 与确定性状态骨架已实现，并通过专用隔离 Vault 验收；真实发送、对话、上下文和任务执行尚未接通 |');
+    expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
+    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；专用隔离 Vault 已验证唯一右侧视图、健康、上下文空态和两个真实禁用的快捷提问，不承担主对话 |');
+    expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
+    expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收 |');
     expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
     expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
     expect(readme).toContain('| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口已实现，但模型调用链、上下文与任务执行尚未接通 |');
@@ -125,7 +126,7 @@ describe('发布与治理契约', () => {
     expect(designQa).toContain('Ardot 组件为 `12:555`');
     expect(designQa).toContain('各产品画板均不显示“首发”“规划中”“尚未实现”等开发或发布文案');
     expect(designQa).toContain('Ardot v2 design-only final result: passed');
-    expect(designQa.trimEnd()).toMatch(/Batch 5A dedicated Vault remediation result: pending; final Obsidian UI user acceptance: pending$/u);
+    expect(designQa.trimEnd()).toMatch(/Batch 5A dedicated Vault remediation result: passed; final Obsidian UI user acceptance: pending$/u);
 
     for (const asset of [
       'design-system.png',
@@ -143,7 +144,7 @@ describe('发布与治理契约', () => {
     }
   });
 
-  it('Batch 5A 固定插件反馈 UI、禁用边界与专用 Vault 重验收门', async () => {
+  it('Batch 5A 固定插件反馈 UI、禁用边界与专用 Vault 证据', async () => {
     const [main, workbench, quickAssistant, newTaskState, styles, designQa] = await Promise.all([
       readFile(path.join(repositoryRoot, 'src', 'main.ts'), 'utf8'),
       readFile(path.join(repositoryRoot, 'src', 'workbench-view.ts'), 'utf8'),
@@ -180,7 +181,45 @@ describe('发布与治理契约', () => {
     expect(designQa).toContain('c8f6922b1a44e5bc0fdb325fce183e95b85320d1');
     expect(designQa).toContain('CI run 32919119819');
     expect(designQa).toContain('Ubuntu check `98028935782`、Windows check `98028935888`');
+    expect(designQa).toContain('a41c93b43245c9b1cfb84c4adb243ef4217c8253');
+    expect(designQa).toContain('CI run 32963736114');
+    expect(designQa).toContain('Ubuntu check `98161570546` 与 Windows check `98161570396`');
+    expect(designQa).toContain('`clientWidth = 700`、`scrollWidth = 700`');
+    expect(designQa).toContain('Workbench、快速助手及对应 leaf 均为 `0`');
 
+    for (const asset of [
+      {
+        bytes: 165_779,
+        name: 'new-task-wide-light.png',
+        sha256: '6F79863879C0AB0E7A34B46CA54916802BDE9D3B5039EAF488AC5A413F2AD231',
+      },
+      {
+        bytes: 243_563,
+        name: 'new-task-with-quick-assistant.png',
+        sha256: '6575F08DFC2EE4E162CDCCB9A6A5FA08B56620C85CAEE88967B1EF3F46071F15',
+      },
+      {
+        bytes: 206_174,
+        name: 'run-wide-light.png',
+        sha256: 'E85BB8DC0EBB197E5F5E8B6C5B647BFC7A667CB7E45B6D1D7B30AFCC39278242',
+      },
+      {
+        bytes: 166_010,
+        name: 'new-task-wide-dark.png',
+        sha256: 'A86C987D3E58CC6A392BFBB8E7A089735F8140550C44C74C713754543533A336',
+      },
+      {
+        bytes: 145_406,
+        name: 'new-task-narrow-700.png',
+        sha256: '80014D474DFD159FE6D814D9DB76C4EF486782646AF31976F96372A1F25646B2',
+      },
+    ]) {
+      const bytes = await readFile(
+        path.join(repositoryRoot, 'docs', 'assets', 'design-qa', 'new-task-host-ui', asset.name),
+      );
+      expect(bytes.byteLength).toBe(asset.bytes);
+      expect(createHash('sha256').update(bytes).digest('hex').toUpperCase()).toBe(asset.sha256);
+    }
   });
 
   it('P0 评估只接受一个生产运行时 ADR', async () => {
