@@ -28,6 +28,8 @@ describe('原生 Workbench 插件基线', () => {
     expect(mockObsidian.views.has(VIEW_TYPE_WORKBENCH)).toBe(true);
     expect(mockObsidian.views.has(VIEW_TYPE_QUICK_ASSISTANT)).toBe(true);
     expect(mockObsidian.ribbonCallbacks).toHaveLength(1);
+    expect(mockObsidian.ribbonIcons).toEqual(['deepseek-whale']);
+    expect(mockObsidian.icons.get('deepseek-whale')).toContain('transform="scale(2)"');
     expect(mockObsidian.settingTabs).toHaveLength(1);
     expect(mockObsidian.commands).toEqual([
       expect.objectContaining({ id: 'open-workbench', name: '打开工作台' }),
@@ -52,7 +54,7 @@ describe('原生 Workbench 插件基线', () => {
     expect(mockObsidian.lastApp?.workspace.requestedLeafTypes).toEqual(['tab']);
   });
 
-  it('渲染内部导航、概览真值，并切换到运行状态', async () => {
+  it('按 Ardot v2 默认渲染新建任务，并把不可用动作保持为真实禁用态', async () => {
     const PluginConstructor = DeepSeekHarnessWorkbenchPlugin as unknown as ConstructablePlugin;
     const plugin = new PluginConstructor();
     await plugin.onload();
@@ -68,31 +70,64 @@ describe('原生 Workbench 插件基线', () => {
 
     const content = view.contentEl as unknown as MockElement;
     expect(content.allText()).toEqual(expect.arrayContaining([
-      'DeepSeek Harness Workbench',
-      '智能体工作台',
-      '概览',
-      '运行状态',
-      '助手',
+      'DeepSeek',
+      'Harness',
+      'Workbench',
+      '新建任务',
       '项目',
       '专家 · Skill · 连接器',
       '自动化',
       '资料库',
       '领域工作台',
-      '当前真实能力',
-      '尚未连接 DSH',
-      '尚未检测',
-      '未启用',
-      '仅桌面端',
-      '会话能力尚未实现；Vault 权限未启用。规划中的模块不会加载数据或执行操作。',
+      '运行',
+      '与 DeepSeek Harness 对话，定义任务、选择上下文，并在执行前审阅权限与变更边界。',
+      '今天想让 DeepSeek Harness 做什么？',
+      '对话',
+      '任务执行',
+      '代码协作',
+      '添加附件',
+      '选择上下文',
+      '默认权限',
+      '模型由 DSH 配置管理',
+      '发送',
+      '执行前确认',
+      '发送前展示上下文、权限和拟变更内容，并允许用户取消。',
     ]));
+    expect(content.allText().join('\n')).not.toMatch(/规划中|尚未实现|首发/);
 
     const navigationItems = content.findAllByClass('dsh-navigation__item');
-    expect(navigationItems).toHaveLength(8);
-    expect(navigationItems.slice(2).every((item) => item.disabled)).toBe(true);
+    expect(navigationItems).toHaveLength(7);
+    expect(navigationItems.slice(1, 6).every((item) => item.disabled)).toBe(true);
+    expect(navigationItems[0]?.attributes.get('aria-current')).toBe('page');
 
-    await navigationItems[1]?.click();
+    const modeButtons = content.findAllByClass('dsh-new-task-mode__button');
+    expect(modeButtons).toHaveLength(3);
+    expect(modeButtons[0]?.classes.has('is-active')).toBe(true);
+    expect(modeButtons[2]?.disabled).toBe(true);
+
+    const composer = content.findAllByTag('textarea')[0];
+    const sendButton = content.findAllByClass('dsh-new-task-composer__send')[0];
+    expect(composer).toBeDefined();
+    expect(composer?.attributes.get('placeholder')).toBe('描述目标，@ 引用上下文，/ 调用 Skill 或命令');
+    expect(sendButton?.disabled).toBe(true);
+
+    await modeButtons[1]?.click();
+    const rerenderedModeButtons = content.findAllByClass('dsh-new-task-mode__button');
+    expect(rerenderedModeButtons[1]?.classes.has('is-active')).toBe(true);
+
+    const rerenderedComposer = content.findAllByTag('textarea')[0];
+    if (!rerenderedComposer) throw new Error('任务输入未渲染');
+    rerenderedComposer.value = '整理本周项目进展';
+    await rerenderedComposer.trigger('input');
+    expect(content.findAllByClass('dsh-new-task-composer__send')[0]?.disabled).toBe(true);
+
+    await content.findAllByClass('dsh-navigation__item')[6]?.click();
     expect(content.allText()).toEqual(expect.arrayContaining([
-      '运行状态',
+      '运行',
+      '汇总当前能力、外部运行时和安全边界；健康检查成功不表示会话已经建立。',
+      '工作台壳层',
+      '可用',
+      '中央标签页与内部导航',
       '检查 DSH',
       '本版本只在手动检查时执行固定的 --version；不读取或写入 Vault，不启动会话，也不使用模型网络。',
     ]));
@@ -121,9 +156,13 @@ describe('原生 Workbench 插件基线', () => {
       '快速助手',
       '尚未检测',
       '未选择笔记或工作范围',
-      '快捷提问尚未启用',
-      '当前容器不读取 Vault，也不提供输入、发送、停止或模型选择。',
+      '总结当前上下文',
+      '检查运行状态',
+      '新建任务是主对话入口。快速助手仅展示健康状态、当前上下文和快捷提问。',
     ]));
+    expect(content.allText()).toContain('仅辅助展示健康、当前上下文和快捷提问，不承担主对话。');
+    expect(content.findAllByClass('dsh-quick-assistant__prompt')).toHaveLength(2);
+    expect(content.findAllByClass('dsh-quick-assistant__prompt').every((item) => item.disabled)).toBe(true);
 
     await plugin.activateQuickAssistant();
     expect(plugin.app.workspace.getLeavesOfType(VIEW_TYPE_QUICK_ASSISTANT)).toHaveLength(1);

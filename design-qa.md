@@ -159,3 +159,41 @@ final result: passed
 - 治理实现提交 `f3fa2402431868519164e65ebded27aa9bfe8f6a` 的远端 [CI run 32700464511](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32700464511) 已通过 Ubuntu 与 Windows；两个 check run 的原始 annotations 合计为 `0`。
 
 Ardot v2 design-only final result: passed
+
+## Batch 5A：Ardot v2 宿主 UI 实现同步
+
+### 范围与真相
+
+- 日期：`2026-08-26`；Ardot 文件仍为 `718186366720195`，用户审阅页面仍为 `UI 真相 v2`（`12:1`）。
+- 本批实现并验证默认“新建任务”、置底“运行”、五个禁用入口、三行品牌、鲸鱼图标、宽窄与 Light/Dark、可选快速助手和确定性内存状态。
+- “对话”和“任务执行”只切换宿主状态；“代码协作”、附件、上下文、权限和发送保持原生禁用。没有启动正式 bridge、读取 Vault、持久化草稿或发起模型请求。
+- Ardot `12:41`、`12:120`、`12:191`、`12:280`、`12:362` / `12:367` 和 `12:536` 已重新逐张读取与截图复核；批准设计完整，无需修改 Ardot。
+
+### 隔离 Vault 证据
+
+隔离 Vault：`D:\codex workspace\_test-vaults\obsidian-trend-radar-evidence`。只写入测试插件目录，不写入笔记内容。
+
+- 宽屏浅色：`docs/assets/design-qa/new-task-host-ui/new-task-wide-light.png`，`2880 × 1824`。
+- 新建任务与快速助手：`docs/assets/design-qa/new-task-host-ui/new-task-with-quick-assistant.png`，`2880 × 1824`。
+- 运行宽屏浅色：`docs/assets/design-qa/new-task-host-ui/run-wide-light.png`，`2880 × 1824`。
+- 新建任务宽屏深色：`docs/assets/design-qa/new-task-host-ui/new-task-wide-dark.png`，`2880 × 1824`。
+- 新建任务 `700px` 容器：`docs/assets/design-qa/new-task-host-ui/new-task-narrow-700.png`，`2880 × 1824`。
+
+首次批量截图出现 Electron 合成帧滞后一状态的问题，因此该组文件被拒绝并覆盖。最终每张证据都在目标状态 DOM 读回后先执行一次稳定化截图，再执行正式截图；文件名、页面、主题、右侧视图和容器宽度已逐张对应。
+
+### 运行读回
+
+- Workbench 连续打开后 DOM 数量为 `1`；快速助手连续打开后 DOM 数量为 `1`。
+- 导航依次为“新建任务”、五个中间禁用入口、“运行”；五个入口全部 `disabled`，活动页使用 `aria-current="page"`。
+- “代码协作”、三个 composer 工具和发送按钮均 `disabled`；输入非空草稿后发送仍不可执行。
+- 模式与草稿在当前 ItemView 内确定性更新；插件 reload 后恢复“对话”与空草稿，发送保持禁用，没有隐式持久化。
+- `700px` 容器读回：`clientWidth = 700`、`scrollWidth = 700`、固定侧栏 `display: none`、紧凑选择器 `display: flex`、composer 页脚 `flex-direction: row`。
+- 深色模式品牌承载底读回为 `rgb(255, 255, 255)`；鲸鱼 path 实际边界为 `19.34 × 14.53px`，匹配 Ardot `20px` 图标容器比例。
+- 产品区域没有“首发”“规划中”“尚未实现”；Obsidian 错误缓冲、错误级控制台消息和受管 `obsidian-bridge.mjs` Node 进程均为 `0`。
+
+### 视觉结论与边界
+
+- 宽屏浅色、深色、快速助手组合、运行和 `700px` 五个状态均未发现文字裁切、水平溢出、错误主题 token、不可读图标或剩余 P0 / P1 / P2 视觉问题。
+- 当前结论是`宿主 UI 已实现并完成隔离 Vault 运行验收`；真实对话、上下文、权限与任务执行仍未实现，最终 Obsidian UI 用户验收必须在后续完整功能批次重新执行。
+
+Batch 5A host UI implementation result: passed; final Obsidian UI user acceptance: pending

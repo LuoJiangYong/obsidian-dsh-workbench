@@ -82,7 +82,7 @@ assert(
 );
 for (const uiContract of [
   '在中央标签页打开并复用 Workbench 视图',
-  '渲染内部导航、概览真值，并切换到运行状态',
+  '按 Ardot v2 默认渲染新建任务，并把不可用动作保持为真实禁用态',
   '只在显式请求时打开并复用右侧快速助手真实空状态',
 ]) {
   assert(pluginBaseline.includes(uiContract), `插件基线缺少 UI 契约：${uiContract}`);

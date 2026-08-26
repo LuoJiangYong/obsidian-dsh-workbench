@@ -18,6 +18,7 @@ export class MockElement {
   icon = '';
   readonly tagName: string;
   text = '';
+  value = '';
 
   constructor(tagName = 'div') {
     this.tagName = tagName;
@@ -52,13 +53,25 @@ export class MockElement {
   }
 
   async click(): Promise<void> {
+    if (this.disabled) return;
     for (const listener of this.eventListeners.get('click') ?? []) await listener();
+  }
+
+  async trigger(type: string): Promise<void> {
+    for (const listener of this.eventListeners.get(type) ?? []) await listener();
   }
 
   findAllByClass(className: string): MockElement[] {
     return [
       ...(this.classes.has(className) ? [this] : []),
       ...this.children.flatMap((child) => child.findAllByClass(className)),
+    ];
+  }
+
+  findAllByTag(tagName: string): MockElement[] {
+    return [
+      ...(this.tagName === tagName ? [this] : []),
+      ...this.children.flatMap((child) => child.findAllByTag(tagName)),
     ];
   }
 
@@ -159,6 +172,8 @@ export const mockObsidian = {
   lastApp: undefined as App | undefined,
   loadedData: null as unknown,
   notices: [] as string[],
+  icons: new Map<string, string>(),
+  ribbonIcons: [] as string[],
   ribbonCallbacks: [] as Array<() => void>,
   savedData: [] as unknown[],
   settingTabs: [] as PluginSettingTab[],
@@ -170,6 +185,8 @@ export function resetMockObsidian(): void {
   mockObsidian.lastApp = undefined;
   mockObsidian.loadedData = null;
   mockObsidian.notices.length = 0;
+  mockObsidian.icons.clear();
+  mockObsidian.ribbonIcons.length = 0;
   mockObsidian.ribbonCallbacks.length = 0;
   mockObsidian.savedData.length = 0;
   mockObsidian.settingTabs.length = 0;
@@ -187,7 +204,8 @@ export class Plugin {
     mockObsidian.commands.push(command);
   }
 
-  addRibbonIcon(_icon: string, _title: string, callback: () => void): MockElement {
+  addRibbonIcon(icon: string, _title: string, callback: () => void): MockElement {
+    mockObsidian.ribbonIcons.push(icon);
     mockObsidian.ribbonCallbacks.push(callback);
     return new MockElement();
   }
@@ -234,6 +252,10 @@ export class Notice {
   constructor(message: string) {
     mockObsidian.notices.push(message);
   }
+}
+
+export function addIcon(iconId: string, svgContent: string): void {
+  mockObsidian.icons.set(iconId, svgContent);
 }
 
 export function setIcon(element: MockElement, iconName: string): void {

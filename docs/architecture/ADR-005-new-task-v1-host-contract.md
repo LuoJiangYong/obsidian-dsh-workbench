@@ -9,7 +9,7 @@
 
 ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实现前仍需消除四类歧义：v1 究竟开放哪些模式、Vault 上下文与外部工作区如何分界、取消何时可以称为成功，以及正式 bridge 如何跟随仍处于预发布阶段的 DSH 演进。
 
-当前代码只实现 DSH `0.1.1-rc.1` 的只读 `--version` 健康检查；它没有会话、事件、上下文、权限或取消能力。2026-08-24 重新核验的正式 bridge 候选为 DSH `0.1.1-rc.2`；Batch 2 已确认固定 tag 的 Agent/session/approval 源码 seam，但 bridge 尚未实现，rc.2 也未完成 Windows 运行验收。
+本 ADR 接受时，代码只实现 DSH `0.1.1-rc.1` 的只读 `--version` 健康检查。后续 Batch 3–4 已实现协议 v1、正式 bridge、事件、权限、取消和 Windows `0.1.1-rc.2` 运行验收；Batch 5 已开始把宿主 UI 与确定性状态骨架接入同一契约，但模型、上下文和任务执行仍未接通。
 
 ## 决定
 
@@ -34,9 +34,9 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 ## 后果与边界
 
 - [新建任务 v1 需求基线](../requirements/new-task-v1.md) 是本 ADR 的详细验收契约。
-- 当前正式 bridge 候选是 DSH `0.1.1-rc.2`；其状态是“源码能力已验证，生产兼容未通过”。当前代码仍只验证健康检查 `0.1.1-rc.1`，两者均须如实展示。
+- 当前正式 bridge 精确锁定 DSH `0.1.1-rc.2`，已完成本地与 Windows CI 真实加载、握手、Agent session、mid-turn cancel 和清理验收；在产品 UI、上下文与隔离 Vault 验收完成前，兼容矩阵仍不得标为 `supported`。健康检查继续独立锁定 `0.1.1-rc.1`。
 - [Batch 2 能力尖峰](./batch-2-bridge-capability-spike.md)与[运行时兼容矩阵](./runtime-compatibility-matrix.md)记录了上游 seam、证据指纹和自动演进门。
-- [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭和 fail-closed 行为；当前只通过假 bridge。
+- [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭和 fail-closed 行为；当前已通过假 bridge、正式 artifact 与 Windows rc.2 运行验收。
 - 数量和字节上限必须在实现批次以测量证据确定；本 ADR 不设占位常数。
 - `DESIGN.md`、ADR-003 和 ADR-004 已检查：本批不改变获批页面、布局、导航、图标或响应式规则，无需修改。
 - 后续 bridge 打包、自动监测 workflow、实现源码、运行验收、Release 与社区提交仍受各自边界约束；当前连续目标只授权 Batch 3–10，不授权 Release 或社区提交。
@@ -46,4 +46,4 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 - `tests/contracts.test.ts` 固定模式、只读 Vault、外部工作区、单终态、真实取消、`rc.1`/`rc.2` 状态分层、协议状态和只读自动演进边界。
 - `tests/bridge-protocol.test.ts` 固定精确握手、session/turn/seq、一次性权限、cancel 确认、唯一终态、shutdown/EOF 和超时。
 - `scripts/verify-ci-coverage.mjs` 确认上述治理契约由双平台完整 `npm test` 执行。
-- 当前批次只验证文档契约一致性，不声称真实 bridge、DSH 会话、Windows 运行或隔离 Vault 产品验收通过。
+- Batch 5 宿主 UI 的状态与禁用行为由 `tests/new-task-state.test.ts` 和 `tests/plugin-baseline.test.ts` 固定；真实产品会话、上下文、任务执行与最终隔离 Vault 用户验收仍由后续批次证明。

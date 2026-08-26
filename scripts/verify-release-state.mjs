@@ -26,7 +26,7 @@ assert(
   'README 误报健康检查状态',
 );
 assert(
-  readme.includes('DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 产品入口、上下文与任务执行尚未接通'),
+  readme.includes('DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口已实现，但模型调用链、上下文与任务执行尚未接通'),
   'README 会话能力边界漂移',
 );
 assert(readme.includes('当前健康检查精确支持 DSH `0.1.1-rc.1`'), 'README 缺少目标 DSH 版本');

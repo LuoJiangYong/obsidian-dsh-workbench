@@ -1,6 +1,7 @@
 import { ItemView, setIcon, type IconName, type WorkspaceLeaf } from 'obsidian';
 
 import type { DshHealthResult } from './dsh-health';
+import { DEEPSEEK_WHALE_ICON } from './icons';
 import { createWorkbenchState } from './workbench-state';
 
 export const VIEW_TYPE_QUICK_ASSISTANT = 'deepseek-harness-quick-assistant-view';
@@ -26,7 +27,7 @@ export class QuickAssistantView extends ItemView {
   }
 
   getIcon(): IconName {
-    return 'bot';
+    return DEEPSEEK_WHALE_ICON;
   }
 
   async onOpen(): Promise<void> {
@@ -41,18 +42,20 @@ export class QuickAssistantView extends ItemView {
 
     const headerEl = contentEl.createEl('header', { cls: 'dsh-quick-assistant__header' });
     const iconEl = headerEl.createSpan({ cls: 'dsh-quick-assistant__header-icon' });
-    setIcon(iconEl, 'bot');
+    setIcon(iconEl, DEEPSEEK_WHALE_ICON);
     const headerCopyEl = headerEl.createDiv();
     headerCopyEl.createEl('h3', { text: '快速助手' });
-    headerCopyEl.createEl('p', { text: '按需查看状态与上下文；对话能力尚未启用。' });
+    headerCopyEl.createEl('p', {
+      text: '仅辅助展示健康、当前上下文和快捷提问，不承担主对话。',
+    });
 
     this.renderSection(contentEl, 'activity', 'DSH 健康', state.healthCheckStatus);
     this.renderSection(contentEl, 'file-question', '当前上下文', '未选择笔记或工作范围');
-    this.renderSection(contentEl, 'message-circle-question', '快捷提问', '快捷提问尚未启用');
+    this.renderPromptSection(contentEl);
 
     contentEl.createEl('p', {
       cls: 'dsh-quick-assistant__boundary',
-      text: '当前容器不读取 Vault，也不提供输入、发送、停止或模型选择。',
+      text: '新建任务是主对话入口。快速助手仅展示健康状态、当前上下文和快捷提问。',
     });
   }
 
@@ -72,5 +75,21 @@ export class QuickAssistantView extends ItemView {
     const copyEl = sectionEl.createDiv();
     copyEl.createEl('h4', { text: label });
     copyEl.createEl('p', { text: value });
+  }
+
+  private renderPromptSection(parentEl: HTMLElement): void {
+    const sectionEl = parentEl.createEl('section', { cls: 'dsh-quick-assistant__section' });
+    const iconEl = sectionEl.createSpan({ cls: 'dsh-quick-assistant__section-icon' });
+    setIcon(iconEl, 'message-circle-question');
+    const copyEl = sectionEl.createDiv();
+    copyEl.createEl('h4', { text: '快捷提问' });
+    for (const prompt of ['总结当前上下文', '检查运行状态']) {
+      const promptEl = copyEl.createEl('button', {
+        cls: 'dsh-quick-assistant__prompt',
+        text: prompt,
+        attr: { type: 'button', 'aria-disabled': 'true' },
+      });
+      promptEl.disabled = true;
+    }
   }
 }

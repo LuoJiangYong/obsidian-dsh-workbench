@@ -1,4 +1,4 @@
-import { Notice, Plugin, type WorkspaceLeaf } from 'obsidian';
+import { addIcon, Notice, Plugin, type WorkspaceLeaf } from 'obsidian';
 
 import { DshHealthProbe, type DshHealthResult } from './dsh-health';
 import {
@@ -8,6 +8,7 @@ import {
   validateDshCommand,
 } from './dsh-settings';
 import { WorkbenchSettingTab } from './settings-tab';
+import { DEEPSEEK_WHALE_ICON, DEEPSEEK_WHALE_SVG } from './icons';
 import {
   QuickAssistantView,
   VIEW_TYPE_QUICK_ASSISTANT,
@@ -22,6 +23,10 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
 
   async onload(): Promise<void> {
     this.settings = loadDshSettings(await this.loadData());
+    addIcon(
+      DEEPSEEK_WHALE_ICON,
+      `<g transform="scale(2)">${DEEPSEEK_WHALE_SVG}</g>`,
+    );
     this.addSettingTab(new WorkbenchSettingTab(this));
 
     this.registerView(
@@ -38,11 +43,16 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
       }),
     );
 
-    this.addRibbonIcon('bot', '打开 DeepSeek Harness Workbench', () => {
+    const ribbonIconEl = this.addRibbonIcon(
+      DEEPSEEK_WHALE_ICON,
+      '打开 DeepSeek Harness Workbench',
+      () => {
       void this.activateWorkbench().catch((error: unknown) => {
         new Notice(this.activationErrorMessage(error));
       });
-    });
+      },
+    );
+    ribbonIconEl.addClass('dsh-whale-ribbon');
 
     this.addCommand({
       id: 'open-workbench',

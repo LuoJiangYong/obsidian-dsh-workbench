@@ -1,14 +1,24 @@
 import { ItemView, setIcon, type IconName, type WorkspaceLeaf } from 'obsidian';
 
 import type { DshHealthResult } from './dsh-health';
+import { DEEPSEEK_WHALE_ICON } from './icons';
+import {
+  canSubmitNewTask,
+  createNewTaskState,
+  type NewTaskMode,
+  type NewTaskState,
+  reduceNewTaskState,
+} from './new-task-state';
 import { createWorkbenchState } from './workbench-state';
 
 export const VIEW_TYPE_WORKBENCH = 'deepseek-harness-workbench-view';
 
-type WorkbenchSectionId = 'overview' | 'runtime-status';
-type WorkbenchNavigationId =
-  | WorkbenchSectionId
-  | 'assistant'
+const BRAND_DEEPSEEK = 'DeepSeek';
+const NEW_TASK_HEADING = '今天想让 DeepSeek Harness 做什么？';
+const NEW_TASK_PLACEHOLDER = '描述目标，@ 引用上下文，/ 调用 Skill 或命令';
+
+type WorkbenchSectionId = 'new-task' | 'run';
+type DisabledNavigationId =
   | 'projects'
   | 'integrations'
   | 'automation'
@@ -23,31 +33,30 @@ type WorkbenchNavigationItem =
       readonly label: string;
     }
   | {
-      readonly availability: 'planned';
+      readonly availability: 'disabled';
       readonly icon: IconName;
-      readonly id: Exclude<WorkbenchNavigationId, WorkbenchSectionId>;
+      readonly id: DisabledNavigationId;
       readonly label: string;
     };
 
 const WORKBENCH_NAVIGATION: readonly WorkbenchNavigationItem[] = Object.freeze([
-  { availability: 'available', icon: 'layout-dashboard', id: 'overview', label: '概览' },
-  { availability: 'available', icon: 'activity', id: 'runtime-status', label: '运行状态' },
-  { availability: 'planned', icon: 'bot', id: 'assistant', label: '助手' },
-  { availability: 'planned', icon: 'folder-kanban', id: 'projects', label: '项目' },
+  { availability: 'available', icon: 'circle-plus', id: 'new-task', label: '新建任务' },
+  { availability: 'disabled', icon: 'folder-kanban', id: 'projects', label: '项目' },
   {
-    availability: 'planned',
+    availability: 'disabled',
     icon: 'blocks',
     id: 'integrations',
     label: '专家 · Skill · 连接器',
   },
-  { availability: 'planned', icon: 'alarm-clock', id: 'automation', label: '自动化' },
-  { availability: 'planned', icon: 'library-big', id: 'library', label: '资料库' },
+  { availability: 'disabled', icon: 'alarm-clock', id: 'automation', label: '自动化' },
+  { availability: 'disabled', icon: 'library-big', id: 'library', label: '资料库' },
   {
-    availability: 'planned',
+    availability: 'disabled',
     icon: 'panels-top-left',
     id: 'domain-workbenches',
     label: '领域工作台',
   },
+  { availability: 'available', icon: 'activity', id: 'run', label: '运行' },
 ]);
 
 interface WorkbenchViewOptions {
@@ -56,7 +65,8 @@ interface WorkbenchViewOptions {
 }
 
 export class WorkbenchView extends ItemView {
-  private activeSection: WorkbenchSectionId = 'overview';
+  private activeSection: WorkbenchSectionId = 'new-task';
+  private newTaskState: NewTaskState = createNewTaskState();
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -74,7 +84,7 @@ export class WorkbenchView extends ItemView {
   }
 
   getIcon(): IconName {
-    return 'bot';
+    return DEEPSEEK_WHALE_ICON;
   }
 
   async onOpen(): Promise<void> {
@@ -91,11 +101,11 @@ export class WorkbenchView extends ItemView {
 
     const mainEl = shellEl.createEl('main', { cls: 'dsh-workbench-main' });
     this.renderMobileNavigation(mainEl);
-    if (this.activeSection === 'runtime-status') {
-      this.renderRuntimeStatus(mainEl);
+    if (this.activeSection === 'run') {
+      this.renderRun(mainEl);
       return;
     }
-    this.renderOverview(mainEl);
+    this.renderNewTask(mainEl);
   }
 
   async onClose(): Promise<void> {
@@ -106,10 +116,11 @@ export class WorkbenchView extends ItemView {
     const sidebarEl = parentEl.createEl('aside', { cls: 'dsh-workbench-sidebar' });
     const brandEl = sidebarEl.createDiv({ cls: 'dsh-workbench-brand' });
     const brandIconEl = brandEl.createSpan({ cls: 'dsh-workbench-brand__icon' });
-    setIcon(brandIconEl, 'bot');
-    const brandCopyEl = brandEl.createDiv();
-    brandCopyEl.createEl('strong', { text: 'DeepSeek Harness Workbench' });
-    brandCopyEl.createSpan({ text: '智能体工作台' });
+    setIcon(brandIconEl, DEEPSEEK_WHALE_ICON);
+    const brandCopyEl = brandEl.createDiv({ cls: 'dsh-workbench-brand__copy' });
+    brandCopyEl.createEl('strong', { text: BRAND_DEEPSEEK });
+    brandCopyEl.createSpan({ text: 'Harness' });
+    brandCopyEl.createSpan({ text: 'Workbench' });
 
     const navigationEl = sidebarEl.createEl('nav', {
       cls: 'dsh-navigation',
@@ -128,10 +139,9 @@ export class WorkbenchView extends ItemView {
       setIcon(iconEl, item.icon);
       buttonEl.createSpan({ cls: 'dsh-navigation__label', text: item.label });
 
-      if (item.availability === 'planned') {
+      if (item.availability === 'disabled') {
         buttonEl.disabled = true;
-        buttonEl.setAttr('title', '规划中：当前没有可用能力');
-        buttonEl.createSpan({ cls: 'dsh-navigation__planned', text: '规划中' });
+        buttonEl.setAttr('aria-disabled', 'true');
         continue;
       }
 
@@ -140,88 +150,169 @@ export class WorkbenchView extends ItemView {
         this.render();
       });
     }
-
-    const footerEl = sidebarEl.createDiv({ cls: 'dsh-workbench-sidebar__footer' });
-    footerEl.createEl('p', {
-      text: '当前仅开放概览与只读运行状态；会话、Vault 和领域模块仍未启用。',
-    });
   }
 
   private renderMobileNavigation(parentEl: HTMLElement): void {
     const wrapperEl = parentEl.createDiv({ cls: 'dsh-mobile-navigation' });
     const iconEl = wrapperEl.createSpan({ cls: 'dsh-mobile-navigation__icon' });
-    setIcon(iconEl, 'menu');
+    setIcon(iconEl, this.activeSection === 'new-task' ? 'circle-plus' : 'activity');
     const selectEl = wrapperEl.createEl('select', {
       attr: { 'aria-label': '选择工作台页面' },
     });
     for (const item of WORKBENCH_NAVIGATION) {
-      const optionEl = selectEl.createEl('option', {
-        text: item.availability === 'planned' ? `${item.label}（规划中）` : item.label,
-        value: item.id,
-      });
-      optionEl.disabled = item.availability === 'planned';
+      const optionEl = selectEl.createEl('option', { text: item.label, value: item.id });
+      optionEl.disabled = item.availability === 'disabled';
     }
     selectEl.value = this.activeSection;
     selectEl.addEventListener('change', () => {
-      if (selectEl.value === 'overview' || selectEl.value === 'runtime-status') {
+      if (selectEl.value === 'new-task' || selectEl.value === 'run') {
         this.activeSection = selectEl.value;
         this.render();
       }
     });
   }
 
-  private renderOverview(parentEl: HTMLElement): void {
-    const health = this.options.getDshHealth();
-    const state = createWorkbenchState(health);
+  private renderNewTask(parentEl: HTMLElement): void {
     this.renderPageHeader(
       parentEl,
-      '概览',
-      '先确认当前能力边界，再进入运行检查或后续获批的工作台模块。',
-      '当前真实能力',
+      '新建任务',
+      '与 DeepSeek Harness 对话，定义任务、选择上下文，并在执行前审阅权限与变更边界。',
+      '与 DeepSeek Harness 对话，选择上下文，并在执行前审阅权限与变更边界。',
     );
 
-    const statusEl = parentEl.createDiv({ cls: 'dsh-overview-status' });
-    this.renderMetric(statusEl, '工作台壳层', '可用', '中央标签页与内部导航');
-    this.renderMetric(statusEl, 'DSH 健康检查', state.healthCheckStatus, '仅固定 --version');
-    this.renderMetric(statusEl, '会话能力', '尚未实现', state.connectionStatus);
-    this.renderMetric(statusEl, 'Vault 权限', state.vaultPermissionStatus, state.platformStatus);
+    const taskEl = parentEl.createEl('section', { cls: 'dsh-new-task' });
+    taskEl.createEl('h3', { text: NEW_TASK_HEADING });
+    this.renderNewTaskModes(taskEl);
 
-    const primarySectionEl = parentEl.createEl('section', { cls: 'dsh-overview-primary' });
-    const primaryCopyEl = primarySectionEl.createDiv();
-    primaryCopyEl.createEl('h3', { text: '确认外部运行时' });
-    primaryCopyEl.createEl('p', {
-      text: '进入运行状态，手动检查当前配置的 DSH 命令和精确目标版本。',
+    const composerEl = taskEl.createDiv({ cls: 'dsh-new-task-composer' });
+    const textareaEl = composerEl.createEl('textarea', {
+      cls: 'dsh-new-task-composer__input',
+      attr: {
+        'aria-label': '任务描述',
+        placeholder: NEW_TASK_PLACEHOLDER,
+        rows: '7',
+      },
     });
-    const actionEl = primarySectionEl.createEl('button', {
-      cls: 'mod-cta dsh-action',
+    textareaEl.value = this.newTaskState.draft;
+
+    const footerEl = composerEl.createDiv({ cls: 'dsh-new-task-composer__footer' });
+    const toolsEl = footerEl.createDiv({ cls: 'dsh-new-task-composer__tools' });
+    this.renderDisabledComposerTool(toolsEl, 'circle-plus', '添加附件', 'attachment');
+    this.renderDisabledComposerTool(toolsEl, 'files', '选择上下文');
+    this.renderDisabledComposerTool(toolsEl, 'shield-check', '默认权限');
+
+    const submitEl = footerEl.createDiv({ cls: 'dsh-new-task-composer__submit' });
+    submitEl.createSpan({
+      cls: 'dsh-new-task-composer__model is-wide',
+      text: '模型由 DSH 配置管理',
+    });
+    submitEl.createSpan({
+      cls: 'dsh-new-task-composer__model is-compact',
+      text: '由 DSH 管理模型',
+    });
+    const sendButtonEl = submitEl.createEl('button', {
+      cls: 'mod-cta dsh-new-task-composer__send',
+      text: '发送',
       attr: { type: 'button' },
     });
-    setIcon(actionEl, 'activity');
-    actionEl.createSpan({ text: '查看运行状态' });
-    actionEl.addEventListener('click', () => {
-      this.activeSection = 'runtime-status';
-      this.render();
+    this.syncSendButton(sendButtonEl);
+    textareaEl.addEventListener('input', () => {
+      this.newTaskState = reduceNewTaskState(this.newTaskState, {
+        type: 'draft-changed',
+        draft: textareaEl.value,
+      });
+      this.syncSendButton(sendButtonEl);
     });
 
-    const boundaryEl = parentEl.createEl('section', { cls: 'dsh-boundary' });
-    const boundaryIconEl = boundaryEl.createSpan({ cls: 'dsh-boundary__icon' });
-    setIcon(boundaryIconEl, 'shield-check');
-    const boundaryCopyEl = boundaryEl.createDiv();
-    boundaryCopyEl.createEl('strong', { text: '当前安全边界' });
-    boundaryCopyEl.createEl('p', {
-      text: '会话能力尚未实现；Vault 权限未启用。规划中的模块不会加载数据或执行操作。',
+    const confirmationEl = taskEl.createEl('section', { cls: 'dsh-new-task-confirmation' });
+    const confirmationIconEl = confirmationEl.createSpan({
+      cls: 'dsh-new-task-confirmation__icon',
+    });
+    setIcon(confirmationIconEl, 'shield-check');
+    const confirmationCopyEl = confirmationEl.createDiv();
+    confirmationCopyEl.createEl('strong', { text: '执行前确认' });
+    confirmationCopyEl.createEl('p', {
+      text: '发送前展示上下文、权限和拟变更内容，并允许用户取消。',
     });
   }
 
-  private renderRuntimeStatus(parentEl: HTMLElement): void {
+  private renderNewTaskModes(parentEl: HTMLElement): void {
+    const modesEl = parentEl.createDiv({
+      cls: 'dsh-new-task-mode',
+      attr: { role: 'tablist', 'aria-label': '任务模式' },
+    });
+    for (const mode of [
+      { id: 'chat', label: '对话' },
+      { id: 'task', label: '任务执行' },
+    ] as const) {
+      const isActive = this.newTaskState.mode === mode.id;
+      const buttonEl = modesEl.createEl('button', {
+        cls: `dsh-new-task-mode__button${isActive ? ' is-active' : ''}`,
+        text: mode.label,
+        attr: {
+          type: 'button',
+          role: 'tab',
+          'aria-selected': isActive ? 'true' : 'false',
+        },
+      });
+      buttonEl.addEventListener('click', () => this.selectNewTaskMode(mode.id));
+    }
+
+    const disabledModeEl = modesEl.createEl('button', {
+      cls: 'dsh-new-task-mode__button',
+      text: '代码协作',
+      attr: {
+        type: 'button',
+        role: 'tab',
+        'aria-disabled': 'true',
+        'aria-selected': 'false',
+      },
+    });
+    disabledModeEl.disabled = true;
+  }
+
+  private selectNewTaskMode(mode: NewTaskMode): void {
+    this.newTaskState = reduceNewTaskState(this.newTaskState, {
+      type: 'mode-changed',
+      mode,
+    });
+    this.render();
+  }
+
+  private renderDisabledComposerTool(
+    parentEl: HTMLElement,
+    icon: IconName,
+    label: string,
+    variant?: 'attachment',
+  ): void {
+    const buttonEl = parentEl.createEl('button', {
+      cls: `dsh-new-task-composer__tool${variant ? ` is-${variant}` : ''}`,
+      attr: { type: 'button', 'aria-disabled': 'true' },
+    });
+    buttonEl.disabled = true;
+    setIcon(buttonEl, icon);
+    buttonEl.createSpan({ cls: 'dsh-new-task-composer__tool-label', text: label });
+  }
+
+  private syncSendButton(buttonEl: HTMLButtonElement): void {
+    buttonEl.disabled = !canSubmitNewTask(this.newTaskState);
+    buttonEl.setAttr('aria-disabled', buttonEl.disabled ? 'true' : 'false');
+  }
+
+  private renderRun(parentEl: HTMLElement): void {
     const health = this.options.getDshHealth();
     const state = createWorkbenchState(health);
     this.renderPageHeader(
       parentEl,
-      '运行状态',
-      '验证当前 DSH 命令是否可执行；健康检查成功不表示已经建立会话连接。',
-      '只读检查',
+      '运行',
+      '汇总当前能力、外部运行时和安全边界；健康检查成功不表示会话已经建立。',
     );
+
+    const overviewEl = parentEl.createDiv({ cls: 'dsh-overview-status' });
+    this.renderMetric(overviewEl, '工作台壳层', '可用', '中央标签页与内部导航');
+    this.renderMetric(overviewEl, 'DSH 健康检查', state.healthCheckStatus, '手动执行固定 --version');
+    this.renderMetric(overviewEl, '会话能力', '任务与对话入口', '由新建任务统一承载');
+    this.renderMetric(overviewEl, 'Vault 权限', state.vaultPermissionStatus, state.platformStatus);
 
     const statusEl = parentEl.createEl('section', { cls: 'dsh-runtime-status' });
     this.renderStatusRow(statusEl, '连接状态', state.connectionStatus);
@@ -251,19 +342,30 @@ export class WorkbenchView extends ItemView {
       cls: 'dsh-runtime-boundary',
       text: '本版本只在手动检查时执行固定的 --version；不读取或写入 Vault，不启动会话，也不使用模型网络。',
     });
+    parentEl.createEl('p', {
+      cls: 'dsh-runtime-legend',
+      text: '状态图例：尚未检测 → 检查中（禁用重复操作）→ 可用 / 明确错误',
+    });
   }
 
   private renderPageHeader(
     parentEl: HTMLElement,
     title: string,
     summary: string,
-    badge: string,
+    compactSummary?: string,
   ): void {
     const headerEl = parentEl.createEl('header', { cls: 'dsh-page-header' });
-    const titleRowEl = headerEl.createDiv({ cls: 'dsh-page-header__title-row' });
-    titleRowEl.createEl('h2', { text: title });
-    titleRowEl.createSpan({ cls: 'dsh-page-header__badge', text: badge });
-    headerEl.createEl('p', { cls: 'dsh-page-header__summary', text: summary });
+    headerEl.createEl('h2', { text: title });
+    headerEl.createEl('p', {
+      cls: `dsh-page-header__summary${compactSummary ? ' is-wide' : ''}`,
+      text: summary,
+    });
+    if (compactSummary) {
+      headerEl.createEl('p', {
+        cls: 'dsh-page-header__summary is-compact',
+        text: compactSummary,
+      });
+    }
   }
 
   private renderMetric(
