@@ -38,15 +38,15 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | Ardot `v2` 宿主 UI 与确定性状态骨架已实现，并通过专用隔离 Vault 验收；真实发送、对话、上下文和任务执行尚未接通 |');
+    expect(readme).toContain('| 新建任务 | 宿主 UI 与状态骨架已通过专用隔离 Vault 验收；只读上下文选择、预览、移除和不可变快照已实现并通过本地完整质量门，专用 Vault 运行验收待执行；真实发送、对话和任务执行尚未接通 |');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
-    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；专用隔离 Vault 已验证唯一右侧视图、健康、上下文空态和两个真实禁用的快捷提问，不承担主对话 |');
+    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选上下文摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收待执行 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
     expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收 |');
     expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
     expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
-    expect(readme).toContain('| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口已实现，但模型调用链、上下文与任务执行尚未接通 |');
-    expect(readme).toContain('| Vault 读取与写入 | 未启用 |');
+    expect(readme).toContain('| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口与上下文快照已实现，但模型调用链与任务执行尚未接通 |');
+    expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件或当前选区可进入只读上下文；写入、删除、移动和整库内容读取仍禁用；专用 Vault 运行验收待执行 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
     expect(readme).toContain('真实模型连接和最终用户 UI 验收尚未完成');
@@ -126,7 +126,7 @@ describe('发布与治理契约', () => {
     expect(designQa).toContain('Ardot 组件为 `12:555`');
     expect(designQa).toContain('各产品画板均不显示“首发”“规划中”“尚未实现”等开发或发布文案');
     expect(designQa).toContain('Ardot v2 design-only final result: passed');
-    expect(designQa.trimEnd()).toMatch(/Batch 5A dedicated Vault remediation result: passed; final Obsidian UI user acceptance: pending$/u);
+    expect(designQa).toContain('Batch 5A dedicated Vault remediation result: passed; final Obsidian UI user acceptance: pending');
 
     for (const asset of [
       'design-system.png',
@@ -220,6 +220,58 @@ describe('发布与治理契约', () => {
       expect(bytes.byteLength).toBe(asset.bytes);
       expect(createHash('sha256').update(bytes).digest('hex').toUpperCase()).toBe(asset.sha256);
     }
+  });
+
+  it('Batch 6 固定显式只读上下文、不可变快照与宿主边界', async () => {
+    const [
+      context,
+      host,
+      workbench,
+      state,
+      styles,
+      readme,
+      design,
+      designQa,
+      hostContract,
+      roadmap,
+    ] = await Promise.all([
+      readFile(path.join(repositoryRoot, 'src', 'new-task-context.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'obsidian-context-host.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'workbench-view.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'new-task-state.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'styles.css'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'design-qa.md'), 'utf8'),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'ADR-005-new-task-v1-host-contract.md'),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
+    ]);
+
+    expect(context).toContain('MAX_NEW_TASK_CONTEXT_ITEMS = 10');
+    expect(context).toContain('MAX_NEW_TASK_CONTEXT_ITEM_BYTES = 96 * 1024');
+    expect(context).toContain('MAX_NEW_TASK_CONTEXT_TOTAL_BYTES = 192 * 1024');
+    expect(context).toContain('createNewTaskContextSnapshot');
+    expect(context).toContain("'context_missing'");
+    expect(context).toContain("'context_binary'");
+    expect(context).toContain("'context_total_too_large'");
+    expect(host).toContain('getActiveFile()');
+    expect(host).toContain("getLeavesOfType('markdown')");
+    expect(host).toContain('getMarkdownFiles()');
+    expect(host).toContain('vault.cachedRead(file)');
+    expect(host).not.toMatch(/vault\.(?:create|delete|modify|rename)/u);
+    expect(workbench).toContain("text: '已选上下文'");
+    expect(workbench).toContain("return '发送时读取最新内容'");
+    expect(workbench).toContain("type: 'context-removed'");
+    expect(state).toContain("type: 'context-added'");
+    expect(styles).toContain('.dsh-new-task-context__item');
+    expect(readme).toContain('## Batch 6：只读上下文（实施中）');
+    expect(design).toContain('只读上下文已进入插件实现且等待专用 Vault 运行验收');
+    expect(hostContract).toContain('最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`');
+    expect(roadmap).toContain('Batch 6 已实现只读上下文纯契约');
+    expect(designQa.trimEnd()).toMatch(/Batch 6 implementation result: full local gates passed; dedicated Vault runtime and remote CI pending; final Obsidian UI user acceptance: pending$/u);
   });
 
   it('P0 评估只接受一个生产运行时 ADR', async () => {
@@ -357,7 +409,7 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
     expect(roadmap).toContain('39023169811fc591be5fe33fde05662fbbc9657e');
     expect(roadmap).toContain('CI run 32711052033');
-    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地与 Windows CI 已由 DSH `0.1.1-rc.2` 真实加载');
+    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地与 Windows CI 已由 DSH `0.1.1-rc.2` 真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；尚未由“新建任务”的发送链启动 |');
   });
 
   it('Batch 4 固定正式 bridge artifact、rc.2 夹具与 Windows 运行边界', async () => {

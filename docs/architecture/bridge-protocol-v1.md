@@ -4,13 +4,13 @@
 - 目标 bridge 版本：`0.1.0`
 - 目标 DSH：`0.1.1-rc.2`
 - 当前状态：协议、正式 bridge、NDJSON、受管进程与本地/远端 Windows DSH `0.1.1-rc.2` 真实运行已实现并验证
-- 未通过：Obsidian 产品 UI、只读上下文、外部工作区权限与隔离 Vault 运行验收
+- 未通过：“新建任务”模型发送链、外部工作区权限、Batch 6 专用 Vault 运行验收与最终用户 UI 验收；宿主 UI 和只读上下文代码子集已实现
 
 ## 目标与边界
 
 协议 v1 只服务首发“新建任务”的对话与任务执行共同运行时需求。它不是通用 DSH API，不复制 DSH session 日志，不提供 SDK/ACP/CLI fallback，也不读取 Vault、接受任意 Shell 或保存凭据。
 
-Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；这仍不表示 Obsidian 产品入口或隔离 Vault 已通过。
+Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文代码子集，但尚未把快照交给真实发送链，也不表示最终隔离 Vault 与用户验收已通过。
 
 ## 精确握手
 

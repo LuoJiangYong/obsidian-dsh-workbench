@@ -12,7 +12,7 @@ export function createWorkbenchState(health: DshHealthResult): WorkbenchState {
     connectionStatus: '尚未连接 DSH',
     healthCheckStatus: formatHealthStatus(health),
     platformStatus: '仅桌面端',
-    vaultPermissionStatus: '未启用',
+    vaultPermissionStatus: '只读上下文（显式选择）',
   });
 }
 

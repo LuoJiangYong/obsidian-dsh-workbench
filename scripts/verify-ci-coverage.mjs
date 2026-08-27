@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 const workflow = await readFile('.github/workflows/ci.yml', 'utf8');
 const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
 const pluginBaseline = await readFile('tests/plugin-baseline.test.ts', 'utf8');
+const newTaskContextTests = await readFile('tests/new-task-context.test.ts', 'utf8');
+const obsidianContextHostTests = await readFile('tests/obsidian-context-host.test.ts', 'utf8');
 const governanceContracts = await readFile('tests/contracts.test.ts', 'utf8');
 const bridgeProtocolTests = await readFile('tests/bridge-protocol.test.ts', 'utf8');
 const formalBridgeTests = await readFile('tests/obsidian-bridge.test.ts', 'utf8');
@@ -83,9 +85,29 @@ assert(
 for (const uiContract of [
   '在中央标签页打开并复用 Workbench 视图',
   '按用户反馈渲染精简导航和胶囊模式，并把不可用动作保持为真实禁用态',
-  '只在显式请求时打开并复用右侧快速助手真实空状态',
+  '只在显式请求时打开并复用右侧快速助手真实上下文摘要',
+  '插件卸载时关闭仍打开的上下文选择器',
 ]) {
   assert(pluginBaseline.includes(uiContract), `插件基线缺少 UI 契约：${uiContract}`);
+}
+for (const contextContract of [
+  '新建任务只读上下文',
+  '发送前从宿主重新读取文件并建立不随后续编辑变化的不可变快照',
+  '以最坏转义内容实测上下文上限仍低于 1 MiB bridge frame',
+]) {
+  assert(newTaskContextTests.includes(contextContract), `只读上下文测试缺少契约：${contextContract}`);
+}
+for (const hostContextContract of [
+  'Obsidian 只读上下文宿主',
+  '从活动 Markdown 视图捕获当前笔记和当前选区，并由用户显式加入',
+  '文件选择器只列出尚未加入的 Markdown 文件',
+  '重复打开或宿主释放时关闭已有选择器',
+  '快照读取只接受仍存在且未超限的 Markdown 文件',
+]) {
+  assert(
+    obsidianContextHostTests.includes(hostContextContract),
+    `Obsidian 上下文宿主测试缺少契约：${hostContextContract}`,
+  );
 }
 for (const ardotContract of [
   'Ardot v2 固定用户审阅真相、AI 只读边界、插件反馈差异和社区首发门',
@@ -161,7 +183,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、Ardot v2、新建任务 v1、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读上下文、Ardot v2、新建任务 v1、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

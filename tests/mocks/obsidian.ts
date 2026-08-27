@@ -121,6 +121,8 @@ export class WorkspaceLeaf {
 }
 
 export class Workspace {
+  activeFile: TFile | null = null;
+  activeMarkdownView: MarkdownView | null = null;
   readonly detachedTypes: string[] = [];
   readonly leaves: WorkspaceLeaf[] = [];
   readonly requestedLeafTypes: string[] = [];
@@ -143,6 +145,17 @@ export class Workspace {
     return this.leaves.filter((leaf) => leaf.viewState?.type === type);
   }
 
+  getActiveFile(): TFile | null {
+    return this.activeFile;
+  }
+
+  getActiveViewOfType<T>(viewType: new (...args: never[]) => T): T | null {
+    if (viewType === MarkdownView && this.activeMarkdownView) {
+      return this.activeMarkdownView as T;
+    }
+    return null;
+  }
+
   getLeaf(type: string): WorkspaceLeaf {
     this.requestedLeafTypes.push(type);
     const leaf = new WorkspaceLeaf(this.rightLeaf.app);
@@ -160,10 +173,125 @@ export class Workspace {
 }
 
 export class App {
+  readonly vault = new Vault();
   readonly workspace: Workspace;
 
   constructor() {
     this.workspace = new Workspace(this);
+  }
+}
+
+export class TFile {
+  readonly basename: string;
+  readonly extension: string;
+  readonly stat: { readonly ctime: number; readonly mtime: number; readonly size: number };
+
+  constructor(
+    readonly path: string,
+    size = 0,
+  ) {
+    const parts = path.split('/');
+    const name = parts[parts.length - 1] ?? path;
+    const dot = name.lastIndexOf('.');
+    this.basename = dot < 0 ? name : name.slice(0, dot);
+    this.extension = dot < 0 ? '' : name.slice(dot + 1);
+    this.stat = { ctime: 0, mtime: 0, size };
+  }
+}
+
+export class Vault {
+  readonly contents = new Map<string, string>();
+  readonly files: TFile[] = [];
+
+  addMarkdownFile(path: string, content: string): TFile {
+    const file = new TFile(path, new TextEncoder().encode(content).byteLength);
+    this.files.push(file);
+    this.contents.set(path, content);
+    return file;
+  }
+
+  cachedRead(file: TFile): Promise<string> {
+    const content = this.contents.get(file.path);
+    return content === undefined
+      ? Promise.reject(new Error('missing'))
+      : Promise.resolve(content);
+  }
+
+  getAbstractFileByPath(path: string): TFile | null {
+    return this.files.find((file) => file.path === path) ?? null;
+  }
+
+  getMarkdownFiles(): TFile[] {
+    return this.files.filter((file) => file.extension.toLocaleLowerCase() === 'md');
+  }
+}
+
+export class Editor {
+  constructor(
+    private readonly selection: string,
+    private readonly from = { ch: 0, line: 0 },
+    private readonly to = { ch: selection.length, line: 0 },
+  ) {}
+
+  getCursor(which: 'from' | 'to'): { readonly ch: number; readonly line: number } {
+    return which === 'from' ? this.from : this.to;
+  }
+
+  getSelection(): string {
+    return this.selection;
+  }
+}
+
+export class MarkdownView {
+  constructor(
+    readonly file: TFile | null,
+    readonly editor: Editor,
+  ) {}
+}
+
+export class Modal {
+  readonly contentEl = new MockElement();
+  private closeCallback: (() => void) | undefined;
+  title = '';
+
+  constructor(readonly app: App) {}
+
+  close(): void {
+    this.onClose();
+    this.closeCallback?.();
+  }
+
+  onClose(): void {}
+
+  onOpen(): void {}
+
+  open(): void {
+    mockObsidian.openModals.push(this);
+    this.onOpen();
+  }
+
+  setTitle(title: string): this {
+    this.title = title;
+    return this;
+  }
+
+  setCloseCallback(callback: () => void): this {
+    this.closeCallback = callback;
+    return this;
+  }
+}
+
+export class FuzzySuggestModal<T> extends Modal {
+  emptyStateText = '';
+  limit = 100;
+  placeholder = '';
+
+  setPlaceholder(placeholder: string): void {
+    this.placeholder = placeholder;
+  }
+
+  getItems(): T[] {
+    return [];
   }
 }
 
@@ -172,6 +300,7 @@ export const mockObsidian = {
   lastApp: undefined as App | undefined,
   loadedData: null as unknown,
   notices: [] as string[],
+  openModals: [] as Modal[],
   icons: new Map<string, string>(),
   ribbonIcons: [] as string[],
   ribbonCallbacks: [] as Array<() => void>,
@@ -185,6 +314,7 @@ export function resetMockObsidian(): void {
   mockObsidian.lastApp = undefined;
   mockObsidian.loadedData = null;
   mockObsidian.notices.length = 0;
+  mockObsidian.openModals.length = 0;
   mockObsidian.icons.clear();
   mockObsidian.ribbonIcons.length = 0;
   mockObsidian.ribbonCallbacks.length = 0;

@@ -7,6 +7,8 @@ import {
 } from '../src/quick-assistant-view';
 import { VIEW_TYPE_WORKBENCH, type WorkbenchView } from '../src/workbench-view';
 import {
+  Editor,
+  MarkdownView,
   type MockElement,
   mockObsidian,
   resetMockObsidian,
@@ -63,8 +65,15 @@ describe('原生 Workbench 插件基线', () => {
     expect(creator).toBeDefined();
     if (!creator) throw new Error('Workbench 视图未注册');
 
-    const leaf = mockObsidian.lastApp?.workspace.getLeaf('tab');
-    if (!leaf) throw new Error('测试 Obsidian app 未建立');
+    const app = mockObsidian.lastApp;
+    const leaf = app?.workspace.getLeaf('tab');
+    if (!app || !leaf) throw new Error('测试 Obsidian app 未建立');
+    const activeFile = app.vault.addMarkdownFile('项目/周报.md', '# 周报\n本周完成上下文接入');
+    app.workspace.activeFile = activeFile;
+    app.workspace.activeMarkdownView = new MarkdownView(
+      activeFile,
+      new Editor('本周完成上下文接入', { ch: 0, line: 1 }, { ch: 9, line: 1 }),
+    );
     const view = creator(leaf) as WorkbenchView;
     await view.onOpen();
 
@@ -110,6 +119,8 @@ describe('原生 Workbench 插件基线', () => {
     expect(composer).toBeDefined();
     expect(composer?.attributes.get('placeholder')).toBe('描述目标，@ 引用上下文，/ 调用 Skill 或命令');
     expect(sendButton?.disabled).toBe(true);
+    const contextButton = content.findAllByClass('dsh-new-task-context__open')[0];
+    expect(contextButton?.disabled).toBe(false);
 
     await modeButtons[1]?.click();
     const rerenderedModeButtons = content.findAllByClass('dsh-new-task-mode__button');
@@ -121,6 +132,24 @@ describe('原生 Workbench 插件基线', () => {
     await rerenderedComposer.trigger('input');
     expect(content.findAllByClass('dsh-new-task-composer__send')[0]?.disabled).toBe(true);
 
+    await content.findAllByClass('dsh-new-task-context__open')[0]?.click();
+    const contextModal = mockObsidian.openModals[0];
+    expect(contextModal?.title).toBe('选择只读上下文');
+    const modalChoices = contextModal?.contentEl.findAllByClass('dsh-context-picker__choice') ?? [];
+    await modalChoices[1]?.click();
+    expect(content.allText()).toEqual(expect.arrayContaining([
+      '已选上下文',
+      '当前选区 · 项目/周报.md',
+      '本周完成上下文接入',
+    ]));
+    expect(view.getContextSummary()).toBe('已选择 1 项：当前选区 · 项目/周报.md');
+    expect(content.findAllByTag('textarea')[0]?.value).toBe('整理本周项目进展');
+    expect(content.findAllByClass('dsh-new-task-composer__send')[0]?.disabled).toBe(true);
+
+    await content.findAllByClass('dsh-new-task-context__remove')[0]?.click();
+    expect(content.allText()).not.toContain('当前选区 · 项目/周报.md');
+    expect(content.findAllByTag('textarea')[0]?.value).toBe('整理本周项目进展');
+
     await content.findAllByClass('dsh-navigation__item')[1]?.click();
     expect(content.allText()).toEqual(expect.arrayContaining([
       '运行',
@@ -129,19 +158,36 @@ describe('原生 Workbench 插件基线', () => {
       '可用',
       '中央标签页与内部导航',
       '检查 DSH',
-      '本版本只在手动检查时执行固定的 --version；不读取或写入 Vault，不启动会话，也不使用模型网络。',
+      '只读上下文（显式选择）',
+      '此健康检查只执行固定的 --version；本操作不读取或写入 Vault，不启动会话，也不使用模型网络。',
     ]));
 
     await view.onClose();
     expect(content.allText()).toEqual([]);
   });
 
-  it('只在显式请求时打开并复用右侧快速助手真实空状态', async () => {
+  it('只在显式请求时打开并复用右侧快速助手真实上下文摘要', async () => {
     const PluginConstructor = DeepSeekHarnessWorkbenchPlugin as unknown as ConstructablePlugin;
     const plugin = new PluginConstructor();
     await plugin.onload();
 
     expect(plugin.app.workspace.getLeavesOfType(VIEW_TYPE_QUICK_ASSISTANT)).toHaveLength(0);
+    await plugin.activateWorkbench();
+    const workbenchLeaf = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_WORKBENCH)[0];
+    const workbenchView = workbenchLeaf?.view as WorkbenchView | undefined;
+    const app = mockObsidian.lastApp;
+    if (!workbenchView || !app) throw new Error('Workbench 视图未建立');
+    const activeFile = app.vault.addMarkdownFile('项目/上下文.md', '快速助手上下文');
+    app.workspace.activeFile = activeFile;
+    app.workspace.activeMarkdownView = new MarkdownView(
+      activeFile,
+      new Editor('快速助手上下文', { ch: 0, line: 0 }, { ch: 7, line: 0 }),
+    );
+    await workbenchView.onOpen();
+    await (workbenchView.contentEl as unknown as MockElement)
+      .findAllByClass('dsh-new-task-context__open')[0]?.click();
+    await mockObsidian.openModals[0]?.contentEl
+      .findAllByClass('dsh-context-picker__choice')[1]?.click();
     await plugin.activateQuickAssistant();
 
     const leaf = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_QUICK_ASSISTANT)[0];
@@ -155,7 +201,7 @@ describe('原生 Workbench 插件基线', () => {
     expect(content.allText()).toEqual(expect.arrayContaining([
       '快速助手',
       '尚未检测',
-      '未选择笔记或工作范围',
+      '已选择 1 项：当前选区 · 项目/上下文.md',
       '总结当前上下文',
       '检查运行状态',
       '新建任务是主对话入口。快速助手仅展示健康状态、当前上下文和快捷提问。',
@@ -182,6 +228,25 @@ describe('原生 Workbench 插件基线', () => {
     await plugin.updateDshCommand(absoluteCommand);
     expect(plugin.settings).toEqual({ dshCommand: absoluteCommand });
     expect(mockObsidian.savedData).toEqual([{ dshCommand: absoluteCommand }]);
+  });
+
+  it('插件卸载时关闭仍打开的上下文选择器', async () => {
+    const PluginConstructor = DeepSeekHarnessWorkbenchPlugin as unknown as ConstructablePlugin;
+    const plugin = new PluginConstructor();
+    await plugin.onload();
+    await plugin.activateWorkbench();
+    const leaf = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_WORKBENCH)[0];
+    const view = leaf?.view as WorkbenchView | undefined;
+    if (!view) throw new Error('Workbench 视图未建立');
+    await view.onOpen();
+    await (view.contentEl as unknown as MockElement)
+      .findAllByClass('dsh-new-task-context__open')[0]?.click();
+    const modal = mockObsidian.openModals[0];
+    expect(modal?.contentEl.allText().length).toBeGreaterThan(0);
+
+    plugin.onunload();
+
+    expect(modal?.contentEl.allText()).toEqual([]);
   });
 
 });

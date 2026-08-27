@@ -11,15 +11,15 @@
 | 能力 | 状态 |
 | --- | --- |
 | Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
-| 新建任务 | Ardot `v2` 宿主 UI 与确定性状态骨架已实现，并通过专用隔离 Vault 验收；真实发送、对话、上下文和任务执行尚未接通 |
-| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge 与宿主 UI 子集已实现，只读上下文与任务执行仍在实施 |
+| 新建任务 | 宿主 UI 与状态骨架已通过专用隔离 Vault 验收；只读上下文选择、预览、移除和不可变快照已实现并通过本地完整质量门，专用 Vault 运行验收待执行；真实发送、对话和任务执行尚未接通 |
+| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge、宿主 UI 与只读上下文子集已实现，真实会话与任务执行仍在实施 |
 | 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
 | ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
-| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；专用隔离 Vault 已验证唯一右侧视图、健康、上下文空态和两个真实禁用的快捷提问，不承担主对话 |
+| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选上下文摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收待执行 |
 | DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收 |
-| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地与 Windows CI 已由 DSH `0.1.1-rc.2` 真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；尚未接入产品 UI |
-| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口已实现，但模型调用链、上下文与任务执行尚未接通 |
-| Vault 读取与写入 | 未启用 |
+| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地与 Windows CI 已由 DSH `0.1.1-rc.2` 真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；尚未由“新建任务”的发送链启动 |
+| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口与上下文快照已实现，但模型调用链与任务执行尚未接通 |
+| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件或当前选区可进入只读上下文；写入、删除、移动和整库内容读取仍禁用；专用 Vault 运行验收待执行 |
 | GitHub Release | 未创建 |
 | Obsidian 社区提交 | 尚未进行 |
 
@@ -29,7 +29,7 @@
 
 “新建任务”承担未来的 DeepSeek Harness 主对话、任务执行、上下文和权限审阅。它是首个 Obsidian 社区插件发布功能：只有完整实现、双平台 CI 与隔离 Vault 运行验收通过，并获得用户对最终 Obsidian 运行 UI 的明确验收后，才允许进入社区发布审批。Ardot、CI 或 GitHub Release 单独通过都不能越过此门。
 
-“新建任务”允许切换“对话”与“任务执行”并编辑内存草稿；“代码协作”、附件、上下文、权限和发送保持真实禁用，不会启动 DSH 或持久化草稿。“运行”只提供手动 `--version` 健康检查；可选右侧快速助手只展示健康状态、上下文空态和两个禁用的快捷提问，不提供聊天输入、发送、停止或模型选择。DSH 命令可在插件设置中配置为 PATH 裸命令或受支持扩展名的绝对路径。
+“新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生选择器显式加入当前笔记、当前选区或单个 Vault Markdown 文件；已选项可预览来源并逐项移除，文件内容只在发送前由 Obsidian 宿主重新读取并建立不可变快照。“代码协作”、附件、权限和发送仍保持真实禁用，不会启动 DSH 或持久化草稿。“运行”只提供手动 `--version` 健康检查；可选右侧快速助手仍不承担主对话。DSH 命令可在插件设置中配置为 PATH 裸命令或受支持扩展名的绝对路径。
 
 ## 开发运行
 
@@ -78,7 +78,7 @@ npm run test:bridge:runtime
 
 当前健康检查精确支持 DSH `0.1.1-rc.1`；其他版本会明确显示不受支持，不做兼容 fallback。该设置页路径与正式 bridge 的 rc.2 路径相互独立，当前 `main.ts` 尚未启动后者；“新建任务”发送保持禁用，因此现有 Obsidian UI 不会发起模型请求。
 
-正式 `obsidian-bridge` 已实现为独立 ESM artifact：只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容；插件侧只用固定 `--profile headless --patch <隔离 overlay>` 参数启动用户已配置的 DSH，设置独立于 Vault 和用户 profile 的 `DSH_HOME`，关闭时先请求协议退出，超时后终止整棵进程树。bridge/协议/DSH/artifact 哈希均精确锁定；最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862) 的 Ubuntu 与 Windows job，两个原始 annotations 数组均为 `[]`。产品 UI、只读 Vault 上下文、外部工作区权限和隔离 Vault 运行验收仍属于后续批次，因此矩阵尚未进入 `supported`。
+正式 `obsidian-bridge` 已实现为独立 ESM artifact：只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容；插件侧只用固定 `--profile headless --patch <隔离 overlay>` 参数启动用户已配置的 DSH，设置独立于 Vault 和用户 profile 的 `DSH_HOME`，关闭时先请求协议退出，超时后终止整棵进程树。bridge/协议/DSH/artifact 哈希均精确锁定；最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862) 的 Ubuntu 与 Windows job，两个原始 annotations 数组均为 `[]`。宿主 UI 和只读上下文代码子集已实现，但模型发送链、外部工作区权限、Batch 6 专用 Vault 运行验收和最终用户验收仍未通过，因此矩阵尚未进入 `supported`。
 
 后续兼容批次继续以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
 
@@ -146,6 +146,15 @@ npm run test:bridge:runtime
 - 插件反馈与证据纠正提交 `a41c93b43245c9b1cfb84c4adb243ef4217c8253` 已通过远端 [CI run 32963736114](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32963736114)；Ubuntu check `98161570546`、Windows check `98161570396` 均成功，两个原始 annotations 数组均为 `[]`。
 - 专用 Vault 已验证唯一 Workbench/快速助手、精简导航、左右半圆模式控件、reload 复位、真实健康检查、Light/Dark、`700px` 无溢出、零笔记写入、零错误和零残留受管进程；验收后插件已禁用，四个可重建资产已移除。
 - 当前证明宿主 UI 与状态骨架的代码门和专用 Vault 运行门通过；不证明模型对话、上下文、权限或任务执行已可用，也不是最终 Obsidian UI 用户验收。
+
+## Batch 6：只读上下文（实施中）
+
+- “选择上下文”已接入 Obsidian 原生宿主选择流程：当前笔记、当前选区和单个 Vault Markdown 文件都必须由用户逐项显式加入；文件选择器只列出 Markdown 文件，不读取整库内容。
+- Workbench 显示已选来源、当前选区文本预览、发送时读取提示与逐项移除；快速助手同步显示 Workbench 已选上下文摘要。重复项、失效文件、非 Markdown、路径越界和超限均产生可定位错误并保留草稿。
+- 上下文限制冻结为最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。测试使用最大合计内容中的引号与换行做最坏 JSON 双重转义，确认投影后的 `turn/start` wire frame 仍小于现有 `1 MiB` bridge 上限。
+- 文件内容在发送前通过 Obsidian `Vault.cachedRead` 重新读取；当前选区在显式加入时固定。快照及其项目为不可变对象，后续编辑不会改变已经建立的快照；bridge 不读取 Vault。
+- Ardot 文件 `718186366720195`、用户审阅页 `UI 真相 v2`（`12:1`）保持只读且未修改。本批只演进插件实现、文字镜像、测试与 CI 契约。
+- 当前已通过 `typecheck`、零警告 `lint`、`72` 项完整测试、生产构建、仓库/CI/bridge 自检、`13` 项 Windows 进程专项测试和 `1` 项真实 rc.2 bridge 测试；专用隔离 Vault 运行验收与远端 CI 仍待执行。真实模型发送、权限请求、外部工作目录、Vault 写入、Release 和社区提交均不在本批。
 
 ## 开发治理
 

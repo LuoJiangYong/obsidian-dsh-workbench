@@ -3,12 +3,18 @@ import { ItemView, setIcon, type IconName, type WorkspaceLeaf } from 'obsidian';
 import type { DshHealthResult } from './dsh-health';
 import { DEEPSEEK_WHALE_ICON } from './icons';
 import {
+  contextSelectionLabel,
+  formatContextByteLimit,
+  type NewTaskContextSelection,
+} from './new-task-context';
+import {
   canSubmitNewTask,
   createNewTaskState,
   type NewTaskMode,
   type NewTaskState,
   reduceNewTaskState,
 } from './new-task-state';
+import type { NewTaskContextHost } from './obsidian-context-host';
 import { createWorkbenchState } from './workbench-state';
 
 export const VIEW_TYPE_WORKBENCH = 'deepseek-harness-workbench-view';
@@ -30,7 +36,9 @@ const WORKBENCH_NAVIGATION: readonly WorkbenchNavigationItem[] = Object.freeze([
 ]);
 
 interface WorkbenchViewOptions {
+  readonly contextHost: NewTaskContextHost;
   readonly getDshHealth: () => DshHealthResult;
+  readonly onContextsChanged: () => void;
   readonly runDshHealthCheck: () => Promise<void>;
 }
 
@@ -79,7 +87,15 @@ export class WorkbenchView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    this.newTaskState = createNewTaskState();
     this.contentEl.empty();
+    this.options.onContextsChanged();
+  }
+
+  getContextSummary(): string {
+    if (this.newTaskState.contexts.length === 0) return '未选择笔记或工作范围';
+    const labels = this.newTaskState.contexts.map((context) => contextSelectionLabel(context));
+    return `已选择 ${String(labels.length)} 项：${labels.join('、')}`;
   }
 
   private renderNavigation(parentEl: HTMLElement): void {
@@ -158,10 +174,11 @@ export class WorkbenchView extends ItemView {
     });
     textareaEl.value = this.newTaskState.draft;
 
+    this.renderSelectedContexts(composerEl);
     const footerEl = composerEl.createDiv({ cls: 'dsh-new-task-composer__footer' });
     const toolsEl = footerEl.createDiv({ cls: 'dsh-new-task-composer__tools' });
     this.renderDisabledComposerTool(toolsEl, 'circle-plus', '添加附件', 'attachment');
-    this.renderDisabledComposerTool(toolsEl, 'files', '选择上下文');
+    this.renderContextTool(toolsEl);
     this.renderDisabledComposerTool(toolsEl, 'shield-check', '默认权限');
 
     const submitEl = footerEl.createDiv({ cls: 'dsh-new-task-composer__submit' });
@@ -257,6 +274,98 @@ export class WorkbenchView extends ItemView {
     buttonEl.createSpan({ cls: 'dsh-new-task-composer__tool-label', text: label });
   }
 
+  private renderContextTool(parentEl: HTMLElement): void {
+    const buttonEl = parentEl.createEl('button', {
+      cls: 'dsh-new-task-composer__tool dsh-new-task-context__open',
+      attr: {
+        type: 'button',
+        'aria-haspopup': 'dialog',
+        'aria-label': '选择只读上下文',
+      },
+    });
+    setIcon(buttonEl, 'files');
+    buttonEl.createSpan({ cls: 'dsh-new-task-composer__tool-label', text: '选择上下文' });
+    buttonEl.addEventListener('click', () => {
+      this.options.contextHost.openPicker({
+        selected: this.newTaskState.contexts,
+        onSelect: (context) => this.addContext(context),
+        onError: (message) => this.setContextError(message),
+      });
+    });
+  }
+
+  private renderSelectedContexts(parentEl: HTMLElement): void {
+    if (this.newTaskState.contexts.length === 0 && !this.newTaskState.contextError) return;
+    const contextEl = parentEl.createEl('section', {
+      cls: 'dsh-new-task-context',
+      attr: { 'aria-label': '已选只读上下文' },
+    });
+    const headerEl = contextEl.createDiv({ cls: 'dsh-new-task-context__header' });
+    headerEl.createEl('strong', { text: '已选上下文' });
+    headerEl.createSpan({ text: formatContextByteLimit() });
+
+    for (const context of this.newTaskState.contexts) {
+      const itemEl = contextEl.createDiv({ cls: 'dsh-new-task-context__item' });
+      const copyEl = itemEl.createDiv({ cls: 'dsh-new-task-context__copy' });
+      copyEl.createSpan({ cls: 'dsh-new-task-context__label', text: contextSelectionLabel(context) });
+      copyEl.createSpan({
+        cls: 'dsh-new-task-context__preview',
+        text: this.contextPreview(context),
+      });
+      const removeEl = itemEl.createEl('button', {
+        cls: 'dsh-new-task-context__remove',
+        attr: {
+          type: 'button',
+          'aria-label': `移除 ${contextSelectionLabel(context)}`,
+        },
+      });
+      setIcon(removeEl, 'x');
+      removeEl.addEventListener('click', () => {
+        this.newTaskState = reduceNewTaskState(this.newTaskState, {
+          type: 'context-removed',
+          id: context.id,
+        });
+        this.options.onContextsChanged();
+        this.render();
+      });
+    }
+
+    if (this.newTaskState.contextError) {
+      contextEl.createEl('p', {
+        cls: 'dsh-new-task-context__error',
+        text: this.newTaskState.contextError,
+        attr: { role: 'alert' },
+      });
+    }
+  }
+
+  private addContext(context: NewTaskContextSelection): void {
+    try {
+      this.newTaskState = reduceNewTaskState(this.newTaskState, {
+        type: 'context-added',
+        context,
+      });
+      this.options.onContextsChanged();
+      this.render();
+    } catch (error) {
+      this.setContextError(error instanceof Error ? error.message : '无法加入所选上下文。');
+    }
+  }
+
+  private setContextError(message: string): void {
+    this.newTaskState = reduceNewTaskState(this.newTaskState, {
+      type: 'context-error-changed',
+      message,
+    });
+    this.render();
+  }
+
+  private contextPreview(context: NewTaskContextSelection): string {
+    if (context.kind !== 'current-selection') return '发送时读取最新内容';
+    const compact = context.content.replace(/\s+/gu, ' ').trim();
+    return compact.length <= 120 ? compact : `${compact.slice(0, 120)}…`;
+  }
+
   private syncSendButton(buttonEl: HTMLButtonElement): void {
     buttonEl.disabled = !canSubmitNewTask(this.newTaskState);
     buttonEl.setAttr('aria-disabled', buttonEl.disabled ? 'true' : 'false');
@@ -303,7 +412,7 @@ export class WorkbenchView extends ItemView {
 
     parentEl.createEl('p', {
       cls: 'dsh-runtime-boundary',
-      text: '本版本只在手动检查时执行固定的 --version；不读取或写入 Vault，不启动会话，也不使用模型网络。',
+      text: '此健康检查只执行固定的 --version；本操作不读取或写入 Vault，不启动会话，也不使用模型网络。',
     });
     parentEl.createEl('p', {
       cls: 'dsh-runtime-legend',

@@ -38,7 +38,7 @@ export default defineConfig(
         'error',
         {
           acronyms: ['DSH'],
-          brands: ['DeepSeek Harness Workbench', 'Vault'],
+          brands: ['DeepSeek Harness Workbench', 'Markdown', 'Vault'],
           enforceCamelCaseLower: true,
         },
       ],

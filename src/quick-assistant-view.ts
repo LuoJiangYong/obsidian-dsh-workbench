@@ -7,6 +7,7 @@ import { createWorkbenchState } from './workbench-state';
 export const VIEW_TYPE_QUICK_ASSISTANT = 'deepseek-harness-quick-assistant-view';
 
 interface QuickAssistantViewOptions {
+  readonly getContextSummary: () => string;
   readonly getDshHealth: () => DshHealthResult;
 }
 
@@ -50,7 +51,7 @@ export class QuickAssistantView extends ItemView {
     });
 
     this.renderSection(contentEl, 'activity', 'DSH 健康', state.healthCheckStatus);
-    this.renderSection(contentEl, 'file-question', '当前上下文', '未选择笔记或工作范围');
+    this.renderSection(contentEl, 'file-question', '当前上下文', this.options.getContextSummary());
     this.renderPromptSection(contentEl);
 
     contentEl.createEl('p', {

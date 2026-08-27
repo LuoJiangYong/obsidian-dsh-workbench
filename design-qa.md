@@ -206,3 +206,14 @@ Ardot v2 design-only final result: passed
 - Ardot 未修改，只读核对；本批只更新插件实现差异、仓库契约、测试、CI 与专用 Vault 证据。
 
 Batch 5A dedicated Vault remediation result: passed; final Obsidian UI user acceptance: pending
+
+## Batch 6：只读上下文实施门
+
+- 日期：`2026-08-26`；Ardot 文件仍为 `718186366720195`，用户审阅页面仍为 `UI 真相 v2`（`12:1`）。Ardot 未修改，只读核对；上下文交互只演进插件、`DESIGN.md`、ADR、测试与 CI 契约。
+- 插件已把“选择上下文”从禁用态升级为原生宿主选择流程，支持当前笔记、当前选区和单个 Vault Markdown 文件；已选来源在 composer 内可见，当前选区显示文本预览，文件明确提示发送时读取，可逐项移除；快速助手同步显示 Workbench 已选上下文摘要。
+- Vault 边界保持只读：文件建议器只列出 Markdown 元数据，只有用户显式加入的文件在发送前通过 `Vault.cachedRead` 重新读取；bridge 不持有 Vault API。整库内容读取、索引、写入、删除和移动均未实现。
+- 限制冻结为 `10` 项、单项 `96 KiB`、合计 `192 KiB`；单元测试以最大引号/换行内容验证上下文 JSON 投影到 `turn/start` 后仍小于 `1 MiB` frame。
+- 本地测试已覆盖选择、去重、预览、移除、草稿保留、失效/二进制/路径/超限错误、发送时重读、不可变快照、宿主 modal 清理和插件卸载边界；`typecheck`、零警告 `lint`、`72` 项完整测试、生产构建、完整自检、`13` 项 Windows 进程专项测试和 `1` 项真实 rc.2 bridge 测试均通过。远端 CI、专用 Vault 运行读回与截图仍待本批后续步骤。
+- 当前发送、权限和附件仍禁用；未启动正式 bridge、模型网络或任务执行，没有写入真实 Vault，也未创建 Release 或社区提交。
+
+Batch 6 implementation result: full local gates passed; dedicated Vault runtime and remote CI pending; final Obsidian UI user acceptance: pending

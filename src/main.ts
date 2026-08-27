@@ -1,6 +1,7 @@
 import { addIcon, Notice, Plugin, type WorkspaceLeaf } from 'obsidian';
 
 import { DshHealthProbe, type DshHealthResult } from './dsh-health';
+import { ObsidianNewTaskContextHost } from './obsidian-context-host';
 import {
   DEFAULT_DSH_SETTINGS,
   type DshSettings,
@@ -19,6 +20,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
   settings: DshSettings = DEFAULT_DSH_SETTINGS;
 
   private readonly healthProbe = new DshHealthProbe();
+  private readonly contextHost = new ObsidianNewTaskContextHost(this.app);
   private health: DshHealthResult = { status: 'unchecked' };
 
   async onload(): Promise<void> {
@@ -33,12 +35,15 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
       VIEW_TYPE_WORKBENCH,
       (leaf: WorkspaceLeaf) => new WorkbenchView(leaf, {
         getDshHealth: () => this.health,
+        contextHost: this.contextHost,
+        onContextsChanged: () => this.refreshQuickAssistantViews(),
         runDshHealthCheck: async () => await this.runDshHealthCheck(),
       }),
     );
     this.registerView(
       VIEW_TYPE_QUICK_ASSISTANT,
       (leaf: WorkspaceLeaf) => new QuickAssistantView(leaf, {
+        getContextSummary: () => this.getNewTaskContextSummary(),
         getDshHealth: () => this.health,
       }),
     );
@@ -76,6 +81,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.contextHost.dispose();
     this.healthProbe.dispose();
   }
 
@@ -139,5 +145,18 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_QUICK_ASSISTANT)) {
       if (leaf.view instanceof QuickAssistantView) leaf.view.render();
     }
+  }
+
+  private refreshQuickAssistantViews(): void {
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_QUICK_ASSISTANT)) {
+      if (leaf.view instanceof QuickAssistantView) leaf.view.render();
+    }
+  }
+
+  private getNewTaskContextSummary(): string {
+    const leaf = this.app.workspace.getLeavesOfType(VIEW_TYPE_WORKBENCH)[0];
+    return leaf?.view instanceof WorkbenchView
+      ? leaf.view.getContextSummary()
+      : '未选择笔记或工作范围';
   }
 }

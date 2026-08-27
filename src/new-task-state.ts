@@ -1,3 +1,9 @@
+import {
+  addNewTaskContextSelection,
+  removeNewTaskContextSelection,
+  type NewTaskContextSelection,
+} from './new-task-context';
+
 export type NewTaskMode = 'chat' | 'task';
 
 export type NewTaskPhase =
@@ -15,6 +21,8 @@ export type NewTaskReviewStatus = 'pending' | 'ready';
 export type NewTaskRuntimeStatus = 'disconnected' | 'connected';
 
 export interface NewTaskState {
+  readonly contextError: string | null;
+  readonly contexts: readonly NewTaskContextSelection[];
   readonly draft: string;
   readonly mode: NewTaskMode;
   readonly phase: NewTaskPhase;
@@ -23,6 +31,9 @@ export interface NewTaskState {
 }
 
 export type NewTaskAction =
+  | { readonly type: 'context-added'; readonly context: NewTaskContextSelection }
+  | { readonly type: 'context-error-changed'; readonly message: string | null }
+  | { readonly type: 'context-removed'; readonly id: string }
   | { readonly type: 'draft-changed'; readonly draft: string }
   | { readonly type: 'mode-changed'; readonly mode: NewTaskMode }
   | { readonly type: 'phase-changed'; readonly phase: NewTaskPhase }
@@ -31,6 +42,8 @@ export type NewTaskAction =
 
 export function createNewTaskState(): NewTaskState {
   return Object.freeze({
+    contextError: null,
+    contexts: Object.freeze([]),
     draft: '',
     mode: 'chat',
     phase: 'idle',
@@ -44,6 +57,20 @@ export function reduceNewTaskState(
   action: NewTaskAction,
 ): NewTaskState {
   switch (action.type) {
+    case 'context-added':
+      return Object.freeze({
+        ...state,
+        contextError: null,
+        contexts: addNewTaskContextSelection(state.contexts, action.context),
+      });
+    case 'context-error-changed':
+      return Object.freeze({ ...state, contextError: action.message });
+    case 'context-removed':
+      return Object.freeze({
+        ...state,
+        contextError: null,
+        contexts: removeNewTaskContextSelection(state.contexts, action.id),
+      });
     case 'draft-changed':
       return Object.freeze({ ...state, draft: action.draft });
     case 'mode-changed':

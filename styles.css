@@ -310,6 +310,101 @@
   opacity: 0.78;
 }
 
+.dsh-workbench-view button.dsh-new-task-context__open:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.dsh-new-task-context {
+  background: var(--background-secondary);
+  border-top: 1px solid var(--background-modifier-border);
+  display: grid;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.dsh-new-task-context__header,
+.dsh-new-task-context__item {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.dsh-new-task-context__header span,
+.dsh-new-task-context__preview {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.dsh-new-task-context__item {
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: 8px 9px;
+}
+
+.dsh-new-task-context__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dsh-new-task-context__label,
+.dsh-new-task-context__preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsh-new-task-context__label {
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+}
+
+.dsh-workbench-view button.dsh-new-task-context__remove {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--text-muted);
+  display: inline-flex;
+  flex: none;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+}
+
+.dsh-new-task-context__remove svg {
+  height: 15px;
+  width: 15px;
+}
+
+.dsh-new-task-context__error {
+  color: var(--text-error);
+  font-size: var(--font-ui-smaller);
+  margin: 0;
+}
+
+.dsh-context-picker__boundary {
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+  margin: 0 0 16px;
+}
+
+.dsh-context-picker__choices {
+  display: grid;
+  gap: 8px;
+}
+
+.dsh-context-picker button.dsh-context-picker__choice {
+  justify-content: flex-start;
+  min-height: 38px;
+  text-align: start;
+  width: 100%;
+}
+
 .dsh-new-task-composer__model {
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
@@ -440,6 +535,7 @@
 .dsh-navigation__item:focus-visible,
 .dsh-new-task-mode__button:focus-visible,
 .dsh-new-task-composer__tool:focus-visible,
+.dsh-new-task-context__remove:focus-visible,
 .dsh-new-task-composer__send:focus-visible,
 .dsh-action:focus-visible {
   outline: 2px solid var(--interactive-accent);
