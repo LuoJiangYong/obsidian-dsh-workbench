@@ -214,7 +214,41 @@ Batch 5A dedicated Vault remediation result: passed; final Obsidian UI user acce
 - 文件夹选择递归展开所选非根文件夹当下已有且尚未选择的 Markdown 笔记，冻结为逐篇文件 ID；整批通过去重、数量与字节检查后一次加入，空集或超限不允许部分成功，后来新增的文件不会静默进入既有选择。
 - Vault 边界保持只读：文件与文件夹建议器只列出 Obsidian 已加载的元数据，只有用户显式加入的文件在发送前通过 `Vault.cachedRead` 重新读取；bridge 不持有 Vault API。隐式整库内容读取、持续索引、写入、删除和移动均未实现。
 - 限制冻结为 `10` 项、单项 `96 KiB`、合计 `192 KiB`；单元测试以最大引号/换行内容验证上下文 JSON 投影到 `turn/start` 后仍小于 `1 MiB` frame。
-- 测试已覆盖单项与原子批量选择、递归文件夹展开、去重、预览、移除、草稿保留、失效/二进制/路径/数量/字节错误、发送时重读、不可变快照、宿主 modal 清理和插件卸载边界；反馈后的 `typecheck`、零警告 `lint`、`77` 项完整测试、生产构建、完整自检、`13` 项 Windows 进程专项测试和 `1` 项真实 rc.2 bridge 测试均通过。远端 CI、专用 Vault 运行读回与截图仍待本批后续步骤。
+- 测试已覆盖单项与原子批量选择、递归文件夹展开、去重、预览、移除、草稿保留、失效/二进制/路径/数量/字节错误、发送时重读、不可变快照、宿主 modal 清理和插件卸载边界；反馈后的 `typecheck`、零警告 `lint`、`77` 项完整测试、生产构建、完整自检、`13` 项 Windows 进程专项测试和 `1` 项真实 rc.2 bridge 测试均通过。
 - 当前发送、权限和附件仍禁用；未启动正式 bridge、模型网络或任务执行，没有写入真实 Vault，也未创建 Release 或社区提交。
 
-Batch 6 implementation result: direct UI feedback implemented and full local gates passed; dedicated Vault runtime and remote CI pending; final Obsidian UI user acceptance: pending
+### 实现、远端 CI 与部署指纹
+
+- Batch 6 初始上下文实现提交为 `c00800f41f9ac8ea68f03537770ced91e6bb4a50`；`2026-08-27` 插件直接反馈后的最终实现状态为 `7ee4b07d4afc0a67b8034e57c513599c7d562b19`。
+- 最终实现状态通过远端 [CI run 33031107880](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33031107880)：Ubuntu check `98383584575`、Windows check `98383584694` 均成功，两个原始 annotations 数组均为 `[]`。Windows job 实际执行 rc.2 运行夹具、进程专项与正式 bridge 测试。
+- 专用 Vault 固定为 `D:\codex workspace\_test-vaults\obsidian-dsh-workbench-evidence`，每个 Obsidian CLI 命令均显式指定 `vault=obsidian-dsh-workbench-evidence`；宿主版本为 Obsidian `1.13.7`（installer `1.12.7`）。
+- 源构建与部署资产逐项一致：`main.js` 为 `36910` bytes、SHA-256 `35529DE68C0E14A21F02D57FE9B2E036C38241E5E3DB8436B08511A4852BB498`；`manifest.json` 为 `329` bytes、`81BDF8F237FA070C3F0DECCC9C09A21F4915196633072D892428E705060F25A6`；`obsidian-bridge.mjs` 为 `13528` bytes、`1CF83B3E977ED5B5DA6CA5C59A5D42CEB70D67E475CE3B8DEC0279A5B27139D6`；`styles.css` 为 `15739` bytes、`2C176837A7E4C1F4884BB3E873ED56C3CB48DD7ACC9D74D049AD469F8671AC7B`。
+
+### 专用 Vault 运行读回
+
+- “选择知识库”入口、标题“已选笔记”、modal 标题“选择知识库内容”和四个选择项均从运行 DOM 读回；四个选择项计算样式 `box-shadow` 均为 `none`，草稿在选择过程中保持不变。
+- “加入当前选区”不是假功能：在 Markdown 编辑器中真实选择 `DeepSeek Harness`（`16` 个字符）后加入，插件显示冻结预览；随后把两个编辑器 leaf 的实时选区都改为 `#`，已选预览仍保持 `DeepSeek Harness`，原笔记内容没有写入。
+- 临时文件夹 `Batch 6 文件夹验收` 含父目录笔记和子目录笔记；文件夹建议器读回父项“`2` 篇可加入”与子项“`1` 篇可加入”。选择父项后两篇笔记一次加入；随后创建第三篇测试笔记，已选列表仍保持 `4` 项，重新打开文件夹选择器只显示父项“`1` 篇可加入”，证明既有文件集合不会静默跟踪后来新增文件。
+- 快速助手读回“已选择 `4` 项”并列出当前笔记、冻结选区和两篇 Vault 文件；发送保持禁用。运行页继续显示“只读上下文（显式选择）”，健康检查边界不变，Workbench 无横向溢出。
+- 深色主题和精确 `700px` 容器均完成视觉复核；窄屏前置断言为 `clientWidth = 700`、`scrollWidth = 700`、固定侧栏 `display: none`、紧凑导航 `display: flex`。验收结束前主题恢复为 `system`，内联宽度已移除。
+- 禁用插件时，打开的知识库 modal、Workbench DOM/leaf、快速助手 DOM/leaf 均归零；重新启用并打开两个入口后，草稿为 `""`、已选笔记为 `0`、快速助手显示“未选择笔记或工作范围”、发送禁用，证明内存状态不跨插件重载泄漏。
+
+### 专用 Vault 截图与视觉复核
+
+- `context-picker-wide-light.png`：`2880 × 1824`，`286505` bytes，SHA-256 `86E19C947D11F84193707915AF94C5B4ACBFB0E2CE01C72DF0A1A3772BDD3C62`。
+- `context-selected-wide-light.png`：`2880 × 1824`，`248542` bytes，SHA-256 `411E8E3FFF133DDA8F2C41D98D0977667BB1C9F3C25199F1A6A13FEFA747B156`。
+- `folder-picker-open-wide-light.png`：`2880 × 1824`，`272846` bytes，SHA-256 `CF6A3345AB0FEC511AFA283546BCF4447C546A978B23F1E08DAE9D328F0D4873`。
+- `folder-selected-final-wide-light.png`：`2880 × 1824`，`257122` bytes，SHA-256 `19C5D6E4A41FDD9F28C73DE54935D7B51756FEA2FDA4AB4FB998B26EAA74C6BB`。
+- `context-with-quick-assistant-visible.png`：`2880 × 1824`，`262014` bytes，SHA-256 `1622CEED41093903C31E045705579253AEA868B7C3713DD9A9FAAA203CCC2F13`。
+- `context-selected-wide-dark-visible.png`：`2880 × 1824`，`410474` bytes，SHA-256 `0DCA39B12CBED741D5F441DDE0EB3A1B51E7279EB8EB53EACFEC76B380B54115`。
+- `context-selected-narrow-700-final.png`：`2880 × 1824`，`250733` bytes，SHA-256 `4E4A78E3E414A4F1CFDE65364CE5E74E61207E565735BB2317807C83E35F86AA`。
+- `run-readonly-context-wide-light-final.png`：`2880 × 1824`，`246886` bytes，SHA-256 `AC0F4BD0B9B6585685FF016FBC716A2FD2E8FE03DE04E5AC1556DFBDAE3FD924`。
+- 八张最终截图已逐张视觉复核；旧状态、动画中间态和错误 Vault 截图均未进入本证据集合。
+
+### 清理与停止边界
+
+- 原始验收笔记 `DeepSeek Harness Workbench 验收说明.md` 的 SHA-256 在运行前后均为 `97ADAA09E558EF57745C4304E12D67DD0B2789F31AAA56D16E10943FAE67C319`；清理后 Vault 文件列表只剩该笔记。
+- 三篇临时笔记、两个临时文件夹和四个插件部署资产均通过 Obsidian API 逐项删除并读回不存在；插件处于禁用且未加载状态，modal、Workbench、快速助手及对应 leaf 均为 `0`，Obsidian 错误缓冲、error 级控制台消息和 `obsidian-bridge.mjs` Node 进程均为 `0`。
+- Ardot 文件、页面和画板均未修改，只读核对。真实模型发送、权限请求、外部工作区、任务执行、最终 Obsidian UI 用户验收、Release 与社区提交仍未通过或未授权。
+
+Batch 6 implementation and dedicated Vault result: passed; final Obsidian UI user acceptance: pending

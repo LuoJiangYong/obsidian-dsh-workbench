@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：已批准的实现输入；正式 bridge、宿主 UI 与只读上下文子集已实现，完整“新建任务”仍在实施
+- 状态：已批准的实现输入；正式 bridge、宿主 UI 与只读上下文子集已实现，且只读子集已通过双平台 CI 与专用 Vault 运行验收；完整“新建任务”仍在实施
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -31,9 +31,9 @@
 
 发送前必须以“已选笔记”显示逐项来源并允许移除。文件夹展开必须先对全部候选完成去重、数量和字节校验，再一次性加入；失败不得留下部分笔记。发送动作建立不可变上下文快照；后续编辑原笔记或更换活动文件不得静默改变已经发送的 turn。空输入、已失效文件、二进制文件、越界路径和超限输入必须在启动 DSH 前以可定位错误失败，并保留草稿。
 
-v1 不把整个 Vault 作为默认上下文，不索引整个 Vault，也不写入、删除或移动 Vault 内容。文件数、单文件字节数、合计字节数、任务字符数和诊断尾部长度的具体上限，必须由后续实现批次基于测量证据冻结并进入测试；当前文档不虚构数值。
+v1 不把整个 Vault 作为默认上下文，不索引整个 Vault，也不写入、删除或移动 Vault 内容。上下文项目数、单项字节数与合计字节数已由 Batch 6 基于 frame 测量冻结；任务字符数仍由真实发送批次冻结，诊断尾部长度由受管进程契约固定。未完成测量的边界不得虚构数值。
 
-Batch 6 已依据现有 `1 MiB` NDJSON frame 上限冻结上下文子集：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。测试把最大合计内容分别填充为引号与换行，经过上下文 JSON 和 `turn/start` wire frame 的双重转义后仍小于 `1 MiB`，为后续任务文本、标识和协议字段保留余量。任务字符上限由真实发送批次冻结；当前诊断尾部已由受管进程实现固定为 `2 KiB`。
+Batch 6 已依据现有 `1 MiB` NDJSON frame 上限冻结上下文子集：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。测试把最大合计内容分别填充为引号与换行，经过上下文 JSON 和 `turn/start` wire frame 的双重转义后仍小于 `1 MiB`，为后续任务文本、标识和协议字段保留余量。最终实现状态 `7ee4b07d4afc0a67b8034e57c513599c7d562b19` 已通过远端 CI `33031107880` 的 Ubuntu/Windows job 与原始零 annotations，并在专用 Vault 完成选择、冻结、重载清理、宽窄屏和明暗主题运行验收。任务字符上限由真实发送批次冻结；当前诊断尾部已由受管进程实现固定为 `2 KiB`。
 
 当前实现只在用户点击“选择知识库”后列出 Obsidian 已知的 Markdown 文件或非根文件夹元数据；不会预读整个 Vault。选择文件夹时递归枚举当下已有且尚未选择的 Markdown 笔记，冻结为逐篇文件 ID，不持续跟踪后来新增的文件。当前笔记和明确选择的 Vault 文件在发送前以 `Vault.cachedRead` 重新读取；当前选区是用户先在 Markdown 编辑器中选中的文本，在加入时固定。已选来源可见并可逐项移除。bridge 只接收后续宿主建立的快照，不获得 Vault API 或文件系统读取能力。
 
@@ -79,11 +79,11 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；当前产品 UI 尚未启动该路径，兼容矩阵也尚未完成隔离 Vault 与用户验收。
+- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读知识库选择的隔离 Vault 门已通过，但当前产品 UI 尚未启动模型发送路径，兼容矩阵的完整会话与最终用户验收仍未完成。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件只读健康检查仍精确支持 `0.1.1-rc.1`；它与正式 bridge 候选 `0.1.1-rc.2` 是两条不同状态，不得合并为“已支持 rc.2”。
-- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过 CI `32717711862` 的 Ubuntu/Windows job 与原始零 annotations，产品 UI 仍待后续批次。
+- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；最终 bridge 状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过 CI `32717711862` 的 Ubuntu/Windows job 与原始零 annotations。宿主 UI 与只读上下文已实现并完成专用 Vault 运行验收，模型发送与任务执行仍待后续批次。
 
 ## 自动同步演进计划
 

@@ -38,15 +38,15 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI 与状态骨架已通过专用隔离 Vault 验收；只读知识库选择、文件夹原子展开、预览、移除和不可变快照已实现并通过反馈后的本地完整质量门，专用 Vault 运行验收待执行；真实发送、对话和任务执行尚未接通 |');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库选择、文件夹原子展开、预览、移除和不可变快照已通过本地完整质量门、双平台远端 CI 与专用隔离 Vault 运行验收；真实发送、对话和任务执行尚未接通 |');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
-    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收待执行 |');
+    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
     expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收 |');
     expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
     expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
     expect(readme).toContain('| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口与上下文快照已实现，但模型调用链与任务执行尚未接通 |');
-    expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；写入、删除、移动、整库索引和隐式整库读取仍禁用；专用 Vault 运行验收待执行 |');
+    expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
     expect(readme).toContain('真实模型连接和最终用户 UI 验收尚未完成');
@@ -273,11 +273,64 @@ describe('发布与治理契约', () => {
     expect(state).toContain("type: 'contexts-added'");
     expect(styles).toContain('.dsh-new-task-context__item');
     expect(styles).toMatch(/\.dsh-context-picker button\.dsh-context-picker__choice \{[\s\S]*?box-shadow: none;/u);
-    expect(readme).toContain('## Batch 6：只读知识库（实施中）');
-    expect(design).toContain('只读知识库选择与文件夹原子展开已进入插件实现');
+    expect(readme).toContain('## Batch 6：只读知识库（实现与运行门已通过）');
+    expect(design).toContain('只读知识库选择与文件夹原子展开已通过本地完整质量门、双平台远端 CI 与专用 Vault 运行验收');
     expect(hostContract).toContain('最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`');
     expect(roadmap).toContain('Batch 6 已实现只读知识库纯契约');
-    expect(designQa.trimEnd()).toMatch(/Batch 6 implementation result: direct UI feedback implemented and full local gates passed; dedicated Vault runtime and remote CI pending; final Obsidian UI user acceptance: pending$/u);
+    expect(designQa).toContain('CI run 33031107880');
+    expect(designQa).toContain('Ubuntu check `98383584575`、Windows check `98383584694`');
+    expect(designQa).toContain('已选列表仍保持 `4` 项');
+    expect(designQa).toContain('SHA-256 在运行前后均为 `97ADAA09E558EF57745C4304E12D67DD0B2789F31AAA56D16E10943FAE67C319`');
+    expect(designQa.trimEnd()).toMatch(/Batch 6 implementation and dedicated Vault result: passed; final Obsidian UI user acceptance: pending$/u);
+
+    for (const asset of [
+      {
+        bytes: 286_505,
+        name: 'context-picker-wide-light.png',
+        sha256: '86E19C947D11F84193707915AF94C5B4ACBFB0E2CE01C72DF0A1A3772BDD3C62',
+      },
+      {
+        bytes: 248_542,
+        name: 'context-selected-wide-light.png',
+        sha256: '411E8E3FFF133DDA8F2C41D98D0977667BB1C9F3C25199F1A6A13FEFA747B156',
+      },
+      {
+        bytes: 272_846,
+        name: 'folder-picker-open-wide-light.png',
+        sha256: 'CF6A3345AB0FEC511AFA283546BCF4447C546A978B23F1E08DAE9D328F0D4873',
+      },
+      {
+        bytes: 257_122,
+        name: 'folder-selected-final-wide-light.png',
+        sha256: '19C5D6E4A41FDD9F28C73DE54935D7B51756FEA2FDA4AB4FB998B26EAA74C6BB',
+      },
+      {
+        bytes: 262_014,
+        name: 'context-with-quick-assistant-visible.png',
+        sha256: '1622CEED41093903C31E045705579253AEA868B7C3713DD9A9FAAA203CCC2F13',
+      },
+      {
+        bytes: 410_474,
+        name: 'context-selected-wide-dark-visible.png',
+        sha256: '0DCA39B12CBED741D5F441DDE0EB3A1B51E7279EB8EB53EACFEC76B380B54115',
+      },
+      {
+        bytes: 250_733,
+        name: 'context-selected-narrow-700-final.png',
+        sha256: '4E4A78E3E414A4F1CFDE65364CE5E74E61207E565735BB2317807C83E35F86AA',
+      },
+      {
+        bytes: 246_886,
+        name: 'run-readonly-context-wide-light-final.png',
+        sha256: 'AC0F4BD0B9B6585685FF016FBC716A2FD2E8FE03DE04E5AC1556DFBDAE3FD924',
+      },
+    ]) {
+      const bytes = await readFile(
+        path.join(repositoryRoot, 'docs', 'assets', 'design-qa', 'new-task-context', asset.name),
+      );
+      expect(bytes.byteLength).toBe(asset.bytes);
+      expect(createHash('sha256').update(bytes).digest('hex').toUpperCase()).toBe(asset.sha256);
+    }
   });
 
   it('P0 评估只接受一个生产运行时 ADR', async () => {
@@ -327,7 +380,7 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('每个 turn 只能产生一个终态');
     expect(requirements).toContain('`failed(runtime_terminated)`');
     expect(requirements).toContain('当前核验到的正式 bridge 目标是 `0.1.1-rc.2`');
-    expect(requirements).toContain('当前产品 UI 尚未启动该路径');
+    expect(requirements).toContain('当前产品 UI 尚未启动模型发送路径');
     expect(requirements).toContain('插件自动安装或更新 DSH');
     expect(hostContract).toContain('状态：已接受');
     expect(hostContract).toContain('只读 `--version` 健康检查');

@@ -9,7 +9,7 @@
 
 ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实现前仍需消除四类歧义：v1 究竟开放哪些模式、Vault 上下文与外部工作区如何分界、取消何时可以称为成功，以及正式 bridge 如何跟随仍处于预发布阶段的 DSH 演进。
 
-本 ADR 接受时，代码只实现 DSH `0.1.1-rc.1` 的只读 `--version` 健康检查。后续 Batch 3–4 已实现协议 v1、正式 bridge、事件、权限、取消和 Windows `0.1.1-rc.2` 运行验收；Batch 5 已接入宿主 UI 与确定性状态骨架；Batch 6 已实现显式只读上下文、发送时重读与不可变快照，专用 Vault 运行验收仍待执行。模型发送和任务执行尚未接通。
+本 ADR 接受时，代码只实现 DSH `0.1.1-rc.1` 的只读 `--version` 健康检查。后续 Batch 3–4 已实现协议 v1、正式 bridge、事件、权限、取消和 Windows `0.1.1-rc.2` 运行验收；Batch 5 已接入宿主 UI 与确定性状态骨架；Batch 6 已实现显式只读上下文、发送时重读与不可变快照，并通过双平台远端 CI 与专用 Vault 运行验收。模型发送和任务执行尚未接通。
 
 ## 决定
 
@@ -34,7 +34,7 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 ## 后果与边界
 
 - [新建任务 v1 需求基线](../requirements/new-task-v1.md) 是本 ADR 的详细验收契约。
-- 当前正式 bridge 精确锁定 DSH `0.1.1-rc.2`，已完成本地与 Windows CI 真实加载、握手、Agent session、mid-turn cancel 和清理验收；在产品 UI、上下文与隔离 Vault 验收完成前，兼容矩阵仍不得标为 `supported`。健康检查继续独立锁定 `0.1.1-rc.1`。
+- 当前正式 bridge 精确锁定 DSH `0.1.1-rc.2`，已完成本地与 Windows CI 真实加载、握手、Agent session、mid-turn cancel 和清理验收；Batch 6 的宿主只读上下文与专用 Vault 运行门也已通过。在模型发送链、外部工作区、完整会话和最终用户验收完成前，兼容矩阵仍不得标为 `supported`。健康检查继续独立锁定 `0.1.1-rc.1`。
 - [Batch 2 能力尖峰](./batch-2-bridge-capability-spike.md)与[运行时兼容矩阵](./runtime-compatibility-matrix.md)记录了上游 seam、证据指纹和自动演进门。
 - [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭和 fail-closed 行为；当前已通过假 bridge、正式 artifact 与 Windows rc.2 运行验收。
 - Batch 6 以现有 `1 MiB` NDJSON frame 和最坏 JSON 双重转义实测冻结上下文上限：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。文件夹展开同样受这些限制并采用原子加入；任务字符上限由真实发送批次冻结。
@@ -48,4 +48,4 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 - `scripts/verify-ci-coverage.mjs` 确认上述治理契约由双平台完整 `npm test` 执行。
 - Batch 5 宿主 UI 的状态与禁用行为由 `tests/new-task-state.test.ts` 和 `tests/plugin-baseline.test.ts` 固定。
 - Batch 6 的显式选择、原子批量加入、去重、移除、失效/二进制/超限失败、发送时重读、不可变快照与 frame 余量由 `tests/new-task-context.test.ts` 固定；Obsidian 当前笔记/选区、Markdown 文件与文件夹建议器、递归展开、整批超限、只读 `cachedRead` 和 modal 清理由 `tests/obsidian-context-host.test.ts` 固定；`tests/plugin-baseline.test.ts` 固定“选择知识库 / 已选笔记”、UI 加入/预览/移除和草稿保留。
-- `scripts/verify-ci-coverage.mjs` 明确读取上述测试，双平台 `npm test` 实际执行；专用隔离 Vault 运行验收、真实产品会话、任务执行与最终用户 UI 验收仍由后续证据证明。
+- `scripts/verify-ci-coverage.mjs` 明确读取上述测试，双平台 `npm test` 实际执行。最终实现状态 `7ee4b07d4afc0a67b8034e57c513599c7d562b19` 的远端 CI `33031107880` 双平台成功且原始 annotations 均为 `[]`；专用隔离 Vault 已完成当前笔记/选区/文件/文件夹、冻结集合、重载清理、宽窄屏和明暗主题验收。真实产品会话、任务执行与最终用户 UI 验收仍由后续证据证明。
