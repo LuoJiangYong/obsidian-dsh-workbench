@@ -14,7 +14,7 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 ## 决定
 
 1. v1 真实实现“对话”和“任务执行”；“代码协作”不属于当前社区首发门，只能在需要保留信息架构时呈现真实禁用态。
-2. Vault 上下文只来自当前笔记、当前选区或用户明确选择的文件，并在发送时形成不可变快照。v1 不读取整个 Vault，不写入、删除或移动 Vault 内容。
+2. Vault 上下文只来自当前笔记、当前选区、用户明确选择的文件，或用户明确选择的非根文件夹在选择当下递归展开得到的确定 Markdown 笔记集合，并在发送时形成不可变快照。文件夹展开先完成整批去重、数量和字节校验，不持续追踪新增文件。v1 不隐式读取整个 Vault，不写入、删除或移动 Vault 内容。
 3. 任务执行只能使用用户明确选择的 Vault 外工作目录。Vault 不得成为默认可写 `cwd`，插件不提供任意 Shell 或危险权限模式。
 4. 每个 turn 采用 `idle -> validating -> starting -> running <-> awaiting_permission -> cancelling -> cancelled` 状态链；`running` 或 `awaiting_permission` 也可进入唯一终态 `completed` 或 `failed`。
 5. `cancelled` 只由 bridge/DSH 的取消确认与 turn 终态共同建立。取消超时后的进程终止属于 `failed(runtime_terminated)`。
@@ -37,8 +37,8 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 - 当前正式 bridge 精确锁定 DSH `0.1.1-rc.2`，已完成本地与 Windows CI 真实加载、握手、Agent session、mid-turn cancel 和清理验收；在产品 UI、上下文与隔离 Vault 验收完成前，兼容矩阵仍不得标为 `supported`。健康检查继续独立锁定 `0.1.1-rc.1`。
 - [Batch 2 能力尖峰](./batch-2-bridge-capability-spike.md)与[运行时兼容矩阵](./runtime-compatibility-matrix.md)记录了上游 seam、证据指纹和自动演进门。
 - [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭和 fail-closed 行为；当前已通过假 bridge、正式 artifact 与 Windows rc.2 运行验收。
-- Batch 6 以现有 `1 MiB` NDJSON frame 和最坏 JSON 双重转义实测冻结上下文上限：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。任务字符上限由真实发送批次冻结。
-- `DESIGN.md`、ADR-003 和 ADR-004 已检查：本批不改变获批页面、布局、导航、图标或响应式规则，无需修改。
+- Batch 6 以现有 `1 MiB` NDJSON frame 和最坏 JSON 双重转义实测冻结上下文上限：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。文件夹展开同样受这些限制并采用原子加入；任务字符上限由真实发送批次冻结。
+- `DESIGN.md`、ADR-003 和 ADR-004 已检查：`2026-08-27` 用户直接反馈只演进插件中的知识库入口文案、扁平选择项和文件夹来源；Ardot 未修改，导航、图标与响应式总规则不变。
 - 后续 bridge 打包、自动监测 workflow、实现源码、运行验收、Release 与社区提交仍受各自边界约束；当前连续目标只授权 Batch 3–10，不授权 Release 或社区提交。
 
 ## 验证
@@ -47,5 +47,5 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 - `tests/bridge-protocol.test.ts` 固定精确握手、session/turn/seq、一次性权限、cancel 确认、唯一终态、shutdown/EOF 和超时。
 - `scripts/verify-ci-coverage.mjs` 确认上述治理契约由双平台完整 `npm test` 执行。
 - Batch 5 宿主 UI 的状态与禁用行为由 `tests/new-task-state.test.ts` 和 `tests/plugin-baseline.test.ts` 固定。
-- Batch 6 的显式选择、去重、移除、失效/二进制/超限失败、发送时重读、不可变快照与 frame 余量由 `tests/new-task-context.test.ts` 固定；Obsidian 当前笔记/选区、Markdown 文件建议器、只读 `cachedRead` 和 modal 清理由 `tests/obsidian-context-host.test.ts` 固定；`tests/plugin-baseline.test.ts` 固定 UI 加入/预览/移除和草稿保留。
+- Batch 6 的显式选择、原子批量加入、去重、移除、失效/二进制/超限失败、发送时重读、不可变快照与 frame 余量由 `tests/new-task-context.test.ts` 固定；Obsidian 当前笔记/选区、Markdown 文件与文件夹建议器、递归展开、整批超限、只读 `cachedRead` 和 modal 清理由 `tests/obsidian-context-host.test.ts` 固定；`tests/plugin-baseline.test.ts` 固定“选择知识库 / 已选笔记”、UI 加入/预览/移除和草稿保留。
 - `scripts/verify-ci-coverage.mjs` 明确读取上述测试，双平台 `npm test` 实际执行；专用隔离 Vault 运行验收、真实产品会话、任务执行与最终用户 UI 验收仍由后续证据证明。

@@ -104,16 +104,27 @@ export function addNewTaskContextSelection(
   selections: readonly NewTaskContextSelection[],
   selection: NewTaskContextSelection,
 ): readonly NewTaskContextSelection[] {
-  if (selections.some((item) => item.id === selection.id)) {
-    throw new NewTaskContextError('duplicate_context', '该上下文已经加入。');
+  return addNewTaskContextSelections(selections, [selection]);
+}
+
+export function addNewTaskContextSelections(
+  selections: readonly NewTaskContextSelection[],
+  additions: readonly NewTaskContextSelection[],
+): readonly NewTaskContextSelection[] {
+  const ids = new Set(selections.map((selection) => selection.id));
+  for (const addition of additions) {
+    if (ids.has(addition.id)) {
+      throw new NewTaskContextError('duplicate_context', '该笔记或选区已经加入。');
+    }
+    ids.add(addition.id);
   }
-  if (selections.length >= MAX_NEW_TASK_CONTEXT_ITEMS) {
+  if (selections.length + additions.length > MAX_NEW_TASK_CONTEXT_ITEMS) {
     throw new NewTaskContextError(
       'context_count_exceeded',
       `最多选择 ${String(MAX_NEW_TASK_CONTEXT_ITEMS)} 项上下文。`,
     );
   }
-  return Object.freeze([...selections, selection]);
+  return Object.freeze([...selections, ...additions]);
 }
 
 export function removeNewTaskContextSelection(

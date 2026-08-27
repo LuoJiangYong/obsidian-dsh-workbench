@@ -199,9 +199,20 @@ export class TFile {
   }
 }
 
+export class TFolder {
+  constructor(readonly path: string) {}
+}
+
 export class Vault {
   readonly contents = new Map<string, string>();
   readonly files: TFile[] = [];
+  readonly folders: TFolder[] = [];
+
+  addFolder(path: string): TFolder {
+    const folder = new TFolder(path);
+    this.folders.push(folder);
+    return folder;
+  }
 
   addMarkdownFile(path: string, content: string): TFile {
     const file = new TFile(path, new TextEncoder().encode(content).byteLength);
@@ -217,8 +228,14 @@ export class Vault {
       : Promise.resolve(content);
   }
 
-  getAbstractFileByPath(path: string): TFile | null {
-    return this.files.find((file) => file.path === path) ?? null;
+  getAbstractFileByPath(path: string): TFile | TFolder | null {
+    return this.files.find((file) => file.path === path)
+      ?? this.folders.find((folder) => folder.path === path)
+      ?? null;
+  }
+
+  getAllLoadedFiles(): Array<TFile | TFolder> {
+    return [...this.folders, ...this.files];
   }
 
   getMarkdownFiles(): TFile[] {

@@ -207,13 +207,14 @@ Ardot v2 design-only final result: passed
 
 Batch 5A dedicated Vault remediation result: passed; final Obsidian UI user acceptance: pending
 
-## Batch 6：只读上下文实施门
+## Batch 6：只读知识库实施门
 
-- 日期：`2026-08-26`；Ardot 文件仍为 `718186366720195`，用户审阅页面仍为 `UI 真相 v2`（`12:1`）。Ardot 未修改，只读核对；上下文交互只演进插件、`DESIGN.md`、ADR、测试与 CI 契约。
-- 插件已把“选择上下文”从禁用态升级为原生宿主选择流程，支持当前笔记、当前选区和单个 Vault Markdown 文件；已选来源在 composer 内可见，当前选区显示文本预览，文件明确提示发送时读取，可逐项移除；快速助手同步显示 Workbench 已选上下文摘要。
-- Vault 边界保持只读：文件建议器只列出 Markdown 元数据，只有用户显式加入的文件在发送前通过 `Vault.cachedRead` 重新读取；bridge 不持有 Vault API。整库内容读取、索引、写入、删除和移动均未实现。
+- 日期：`2026-08-26`，插件 UI 直接反馈更新于 `2026-08-27`；Ardot 文件仍为 `718186366720195`，用户审阅页面仍为 `UI 真相 v2`（`12:1`）。Ardot 未修改，只读核对；知识库交互只演进插件、`DESIGN.md`、ADR、测试与 CI 契约。
+- 插件入口使用“选择知识库”，结果标题使用“已选笔记”；选择项去除方框阴影并增加次级说明。宿主流程支持当前笔记、当前选区、单个 Vault Markdown 文件和“选择文件夹”。当前选区是真实编辑器选中文本：先在 Markdown 编辑器中选择，打开 Workbench 后加入时冻结；不可用时显示明确操作提示。
+- 文件夹选择递归展开所选非根文件夹当下已有且尚未选择的 Markdown 笔记，冻结为逐篇文件 ID；整批通过去重、数量与字节检查后一次加入，空集或超限不允许部分成功，后来新增的文件不会静默进入既有选择。
+- Vault 边界保持只读：文件与文件夹建议器只列出 Obsidian 已加载的元数据，只有用户显式加入的文件在发送前通过 `Vault.cachedRead` 重新读取；bridge 不持有 Vault API。隐式整库内容读取、持续索引、写入、删除和移动均未实现。
 - 限制冻结为 `10` 项、单项 `96 KiB`、合计 `192 KiB`；单元测试以最大引号/换行内容验证上下文 JSON 投影到 `turn/start` 后仍小于 `1 MiB` frame。
-- 本地测试已覆盖选择、去重、预览、移除、草稿保留、失效/二进制/路径/超限错误、发送时重读、不可变快照、宿主 modal 清理和插件卸载边界；`typecheck`、零警告 `lint`、`72` 项完整测试、生产构建、完整自检、`13` 项 Windows 进程专项测试和 `1` 项真实 rc.2 bridge 测试均通过。远端 CI、专用 Vault 运行读回与截图仍待本批后续步骤。
+- 测试已覆盖单项与原子批量选择、递归文件夹展开、去重、预览、移除、草稿保留、失效/二进制/路径/数量/字节错误、发送时重读、不可变快照、宿主 modal 清理和插件卸载边界；反馈后的 `typecheck`、零警告 `lint`、`77` 项完整测试、生产构建、完整自检、`13` 项 Windows 进程专项测试和 `1` 项真实 rc.2 bridge 测试均通过。远端 CI、专用 Vault 运行读回与截图仍待本批后续步骤。
 - 当前发送、权限和附件仍禁用；未启动正式 bridge、模型网络或任务执行，没有写入真实 Vault，也未创建 Release 或社区提交。
 
-Batch 6 implementation result: full local gates passed; dedicated Vault runtime and remote CI pending; final Obsidian UI user acceptance: pending
+Batch 6 implementation result: direct UI feedback implemented and full local gates passed; dedicated Vault runtime and remote CI pending; final Obsidian UI user acceptance: pending

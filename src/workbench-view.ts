@@ -155,8 +155,8 @@ export class WorkbenchView extends ItemView {
     this.renderPageHeader(
       parentEl,
       '新建任务',
-      '与 DeepSeek Harness 对话，定义任务、选择上下文，并在执行前审阅权限与变更边界。',
-      '与 DeepSeek Harness 对话，选择上下文，并在执行前审阅权限与变更边界。',
+      '与 DeepSeek Harness 对话，定义任务、选择知识库内容，并在执行前审阅权限与变更边界。',
+      '与 DeepSeek Harness 对话，选择知识库内容，并在执行前审阅权限与变更边界。',
     );
 
     const taskEl = parentEl.createEl('section', { cls: 'dsh-new-task' });
@@ -280,15 +280,16 @@ export class WorkbenchView extends ItemView {
       attr: {
         type: 'button',
         'aria-haspopup': 'dialog',
-        'aria-label': '选择只读上下文',
+        'aria-label': '选择知识库内容',
       },
     });
     setIcon(buttonEl, 'files');
-    buttonEl.createSpan({ cls: 'dsh-new-task-composer__tool-label', text: '选择上下文' });
+    buttonEl.createSpan({ cls: 'dsh-new-task-composer__tool-label', text: '选择知识库' });
     buttonEl.addEventListener('click', () => {
       this.options.contextHost.openPicker({
         selected: this.newTaskState.contexts,
         onSelect: (context) => this.addContext(context),
+        onSelectMany: (contexts) => this.addContexts(contexts),
         onError: (message) => this.setContextError(message),
       });
     });
@@ -298,10 +299,10 @@ export class WorkbenchView extends ItemView {
     if (this.newTaskState.contexts.length === 0 && !this.newTaskState.contextError) return;
     const contextEl = parentEl.createEl('section', {
       cls: 'dsh-new-task-context',
-      attr: { 'aria-label': '已选只读上下文' },
+      attr: { 'aria-label': '已选笔记' },
     });
     const headerEl = contextEl.createDiv({ cls: 'dsh-new-task-context__header' });
-    headerEl.createEl('strong', { text: '已选上下文' });
+    headerEl.createEl('strong', { text: '已选笔记' });
     headerEl.createSpan({ text: formatContextByteLimit() });
 
     for (const context of this.newTaskState.contexts) {
@@ -340,10 +341,14 @@ export class WorkbenchView extends ItemView {
   }
 
   private addContext(context: NewTaskContextSelection): void {
+    this.addContexts([context]);
+  }
+
+  private addContexts(contexts: readonly NewTaskContextSelection[]): void {
     try {
       this.newTaskState = reduceNewTaskState(this.newTaskState, {
-        type: 'context-added',
-        context,
+        type: 'contexts-added',
+        contexts,
       });
       this.options.onContextsChanged();
       this.render();

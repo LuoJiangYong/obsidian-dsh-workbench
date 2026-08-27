@@ -399,10 +399,37 @@
 }
 
 .dsh-context-picker button.dsh-context-picker__choice {
+  align-items: flex-start;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   justify-content: flex-start;
-  min-height: 38px;
+  min-height: 54px;
+  padding-block: 9px;
   text-align: start;
   width: 100%;
+}
+
+.dsh-context-picker button.dsh-context-picker__choice:hover,
+.dsh-context-picker button.dsh-context-picker__choice:focus-visible {
+  box-shadow: none;
+}
+
+.dsh-context-picker__choice-label {
+  color: var(--text-normal);
+  font-weight: var(--font-medium);
+}
+
+.dsh-context-picker__choice-hint {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+}
+
+.dsh-context-picker button.dsh-context-picker__choice:disabled .dsh-context-picker__choice-label,
+.dsh-context-picker button.dsh-context-picker__choice:disabled .dsh-context-picker__choice-hint {
+  color: var(--text-faint);
 }
 
 .dsh-new-task-composer__model {

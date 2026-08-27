@@ -92,6 +92,7 @@ for (const uiContract of [
 }
 for (const contextContract of [
   '新建任务只读上下文',
+  '把文件夹展开结果作为一个原子批次加入，重复或超量时不部分修改',
   '发送前从宿主重新读取文件并建立不随后续编辑变化的不可变快照',
   '以最坏转义内容实测上下文上限仍低于 1 MiB bridge frame',
 ]) {
@@ -101,6 +102,9 @@ for (const hostContextContract of [
   'Obsidian 只读上下文宿主',
   '从活动 Markdown 视图捕获当前笔记和当前选区，并由用户显式加入',
   '文件选择器只列出尚未加入的 Markdown 文件',
+  '选择文件夹时递归展开未选择的 Markdown，并作为一个受限批次加入',
+  '文件夹展开超过剩余项数时整体失败且不提交部分笔记',
+  '文件夹展开使合计字节超限时在读取前整体失败',
   '重复打开或宿主释放时关闭已有选择器',
   '快照读取只接受仍存在且未超限的 Markdown 文件',
 ]) {
@@ -183,7 +187,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读上下文、Ardot v2、新建任务 v1、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库与文件夹原子展开、Ardot v2、新建任务 v1、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

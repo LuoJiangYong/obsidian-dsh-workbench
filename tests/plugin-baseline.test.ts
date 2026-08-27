@@ -84,13 +84,13 @@ describe('原生 Workbench 插件基线', () => {
       'Workbench',
       '新建任务',
       '运行',
-      '与 DeepSeek Harness 对话，定义任务、选择上下文，并在执行前审阅权限与变更边界。',
+      '与 DeepSeek Harness 对话，定义任务、选择知识库内容，并在执行前审阅权限与变更边界。',
       '今天想让 DeepSeek Harness 做什么？',
       '对话',
       '任务执行',
       '代码协作',
       '添加附件',
-      '选择上下文',
+      '选择知识库',
       '默认权限',
       '模型由 DSH 配置管理',
       '发送',
@@ -134,11 +134,11 @@ describe('原生 Workbench 插件基线', () => {
 
     await content.findAllByClass('dsh-new-task-context__open')[0]?.click();
     const contextModal = mockObsidian.openModals[0];
-    expect(contextModal?.title).toBe('选择只读上下文');
+    expect(contextModal?.title).toBe('选择知识库内容');
     const modalChoices = contextModal?.contentEl.findAllByClass('dsh-context-picker__choice') ?? [];
     await modalChoices[1]?.click();
     expect(content.allText()).toEqual(expect.arrayContaining([
-      '已选上下文',
+      '已选笔记',
       '当前选区 · 项目/周报.md',
       '本周完成上下文接入',
     ]));

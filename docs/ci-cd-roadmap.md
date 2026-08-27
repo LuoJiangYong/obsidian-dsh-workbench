@@ -101,7 +101,7 @@ Batch 4 已实现正式 `obsidian-bridge`、NDJSON、受管进程与独立 rc.2 
 
 Batch 5A 原实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 的代码与双平台 CI 证据有效：[CI run 32919119819](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32919119819) 的 Ubuntu check `98028935782`、Windows check `98028935888` 均成功，两个原始 annotations 数组均为 `[]`。原运行截图误用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，已撤回。插件反馈与证据纠正提交 `a41c93b43245c9b1cfb84c4adb243ef4217c8253` 已通过 [CI run 32963736114](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32963736114)：Ubuntu check `98161570546`、Windows check `98161570396` 均成功，两个原始 annotations 数组均为 `[]`。证据提交 `d19cb1e81eee18fb882e9230dddc1493ebf2e4e1` 已通过 [CI run 32965459435](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32965459435)：Ubuntu check `98166848190`、Windows check `98166848475` 均成功，两个原始 annotations 数组均为 `[]`。Ardot 保持用户审阅原状、AI 只读；专用 `obsidian-dsh-workbench-evidence` Vault 已完成运行与视觉修正验收。
 
-Batch 6 已实现只读上下文纯契约、Obsidian 宿主适配与 Workbench UI：当前笔记、当前选区和单个 Markdown 文件必须显式加入，选项可见且可移除；文件在发送前重新读取，失效/二进制/路径/数量/字节错误 fail closed 并保留草稿。限制为 `10` 项、单项 `96 KiB`、合计 `192 KiB`，最坏 JSON 双重转义的 wire frame 实测低于 `1 MiB`。`verify:ci-coverage` 已绑定纯状态、宿主与插件基线测试；本地 `typecheck`、零警告 `lint`、`72` 项完整测试、生产构建、完整自检、`13` 项 Windows 进程专项测试与 `1` 项真实 rc.2 bridge 测试均通过，当前仍等待专用 Vault 运行证据和远端 CI。
+Batch 6 已实现只读知识库纯契约、Obsidian 宿主适配与 Workbench UI：当前笔记、当前选区、单个 Markdown 文件和明确选择的非根文件夹均需用户主动操作；文件夹递归展开为选择当下的确定 Markdown 集合，并在整批去重、数量和字节校验通过后原子加入。文件在发送前重新读取，失效/二进制/路径/数量/字节错误 fail closed 并保留草稿。限制为 `10` 项、单项 `96 KiB`、合计 `192 KiB`，最坏 JSON 双重转义的 wire frame 实测低于 `1 MiB`。`verify:ci-coverage` 绑定纯状态、宿主与插件基线测试；`2026-08-27` 直接 UI 反馈后的 `typecheck`、零警告 `lint`、`77` 项完整测试、生产构建、完整自检、`13` 项 Windows 进程专项测试和 `1` 项真实 rc.2 bridge 测试均通过，专用 Vault 运行证据和远端 CI 待执行。Ardot 未修改、只读核对。
 
 这些证据分别证明正式 bridge、Obsidian 宿主 UI 和只读上下文代码子集，但尚未证明模型发送链已接通，也不证明外部工作区权限、完整会话或最终用户 UI 验收通过，因此 Phase C 整体仍是“部分建立”。
 
@@ -156,4 +156,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A 的插件反馈修正、双平台 CI、原始零 annotations、专用 Vault 修正验收与项目知识库同步均已通过；Batch 6 只读上下文代码与完整本地质量门已通过，下一步是精确提交、远端 CI 与专用 Vault 运行验收。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A 的插件反馈修正、双平台 CI、原始零 annotations、专用 Vault 修正验收与项目知识库同步均已通过；Batch 6 已纳入 `2026-08-27` 的“选择知识库 / 已选笔记 / 无方框阴影 / 选择文件夹”插件直接反馈并通过本地完整质量门，下一步是精确提交、远端 CI 与专用 Vault 运行验收。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。

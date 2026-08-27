@@ -1,4 +1,5 @@
 import {
+  addNewTaskContextSelections,
   addNewTaskContextSelection,
   removeNewTaskContextSelection,
   type NewTaskContextSelection,
@@ -32,6 +33,7 @@ export interface NewTaskState {
 
 export type NewTaskAction =
   | { readonly type: 'context-added'; readonly context: NewTaskContextSelection }
+  | { readonly type: 'contexts-added'; readonly contexts: readonly NewTaskContextSelection[] }
   | { readonly type: 'context-error-changed'; readonly message: string | null }
   | { readonly type: 'context-removed'; readonly id: string }
   | { readonly type: 'draft-changed'; readonly draft: string }
@@ -62,6 +64,12 @@ export function reduceNewTaskState(
         ...state,
         contextError: null,
         contexts: addNewTaskContextSelection(state.contexts, action.context),
+      });
+    case 'contexts-added':
+      return Object.freeze({
+        ...state,
+        contextError: null,
+        contexts: addNewTaskContextSelections(state.contexts, action.contexts),
       });
     case 'context-error-changed':
       return Object.freeze({ ...state, contextError: action.message });

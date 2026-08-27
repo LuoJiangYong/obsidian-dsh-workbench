@@ -7,6 +7,7 @@ import {
   MAX_NEW_TASK_CONTEXT_TOTAL_BYTES,
   NewTaskContextError,
   addNewTaskContextSelection,
+  addNewTaskContextSelections,
   createCurrentSelectionContext,
   createNewTaskContextSnapshot,
   createVaultFileContext,
@@ -43,6 +44,37 @@ describe('新建任务只读上下文', () => {
     )).toThrow(expect.objectContaining({ code: 'context_count_exceeded' }));
 
     expect(removeNewTaskContextSelection(selections, current.id)).not.toContain(current);
+  });
+
+  it('把文件夹展开结果作为一个原子批次加入，重复或超量时不部分修改', () => {
+    const existing = [createVaultFileContext('vault-file', '资料/已选.md')];
+    const folderFiles = [
+      createVaultFileContext('vault-file', '资料/一.md'),
+      createVaultFileContext('vault-file', '资料/子目录/二.md'),
+    ];
+
+    const selections = addNewTaskContextSelections(existing, folderFiles);
+    expect(selections.map((selection) => selection.id)).toEqual([
+      'vault-file:资料/已选.md',
+      'vault-file:资料/一.md',
+      'vault-file:资料/子目录/二.md',
+    ]);
+    expect(Object.isFrozen(selections)).toBe(true);
+
+    const duplicateBatch = [folderFiles[0]!, folderFiles[0]!];
+    expect(() => addNewTaskContextSelections(existing, duplicateBatch)).toThrow(
+      expect.objectContaining({ code: 'duplicate_context' }),
+    );
+    expect(existing).toHaveLength(1);
+
+    const tooMany = Array.from(
+      { length: MAX_NEW_TASK_CONTEXT_ITEMS },
+      (_, index) => createVaultFileContext('vault-file', `批量/${String(index)}.md`),
+    );
+    expect(() => addNewTaskContextSelections(existing, tooMany)).toThrow(
+      expect.objectContaining({ code: 'context_count_exceeded' }),
+    );
+    expect(existing).toHaveLength(1);
   });
 
   it('在加入时固定当前选区文本并拒绝空白或单项超限', () => {

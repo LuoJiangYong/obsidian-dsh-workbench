@@ -38,15 +38,15 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI 与状态骨架已通过专用隔离 Vault 验收；只读上下文选择、预览、移除和不可变快照已实现并通过本地完整质量门，专用 Vault 运行验收待执行；真实发送、对话和任务执行尚未接通 |');
+    expect(readme).toContain('| 新建任务 | 宿主 UI 与状态骨架已通过专用隔离 Vault 验收；只读知识库选择、文件夹原子展开、预览、移除和不可变快照已实现并通过反馈后的本地完整质量门，专用 Vault 运行验收待执行；真实发送、对话和任务执行尚未接通 |');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
-    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选上下文摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收待执行 |');
+    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收待执行 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
     expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收 |');
     expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
     expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
     expect(readme).toContain('| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口与上下文快照已实现，但模型调用链与任务执行尚未接通 |');
-    expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件或当前选区可进入只读上下文；写入、删除、移动和整库内容读取仍禁用；专用 Vault 运行验收待执行 |');
+    expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；写入、删除、移动、整库索引和隐式整库读取仍禁用；专用 Vault 运行验收待执行 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
     expect(readme).toContain('真实模型连接和最终用户 UI 验收尚未完成');
@@ -254,24 +254,30 @@ describe('发布与治理契约', () => {
     expect(context).toContain('MAX_NEW_TASK_CONTEXT_ITEM_BYTES = 96 * 1024');
     expect(context).toContain('MAX_NEW_TASK_CONTEXT_TOTAL_BYTES = 192 * 1024');
     expect(context).toContain('createNewTaskContextSnapshot');
+    expect(context).toContain('addNewTaskContextSelections');
     expect(context).toContain("'context_missing'");
     expect(context).toContain("'context_binary'");
     expect(context).toContain("'context_total_too_large'");
     expect(host).toContain('getActiveFile()');
     expect(host).toContain("getLeavesOfType('markdown')");
     expect(host).toContain('getMarkdownFiles()');
+    expect(host).toContain('getAllLoadedFiles()');
+    expect(host).toContain('VaultFolderSuggestModal');
+    expect(host).toContain("this.setPlaceholder('选择一个 Vault 文件夹')");
     expect(host).toContain('vault.cachedRead(file)');
     expect(host).not.toMatch(/vault\.(?:create|delete|modify|rename)/u);
-    expect(workbench).toContain("text: '已选上下文'");
+    expect(workbench).toContain("text: '已选笔记'");
+    expect(workbench).toContain("text: '选择知识库'");
     expect(workbench).toContain("return '发送时读取最新内容'");
     expect(workbench).toContain("type: 'context-removed'");
-    expect(state).toContain("type: 'context-added'");
+    expect(state).toContain("type: 'contexts-added'");
     expect(styles).toContain('.dsh-new-task-context__item');
-    expect(readme).toContain('## Batch 6：只读上下文（实施中）');
-    expect(design).toContain('只读上下文已进入插件实现且等待专用 Vault 运行验收');
+    expect(styles).toMatch(/\.dsh-context-picker button\.dsh-context-picker__choice \{[\s\S]*?box-shadow: none;/u);
+    expect(readme).toContain('## Batch 6：只读知识库（实施中）');
+    expect(design).toContain('只读知识库选择与文件夹原子展开已进入插件实现');
     expect(hostContract).toContain('最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`');
-    expect(roadmap).toContain('Batch 6 已实现只读上下文纯契约');
-    expect(designQa.trimEnd()).toMatch(/Batch 6 implementation result: full local gates passed; dedicated Vault runtime and remote CI pending; final Obsidian UI user acceptance: pending$/u);
+    expect(roadmap).toContain('Batch 6 已实现只读知识库纯契约');
+    expect(designQa.trimEnd()).toMatch(/Batch 6 implementation result: direct UI feedback implemented and full local gates passed; dedicated Vault runtime and remote CI pending; final Obsidian UI user acceptance: pending$/u);
   });
 
   it('P0 评估只接受一个生产运行时 ADR', async () => {

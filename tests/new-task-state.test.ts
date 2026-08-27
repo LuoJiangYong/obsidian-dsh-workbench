@@ -45,6 +45,23 @@ describe('新建任务宿主状态', () => {
     expect(state.draft).toBe('总结当前笔记');
   });
 
+  it('把文件夹展开的多篇笔记一次加入并保持草稿', () => {
+    let state = reduceNewTaskState(createNewTaskState(), {
+      type: 'draft-changed',
+      draft: '总结资料文件夹',
+    });
+    const contexts = [
+      createVaultFileContext('vault-file', '资料/一.md'),
+      createVaultFileContext('vault-file', '资料/子目录/二.md'),
+    ];
+
+    state = reduceNewTaskState(state, { type: 'contexts-added', contexts });
+
+    expect(state.contexts).toEqual(contexts);
+    expect(state.draft).toBe('总结资料文件夹');
+    expect(state.contextError).toBeNull();
+  });
+
   it('只更新当前动作对应的字段且不修改旧状态', () => {
     const initial = createNewTaskState();
     const withMode = reduceNewTaskState(initial, { type: 'mode-changed', mode: 'task' });
