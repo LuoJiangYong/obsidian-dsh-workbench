@@ -87,7 +87,7 @@ Batch 0B 已建立其中的只读健康检查子集：
 - 精确目标版本 `0.1.1-rc.1`；其他版本明确显示不支持，不增加兼容分支。
 - 假运行时覆盖 PATH 裸命令、绝对路径、Windows `.cmd` shim、无效输出、超时、stderr 限长脱敏、`dispose` 与进程树清理。
 - Windows matrix 增加显式 `npm run test:runtime` 专项步骤；完整 `npm test` 仍在 Windows 与 Ubuntu 运行。
-- SDK、ACP 与薄 bridge 的 P0 评估已形成唯一 ADR；Batch 4 已实现生产 bridge，Batch 5A 已实现 Obsidian 宿主 UI，Batch 6 已实现只读上下文子集，但模型发送链仍未接通。
+- SDK、ACP 与薄 bridge 的 P0 评估已形成唯一 ADR；Batch 4 已实现生产 bridge，Batch 5A 已实现 Obsidian 宿主 UI，Batch 6 已实现只读上下文，Batch 7 已实现模型发送链并统一 rc.2 健康检查。
 
 正式 bridge 的版本演进门已冻结为：每个实现或兼容批次重新读取 GitHub 最新预发布与 npm dist-tag，以一致结果建立待验证候选并精确锁定；当前目标为 `0.1.1-rc.2`。计划中的上游监测只允许生成 issue、兼容提案或 draft PR，不得自动安装/更新 DSH、自动合并、自动发布或自动提交社区目录。监测 workflow 尚未实现。
 
@@ -103,7 +103,9 @@ Batch 5A 原实现提交 `c8f6922b1a44e5bc0fdb325fce183e95b85320d1` 的代码与
 
 Batch 6 已实现只读知识库纯契约、Obsidian 宿主适配与 Workbench UI：当前笔记、当前选区、单个 Markdown 文件和明确选择的非根文件夹均需用户主动操作；文件夹递归展开为选择当下的确定 Markdown 集合，并在整批去重、数量和字节校验通过后原子加入。文件在发送前重新读取，失效/二进制/路径/数量/字节错误 fail closed 并保留草稿。限制为 `10` 项、单项 `96 KiB`、合计 `192 KiB`，最坏 JSON 双重转义的 wire frame 实测低于 `1 MiB`。最终实现状态 `7ee4b07d4afc0a67b8034e57c513599c7d562b19` 已通过本地完整门和远端 [CI run 33031107880](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33031107880)：Ubuntu check `98383584575`、Windows check `98383584694` 均成功，两个原始 annotations 数组均为 `[]`。专用 `obsidian-dsh-workbench-evidence` Vault 已在 Obsidian `1.13.7` 完成当前笔记、真实当前选区冻结、递归文件夹、后来新增文件不静默跟踪、快速助手、Light/Dark、精确 `700px`、禁用/重载复位、零错误与零 bridge 残留验收；临时夹具与部署资产已清理，原始笔记哈希不变。Ardot 未修改、只读核对。
 
-这些证据分别证明正式 bridge、Obsidian 宿主 UI 和只读上下文代码子集，但尚未证明模型发送链已接通，也不证明外部工作区权限、完整会话或最终用户 UI 验收通过，因此 Phase C 整体仍是“部分建立”。
+Batch 7 已实现插件级 `NewTaskConversationController`、发送前任务/只读笔记确认、确定性 `64 KiB` 任务信封、DSH session 复用、流式回复、真实 turn cancel、取消超时强制清理和可见错误终态。运行数据按 [ADR-006](./architecture/ADR-006-conversation-runtime-storage.md) 分层：完整历史/设置/凭据保留在用户原生 `$DSH_HOME`，bridge overlay 位于 Vault 哈希分区的操作系统状态目录，Workbench 只保存内存投影；所有运行目录在启动 DSH 前校验不位于 Vault。对话 session 使用 DSH 工具枚举和执行双重拒绝，保持真正只读。当前实现正在等待本批远端 CI 与专用 Vault 运行验收。
+
+这些证据证明正式 bridge、Obsidian 宿主 UI、只读上下文和产品对话发送链已经形成代码闭环，但 Batch 7 运行证据、外部工作区权限、任务执行、跨重启恢复与最终用户 UI 验收尚未通过，因此 Phase C 整体仍是“部分建立”。
 
 ## Phase D：隔离 Vault 与发布门
 
@@ -156,4 +158,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A 与 Batch 6 的实现、本地完整门、双平台 CI、原始零 annotations、专用 Vault 运行验收及清理均已通过；Batch 6 已纳入 `2026-08-27` 的“选择知识库 / 已选笔记 / 无方框阴影 / 选择文件夹”插件直接反馈。下一步进入 Batch 7 的真实对话发送链。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A 与 Batch 6 的实现、本地完整门、双平台 CI、原始零 annotations、专用 Vault 运行验收及清理均已通过；Batch 7 代码已实现，下一步完成本地完整门、远端 CI 和专用 Vault 真实对话验收。随后 Batch 8 接通 Vault 外工作区任务，并实现用户新增的逐轮“已编辑文件”卡片：默认三项、可展开、原生右键操作、真实 diff 审核与安全逐轮撤销。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。

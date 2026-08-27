@@ -79,6 +79,11 @@ export class MockElement {
     this.attributes.set(name, value);
   }
 
+  setText(value: string): void {
+    this.children.length = 0;
+    this.text = value;
+  }
+
   allText(): string[] {
     return [this.text, ...this.children.flatMap((child) => child.allText())]
       .filter((value) => value.length > 0);

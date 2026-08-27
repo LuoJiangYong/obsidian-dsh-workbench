@@ -12,7 +12,7 @@ import {
 } from './bridge-protocol';
 
 export const name = 'obsidian-bridge';
-export const inject = ['agents', 'agentDefaultModel'] as const;
+export const inject = ['agents', 'agentDefaultModel', 'tools'] as const;
 export const MAX_BRIDGE_FRAME_BYTES = 1024 * 1024;
 
 type ApprovalOutcome = 'allowed-once' | 'cancelled' | 'rejected' | 'unavailable';
@@ -46,6 +46,10 @@ export interface DshModelSelection {
 }
 
 export interface DshScopedContext {
+  readonly tools: {
+    guard(guard: () => string | undefined): () => void;
+    restrict(filter: { readonly allow?: readonly string[]; readonly deny?: readonly string[] }): () => void;
+  };
   on(
     event: 'system-prompt/assemble',
     listener: (
@@ -273,7 +277,10 @@ export class ObsidianBridgeServer {
     const handle = await this.context.agents.create({
       sessionId,
       agentOptions: { provider: selection.provider, model: selection.model },
-      setup: (agentContext) => { installModelSelection(agentContext, selection); },
+      setup: (agentContext) => {
+        installModelSelection(agentContext, selection);
+        if (mode === 'chat') installChatToolBoundary(agentContext);
+      },
     });
     if (this.sessions.has(sessionId)) {
       await handle.dispose();
@@ -637,6 +644,11 @@ function installModelSelection(
       ...(assembled.reasoningEffort === undefined ? {} : { reasoningEffort: assembled.reasoningEffort }),
     };
   });
+}
+
+function installChatToolBoundary(context: DshScopedContext): void {
+  context.tools.restrict({ allow: [] });
+  context.tools.guard(() => 'Obsidian 对话模式不允许调用 DSH 工具。');
 }
 
 function createUserMessage(text: string): DshMessage {

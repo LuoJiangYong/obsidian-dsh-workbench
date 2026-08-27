@@ -1,5 +1,6 @@
-import { ItemView, setIcon, type IconName, type WorkspaceLeaf } from 'obsidian';
+import { ItemView, Modal, setIcon, type IconName, type WorkspaceLeaf } from 'obsidian';
 
+import type { BridgePermissionDecision } from './bridge-protocol';
 import type { DshHealthResult } from './dsh-health';
 import { DEEPSEEK_WHALE_ICON } from './icons';
 import {
@@ -7,6 +8,11 @@ import {
   formatContextByteLimit,
   type NewTaskContextSelection,
 } from './new-task-context';
+import type {
+  NewTaskConversationHost,
+  NewTaskConversationMessage,
+  NewTaskConversationSnapshot,
+} from './new-task-conversation';
 import {
   canSubmitNewTask,
   createNewTaskState,
@@ -36,6 +42,7 @@ const WORKBENCH_NAVIGATION: readonly WorkbenchNavigationItem[] = Object.freeze([
 ]);
 
 interface WorkbenchViewOptions {
+  readonly conversationHost: NewTaskConversationHost;
   readonly contextHost: NewTaskContextHost;
   readonly getDshHealth: () => DshHealthResult;
   readonly onContextsChanged: () => void;
@@ -44,7 +51,11 @@ interface WorkbenchViewOptions {
 
 export class WorkbenchView extends ItemView {
   private activeSection: WorkbenchSectionId = 'new-task';
+  private conversationEl: HTMLElement | undefined;
+  private detachConversation: (() => void) | undefined;
   private newTaskState: NewTaskState = createNewTaskState();
+  private sendButtonEl: HTMLButtonElement | undefined;
+  private textareaEl: HTMLTextAreaElement | undefined;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -66,11 +77,17 @@ export class WorkbenchView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    this.detachConversation ??= this.options.conversationHost.subscribe(
+      () => this.syncConversationSurface(),
+    );
     this.render();
   }
 
   render(): void {
     const { contentEl } = this;
+    this.conversationEl = undefined;
+    this.sendButtonEl = undefined;
+    this.textareaEl = undefined;
     contentEl.empty();
     contentEl.addClass('dsh-workbench-view');
 
@@ -87,7 +104,12 @@ export class WorkbenchView extends ItemView {
   }
 
   async onClose(): Promise<void> {
+    this.detachConversation?.();
+    this.detachConversation = undefined;
     this.newTaskState = createNewTaskState();
+    this.conversationEl = undefined;
+    this.sendButtonEl = undefined;
+    this.textareaEl = undefined;
     this.contentEl.empty();
     this.options.onContextsChanged();
   }
@@ -163,6 +185,14 @@ export class WorkbenchView extends ItemView {
     taskEl.createEl('h3', { text: NEW_TASK_HEADING });
     this.renderNewTaskModes(taskEl);
 
+    this.conversationEl = taskEl.createEl('section', {
+      cls: 'dsh-new-task-conversation',
+      attr: {
+        'aria-label': '对话记录',
+        'aria-live': 'polite',
+      },
+    });
+
     const composerEl = taskEl.createDiv({ cls: 'dsh-new-task-composer' });
     const textareaEl = composerEl.createEl('textarea', {
       cls: 'dsh-new-task-composer__input',
@@ -172,6 +202,7 @@ export class WorkbenchView extends ItemView {
         rows: '7',
       },
     });
+    this.textareaEl = textareaEl;
     textareaEl.value = this.newTaskState.draft;
 
     this.renderSelectedContexts(composerEl);
@@ -195,13 +226,17 @@ export class WorkbenchView extends ItemView {
       text: '发送',
       attr: { type: 'button' },
     });
-    this.syncSendButton(sendButtonEl);
+    this.sendButtonEl = sendButtonEl;
+    this.syncSendButton();
     textareaEl.addEventListener('input', () => {
       this.newTaskState = reduceNewTaskState(this.newTaskState, {
         type: 'draft-changed',
         draft: textareaEl.value,
       });
-      this.syncSendButton(sendButtonEl);
+      this.syncSendButton();
+    });
+    sendButtonEl.addEventListener('click', () => {
+      void this.handlePrimaryAction();
     });
 
     const confirmationEl = taskEl.createEl('section', { cls: 'dsh-new-task-confirmation' });
@@ -212,8 +247,9 @@ export class WorkbenchView extends ItemView {
     const confirmationCopyEl = confirmationEl.createDiv();
     confirmationCopyEl.createEl('strong', { text: '执行前确认' });
     confirmationCopyEl.createEl('p', {
-      text: '发送前展示上下文、权限和拟变更内容，并允许用户取消。',
+      text: '发送前确认任务和只读笔记；对话不开放 DSH 工具，也不会写入知识库。',
     });
+    this.syncConversationSurface();
   }
 
   private renderNewTaskModes(parentEl: HTMLElement): void {
@@ -371,14 +407,160 @@ export class WorkbenchView extends ItemView {
     return compact.length <= 120 ? compact : `${compact.slice(0, 120)}…`;
   }
 
-  private syncSendButton(buttonEl: HTMLButtonElement): void {
-    buttonEl.disabled = !canSubmitNewTask(this.newTaskState);
+  private async handlePrimaryAction(): Promise<void> {
+    const snapshot = this.options.conversationHost.getSnapshot();
+    if (snapshot.phase === 'running' || snapshot.phase === 'awaiting_permission') {
+      await this.options.conversationHost.cancel();
+      return;
+    }
+    if (!canSubmitNewTask(this.newTaskState, snapshot.phase)) return;
+
+    const draft = this.newTaskState.draft;
+    const contexts = this.newTaskState.contexts;
+    const mode = this.newTaskState.mode;
+    new NewTaskReviewModal(
+      this.app,
+      draft,
+      contexts,
+      async () => {
+        const accepted = await this.options.conversationHost.submit({
+          contexts,
+          draft,
+          mode,
+          reader: this.options.contextHost,
+        });
+        if (accepted) {
+          this.newTaskState = reduceNewTaskState(this.newTaskState, {
+            type: 'draft-changed',
+            draft: '',
+          });
+          if (this.textareaEl) this.textareaEl.value = '';
+          this.syncSendButton();
+        }
+        return accepted;
+      },
+    ).open();
+  }
+
+  private syncConversationSurface(): void {
+    const conversationEl = this.conversationEl;
+    if (!conversationEl) {
+      this.syncSendButton();
+      return;
+    }
+    const snapshot = this.options.conversationHost.getSnapshot();
+    conversationEl.empty();
+
+    for (const message of snapshot.messages) {
+      const messageEl = conversationEl.createEl('article', {
+        cls: `dsh-new-task-message is-${message.role}`,
+      });
+      messageEl.createEl('strong', {
+        cls: 'dsh-new-task-message__role',
+        text: message.role === 'user' ? '你' : 'DeepSeek Harness',
+      });
+      messageEl.createEl('p', {
+        cls: 'dsh-new-task-message__content',
+        text: message.text || (message.role === 'assistant' ? '正在回复…' : ''),
+      });
+      const messageStatus = conversationMessageStatus(message);
+      if (messageStatus) {
+        messageEl.createSpan({
+          cls: 'dsh-new-task-message__status',
+          text: messageStatus,
+        });
+      }
+    }
+
+    if (snapshot.tools.length > 0) {
+      const toolsEl = conversationEl.createEl('section', {
+        cls: 'dsh-new-task-tools',
+        attr: { 'aria-label': '工具调用' },
+      });
+      toolsEl.createEl('strong', { text: '工具调用' });
+      toolsEl.createEl('p', {
+        text: snapshot.tools.map((tool) => tool.toolName).join('、'),
+      });
+    }
+
+    if (snapshot.permission) this.renderPermission(conversationEl, snapshot);
+    if (snapshot.error) {
+      conversationEl.createEl('p', {
+        cls: 'dsh-new-task-conversation__error',
+        text: snapshot.error.message,
+        attr: { role: 'alert' },
+      });
+    }
+
+    const status = conversationPhaseStatus(snapshot);
+    if (status) {
+      conversationEl.createEl('p', {
+        cls: 'dsh-new-task-conversation__status',
+        text: status,
+      });
+    }
+    this.syncSendButton();
+  }
+
+  private renderPermission(
+    parentEl: HTMLElement,
+    snapshot: NewTaskConversationSnapshot,
+  ): void {
+    const permission = snapshot.permission;
+    if (!permission) return;
+    const permissionEl = parentEl.createEl('section', {
+      cls: 'dsh-new-task-permission',
+      attr: { 'aria-label': '本次权限请求' },
+    });
+    permissionEl.createEl('strong', { text: `请求调用 ${permission.toolName}` });
+    if (permission.reason) permissionEl.createEl('p', { text: permission.reason });
+    permissionEl.createEl('p', { text: '决定仅对本次请求有效。' });
+    const actionsEl = permissionEl.createDiv({ cls: 'dsh-new-task-permission__actions' });
+    for (const action of [
+      { decision: 'reject', label: '拒绝' },
+      { decision: 'allow-once', label: '仅本次允许' },
+    ] as const satisfies readonly {
+      readonly decision: BridgePermissionDecision;
+      readonly label: string;
+    }[]) {
+      const buttonEl = actionsEl.createEl('button', {
+        cls: action.decision === 'allow-once' ? 'mod-cta' : '',
+        text: action.label,
+        attr: { type: 'button' },
+      });
+      buttonEl.disabled = permission.resolving;
+      buttonEl.addEventListener('click', () => {
+        void this.options.conversationHost.resolvePermission(action.decision);
+      });
+    }
+  }
+
+  private syncSendButton(): void {
+    const buttonEl = this.sendButtonEl;
+    if (!buttonEl) return;
+    const phase = this.options.conversationHost.getSnapshot().phase;
+    if (phase === 'running' || phase === 'awaiting_permission') {
+      buttonEl.setText('停止');
+      buttonEl.disabled = false;
+    } else if (phase === 'validating' || phase === 'starting') {
+      buttonEl.setText('发送中…');
+      buttonEl.disabled = true;
+    } else if (phase === 'cancelling') {
+      buttonEl.setText('正在停止…');
+      buttonEl.disabled = true;
+    } else {
+      buttonEl.setText('发送');
+      buttonEl.disabled = !canSubmitNewTask(this.newTaskState, phase);
+    }
     buttonEl.setAttr('aria-disabled', buttonEl.disabled ? 'true' : 'false');
   }
 
   private renderRun(parentEl: HTMLElement): void {
     const health = this.options.getDshHealth();
-    const state = createWorkbenchState(health);
+    const state = createWorkbenchState(
+      health,
+      this.options.conversationHost.getSnapshot().runtimeStatus,
+    );
     this.renderPageHeader(
       parentEl,
       '运行',
@@ -462,4 +644,100 @@ export class WorkbenchView extends ItemView {
     rowEl.createSpan({ cls: 'dsh-runtime-status__label', text: label });
     rowEl.createSpan({ cls: 'dsh-runtime-status__value', text: value });
   }
+}
+
+class NewTaskReviewModal extends Modal {
+  constructor(
+    app: WorkbenchView['app'],
+    private readonly draft: string,
+    private readonly contexts: readonly NewTaskContextSelection[],
+    private readonly onConfirm: () => Promise<boolean>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.setTitle('确认发送');
+    this.contentEl.createEl('p', {
+      cls: 'dsh-new-task-review__boundary',
+      text: '本次为只读对话：仅发送下列任务和你明确选择的笔记；不开放 DSH 工具，不写入知识库。',
+    });
+    this.contentEl.createEl('strong', { text: '任务' });
+    this.contentEl.createEl('pre', {
+      cls: 'dsh-new-task-review__task',
+      text: this.draft.trim(),
+    });
+    this.contentEl.createEl('strong', { text: '已选笔记' });
+    if (this.contexts.length === 0) {
+      this.contentEl.createEl('p', { text: '无' });
+    } else {
+      const listEl = this.contentEl.createEl('ul', { cls: 'dsh-new-task-review__contexts' });
+      for (const context of this.contexts) {
+        listEl.createEl('li', { text: contextSelectionLabel(context) });
+      }
+    }
+
+    const errorEl = this.contentEl.createEl('p', {
+      cls: 'dsh-new-task-review__error',
+      attr: { role: 'alert' },
+    });
+    const actionsEl = this.contentEl.createDiv({ cls: 'dsh-new-task-review__actions' });
+    const cancelEl = actionsEl.createEl('button', {
+      text: '取消',
+      attr: { type: 'button' },
+    });
+    cancelEl.addEventListener('click', () => this.close());
+    const confirmEl = actionsEl.createEl('button', {
+      cls: 'mod-cta dsh-new-task-review__confirm',
+      text: '确认发送',
+      attr: { type: 'button' },
+    });
+    confirmEl.addEventListener('click', () => {
+      void this.confirm(confirmEl, cancelEl, errorEl);
+    });
+  }
+
+  private async confirm(
+    confirmEl: HTMLButtonElement,
+    cancelEl: HTMLButtonElement,
+    errorEl: HTMLElement,
+  ): Promise<void> {
+    confirmEl.disabled = true;
+    cancelEl.disabled = true;
+    errorEl.setText('');
+    const accepted = await this.onConfirm();
+    if (accepted) {
+      this.close();
+      return;
+    }
+    const failure = '发送未被接受，请返回工作台查看错误并重试。';
+    errorEl.setText(failure);
+    confirmEl.disabled = false;
+    cancelEl.disabled = false;
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+function conversationMessageStatus(message: NewTaskConversationMessage): string | undefined {
+  if (message.delivery === 'pending') return '正在发送';
+  if (message.delivery === 'failed') return '发送失败';
+  if (message.interrupted === true) return '已中断';
+  return undefined;
+}
+
+function conversationPhaseStatus(snapshot: NewTaskConversationSnapshot): string | undefined {
+  const statuses: Readonly<Partial<Record<NewTaskConversationSnapshot['phase'], string>>> = {
+    awaiting_permission: '等待本次权限决定',
+    cancelled: '已停止',
+    cancelling: '正在停止…',
+    completed: '回复完成',
+    failed: '本次对话失败',
+    running: 'DSH 正在回复…',
+    starting: '正在连接 DSH…',
+    validating: '正在校验只读笔记…',
+  };
+  return statuses[snapshot.phase];
 }

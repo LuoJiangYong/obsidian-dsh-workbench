@@ -17,8 +17,6 @@ export type NewTaskPhase =
   | 'cancelled'
   | 'completed'
   | 'failed';
-
-export type NewTaskReviewStatus = 'pending' | 'ready';
 export type NewTaskRuntimeStatus = 'disconnected' | 'connected';
 
 export interface NewTaskState {
@@ -26,9 +24,6 @@ export interface NewTaskState {
   readonly contexts: readonly NewTaskContextSelection[];
   readonly draft: string;
   readonly mode: NewTaskMode;
-  readonly phase: NewTaskPhase;
-  readonly reviewStatus: NewTaskReviewStatus;
-  readonly runtimeStatus: NewTaskRuntimeStatus;
 }
 
 export type NewTaskAction =
@@ -37,10 +32,7 @@ export type NewTaskAction =
   | { readonly type: 'context-error-changed'; readonly message: string | null }
   | { readonly type: 'context-removed'; readonly id: string }
   | { readonly type: 'draft-changed'; readonly draft: string }
-  | { readonly type: 'mode-changed'; readonly mode: NewTaskMode }
-  | { readonly type: 'phase-changed'; readonly phase: NewTaskPhase }
-  | { readonly type: 'review-status-changed'; readonly status: NewTaskReviewStatus }
-  | { readonly type: 'runtime-status-changed'; readonly status: NewTaskRuntimeStatus };
+  | { readonly type: 'mode-changed'; readonly mode: NewTaskMode };
 
 export function createNewTaskState(): NewTaskState {
   return Object.freeze({
@@ -48,9 +40,6 @@ export function createNewTaskState(): NewTaskState {
     contexts: Object.freeze([]),
     draft: '',
     mode: 'chat',
-    phase: 'idle',
-    reviewStatus: 'pending',
-    runtimeStatus: 'disconnected',
   });
 }
 
@@ -83,18 +72,14 @@ export function reduceNewTaskState(
       return Object.freeze({ ...state, draft: action.draft });
     case 'mode-changed':
       return Object.freeze({ ...state, mode: action.mode });
-    case 'phase-changed':
-      return Object.freeze({ ...state, phase: action.phase });
-    case 'review-status-changed':
-      return Object.freeze({ ...state, reviewStatus: action.status });
-    case 'runtime-status-changed':
-      return Object.freeze({ ...state, runtimeStatus: action.status });
   }
 }
 
-export function canSubmitNewTask(state: NewTaskState): boolean {
+export function canSubmitNewTask(state: NewTaskState, phase: NewTaskPhase): boolean {
   return state.draft.trim().length > 0
-    && state.phase === 'idle'
-    && state.reviewStatus === 'ready'
-    && state.runtimeStatus === 'connected';
+    && state.mode === 'chat'
+    && (phase === 'idle'
+      || phase === 'cancelled'
+      || phase === 'completed'
+      || phase === 'failed');
 }

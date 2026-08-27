@@ -252,3 +252,21 @@ Batch 5A dedicated Vault remediation result: passed; final Obsidian UI user acce
 - Ardot 文件、页面和画板均未修改，只读核对。真实模型发送、权限请求、外部工作区、任务执行、最终 Obsidian UI 用户验收、Release 与社区提交仍未通过或未授权。
 
 Batch 6 implementation and dedicated Vault result: passed; final Obsidian UI user acceptance: pending
+
+## Batch 7：真实只读对话实施门
+
+- 日期：`2026-08-27`；Ardot 文件仍为 `718186366720195`，用户审阅页面仍为 `UI 真相 v2`（`12:1`），相关产品画板仍为 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360` 与 QA `12:530`。
+- Ardot 未修改、只读核对。本批只根据用户对插件的直接反馈演进 `DESIGN.md`、ADR、插件 UI、测试、CI 契约和本文；没有新增、删除、移动或更新 Ardot 节点、画板、文案、样式、变量或截图。
+- 本批先对照 Claudian 当前提交 `15b78af785cda04fccc96f4effcfae6367f9be65` 的 provider 原生历史、共享存储、路径防护和标签生命周期。采用“provider 原生 session 为完整历史真相、插件级运行所有权、串行清理、路径包含关系防护”；拒绝把类似 `.claudian/sessions` 或 `.inputs.json` 的运行账本写入 Vault。详细决策见 ADR-006。
+- Workbench “对话”模式已接入发送前 modal，展示任务、已选笔记和“不开放 DSH 工具、不写入知识库”边界；取消保留草稿，确认后才重读笔记、建立确定性快照并启动 DSH。
+- 对话区以无方框阴影的平面分隔展示当前插件生命周期内的用户消息、流式助手文本、工具身份、一次性权限、停止与错误终态。流式事件只更新消息区，不重绘 textarea；活动 turn 的主操作变为“停止”。
+- DSH “对话” session 同时执行空 allow-list 与 guard 拒绝，标准 preset 中的 Shell、文件系统、Web 等工具既不可枚举也不可执行。当前对话因此不会写入 Vault 或外部工作区；协议保留工具/权限投影供后续任务模式使用。
+- 完整历史、设置和凭据继续由用户原生 `$DSH_HOME` 管理；插件 bridge overlay 位于操作系统应用数据目录中的 Vault 哈希分区，当前草稿与消息投影只在内存。状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 时在任何 DSH 检查前失败。
+- 用户新增的“每个任务 turn 结束显示已编辑文件、默认三个/可展开、右键操作、审核与安全撤销”属于 Batch 8 外部工作区真实变更结果，不在本批显示假卡片；需求已写入 `docs/requirements/new-task-v1.md`。
+
+### 当前证据状态
+
+- 定向 TypeScript、零警告 lint 与对话/存储/bridge/UI 测试已通过；完整本地质量门、远端双平台 CI、专用 `obsidian-dsh-workbench-evidence` Vault 的真实模型回复/停止/重载清理、最终截图和资产指纹仍待本批后续建立。
+- 未使用且不会使用 `D:\codex workspace\_test-vaults\obsidian-trend-radar-evidence`；它属于另一个插件。
+
+Batch 7 implementation: in progress; dedicated Vault result: pending; final Obsidian UI user acceptance: pending

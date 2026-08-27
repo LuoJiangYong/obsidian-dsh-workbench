@@ -15,7 +15,7 @@ if (managedScenario) {
   process.exit(64);
 } else switch (process.env.FAKE_DSH_SCENARIO) {
   case 'success':
-    process.stdout.write('0.1.1-rc.1\n');
+    process.stdout.write('0.1.1-rc.2\n');
     break;
   case 'unsupported':
     process.stdout.write('0.1.0-rc.6\n');
@@ -46,6 +46,14 @@ if (managedScenario) {
 }
 
 function runManagedBridge(scenario) {
+  const environmentFile = process.env.FAKE_DSH_ENV_FILE;
+  if (environmentFile) {
+    writeFileSync(environmentFile, JSON.stringify({
+      dshHome: process.env.DSH_HOME,
+      permissionMode: process.env.DSH_PERMISSION_MODE,
+      telemetryDisabled: process.env.DSH_TELEMETRY_DISABLED,
+    }), 'utf8');
+  }
   if (scenario === 'managed-hang-with-child') {
     const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1_000)'], {
       stdio: 'ignore',

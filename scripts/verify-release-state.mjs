@@ -22,14 +22,17 @@ assert(manifest.description.length <= 250, 'manifest description 超过 250 字�
 assert(manifest.description.endsWith('.'), 'manifest description 必须以句点结尾');
 assert(readme.includes(expected.unofficialStatement), 'README 缺少非官方声明');
 assert(
-  readme.includes('DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收'),
+  readme.includes('DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标已统一为 `0.1.1-rc.2` 并通过本地测试，正在等待本批双平台 CI 与专用隔离 Vault 读回'),
   'README 误报健康检查状态',
 );
 assert(
-  readme.includes('DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口与上下文快照已实现，但模型调用链与任务执行尚未接通'),
+  readme.includes('DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部 DSH 工具，任务执行尚未接通'),
   'README 会话能力边界漂移',
 );
-assert(readme.includes('当前健康检查精确支持 DSH `0.1.1-rc.1`'), 'README 缺少目标 DSH 版本');
+assert(
+  readme.includes('当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`'),
+  'README 缺少目标 DSH 版本',
+);
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');
 
 await access('main.js');

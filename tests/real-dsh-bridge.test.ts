@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -33,26 +33,32 @@ afterAll(async () => {
 });
 
 describe.runIf(existsSync(dshCommand))('DSH 0.1.1-rc.2 正式 bridge 运行验收', () => {
-  it('真实加载 artifact，完成握手、Agent session、mid-turn cancel、关闭与零残留', async () => {
+  it('真实加载 artifact，以原生 DSH 会话落盘并完成 mid-turn cancel、关闭与零残留', async () => {
     const model = await createSlowModelServer();
-    const runtimeHome = path.join(temporaryRoot, 'dsh-home');
+    const dshHome = path.join(temporaryRoot, 'dsh-home');
+    const stateDirectory = path.join(temporaryRoot, 'plugin-state');
     const workingDirectory = path.join(temporaryRoot, 'workspace');
     const manager = new ManagedBridgeProcess({
       bridgePath,
       command: dshCommand,
+      dshHome,
       environment: {
         ...process.env,
         DEEPSEEK_API_KEY: 'fixture-key-never-logged',
         DEEPSEEK_BASE_URL: model.url,
       },
       requestTimeoutMs: 10_000,
-      runtimeHome,
+      stateDirectory,
       shutdownTimeoutMs: 5_000,
       startTimeoutMs: 15_000,
+      vaultPath: path.join(temporaryRoot, 'vault'),
       workingDirectory,
     });
 
-    await mkdir(workingDirectory, { recursive: true });
+    await Promise.all([
+      mkdir(workingDirectory, { recursive: true }),
+      mkdir(path.join(temporaryRoot, 'vault'), { recursive: true }),
+    ]);
     try {
       const client = await manager.start();
       await client.createSession({ sessionId: 'real-session-1', mode: 'chat' });
@@ -75,6 +81,10 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.1-rc.2 正式 bridge 运行验�
         shutdown: { outcome: 'graceful' },
         failure: undefined,
       });
+      const sessionArtifacts = await readdir(path.join(dshHome, 'sessions'), { recursive: true });
+      expect(sessionArtifacts.some((entry) => /session\.jsonl(?:\.zstd)?$/u.test(entry))).toBe(true);
+      expect(existsSync(path.join(stateDirectory, 'obsidian-bridge.cordis.patch.yml'))).toBe(true);
+      expect(existsSync(path.join(dshHome, 'obsidian-bridge.cordis.patch.yml'))).toBe(false);
     } finally {
       await manager.dispose();
       await model.close();

@@ -29,8 +29,10 @@ const SESSION_ID = 'session-real-bridge';
 const TURN_ID = 'turn-real-bridge';
 
 describe('正式 obsidian-bridge', () => {
-  it('完成精确握手、创建 Agent 并窄投影 DSH session 事件', async () => {
+  it('完成精确握手、禁止对话模式全部 DSH 工具并窄投影 DSH session 事件', async () => {
     const harness = await createReadySession();
+    expect(harness.context.scoped.restrictions).toEqual([{ allow: [] }]);
+    expect(harness.context.scoped.guards[0]?.()).toBe('Obsidian 对话模式不允许调用 DSH 工具。');
     await harness.server.receive(turnStartRequest('request-3'));
 
     expect(harness.agent.messages).toHaveLength(1);
@@ -228,7 +230,25 @@ class FakeWire implements BridgeWire {
 }
 
 class FakeScopedContext {
+  readonly guards: Array<() => string | undefined> = [];
   readonly listeners = new Map<string, unknown>();
+  readonly restrictions: Array<{
+    readonly allow?: readonly string[];
+    readonly deny?: readonly string[];
+  }> = [];
+  readonly tools = {
+    guard: (guard: () => string | undefined): (() => void) => {
+      this.guards.push(guard);
+      return () => undefined;
+    },
+    restrict: (filter: {
+      readonly allow?: readonly string[];
+      readonly deny?: readonly string[];
+    }): (() => void) => {
+      this.restrictions.push(filter);
+      return () => undefined;
+    },
+  };
 
   on(event: string, listener: unknown): () => void {
     this.listeners.set(event, listener);

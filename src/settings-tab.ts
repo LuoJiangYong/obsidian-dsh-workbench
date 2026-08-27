@@ -28,7 +28,11 @@ export class WorkbenchSettingTab extends PluginSettingTab {
       },
       {
         name: '运行边界',
-        desc: '健康检查仅在手动触发时执行固定的 --version；插件不会安装、更新或自动启动 DSH 会话。',
+        desc: '健康检查仅在手动触发时执行固定的 --version；只有确认发送后才启动受管 DSH 会话和模型请求。插件不会安装或更新 DSH。',
+      },
+      {
+        name: '运行数据',
+        desc: '完整会话、模型设置和凭据由原生 DSH_HOME 管理；插件只在 Vault 外保存可重建的 bridge 状态，当前对话投影保留在内存。',
       },
     ];
   }

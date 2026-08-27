@@ -95,7 +95,7 @@ describe('原生 Workbench 插件基线', () => {
       '模型由 DSH 配置管理',
       '发送',
       '执行前确认',
-      '发送前展示上下文、权限和拟变更内容，并允许用户取消。',
+      '发送前确认任务和只读笔记；对话不开放 DSH 工具，也不会写入知识库。',
     ]));
     expect(content.allText().join('\n')).not.toMatch(/规划中|尚未实现|首发/);
     expect(content.allText().join('\n')).not.toMatch(/项目|专家 · Skill · 连接器|自动化|资料库|领域工作台/u);

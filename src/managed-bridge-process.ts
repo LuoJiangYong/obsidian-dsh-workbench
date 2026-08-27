@@ -13,16 +13,22 @@ import { BridgeProtocolClient } from './bridge-protocol-client';
 import { TARGET_BRIDGE_DSH_VERSION } from './bridge-protocol';
 import { DshHealthProbe, redactDiagnostic } from './dsh-health';
 import { validateDshCommand } from './dsh-settings';
+import {
+  prepareWorkbenchRuntimeStorage,
+  resolveWorkbenchRuntimeStorage,
+} from './runtime-storage';
 
 export interface ManagedBridgeProcessOptions {
   readonly bridgePath: string;
   readonly command: string;
+  readonly dshHome?: string;
   readonly environment?: NodeJS.ProcessEnv;
   readonly platform?: NodeJS.Platform;
   readonly requestTimeoutMs?: number;
-  readonly runtimeHome: string;
+  readonly stateDirectory: string;
   readonly shutdownTimeoutMs?: number;
   readonly startTimeoutMs?: number;
+  readonly vaultPath: string;
   readonly workingDirectory: string;
 }
 
@@ -70,6 +76,18 @@ export class ManagedBridgeProcess {
     if (this.disposed) throw new Error('受管 bridge 已释放');
     if (this.child) throw new Error('受管 bridge 已启动');
 
+    const configuredStorage = resolveWorkbenchRuntimeStorage({
+      environment: this.environment,
+      platform: this.platform,
+      vaultPath: this.options.vaultPath,
+    });
+    const storage = await prepareWorkbenchRuntimeStorage({
+      dshHome: this.options.dshHome ?? configuredStorage.dshHome,
+      platform: this.platform,
+      stateDirectory: this.options.stateDirectory,
+      vaultPath: this.options.vaultPath,
+      workingDirectory: this.options.workingDirectory,
+    });
     const health = await new DshHealthProbe({
       environment: this.environment,
       expectedVersion: TARGET_BRIDGE_DSH_VERSION,
@@ -79,9 +97,8 @@ export class ManagedBridgeProcess {
     if (health.status !== 'available') {
       throw new Error(`DSH ${TARGET_BRIDGE_DSH_VERSION} 启动前检查失败：${health.status}`);
     }
-
-    await mkdir(this.options.runtimeHome, { recursive: true });
-    const overlayPath = path.join(this.options.runtimeHome, OVERLAY_FILENAME);
+    await mkdir(this.options.workingDirectory, { recursive: true });
+    const overlayPath = path.join(storage.stateDirectory, OVERLAY_FILENAME);
     await writeFile(
       overlayPath,
       createBridgeOverlay(this.options.bridgePath),
@@ -99,7 +116,8 @@ export class ManagedBridgeProcess {
       detached: this.platform !== 'win32',
       env: {
         ...this.environment,
-        DSH_HOME: this.options.runtimeHome,
+        DSH_HOME: storage.dshHome,
+        DSH_PERMISSION_MODE: 'read-only',
         DSH_TELEMETRY_DISABLED: '1',
       },
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -174,9 +192,11 @@ export class ManagedBridgeProcess {
     let diagnostic = this.stderrTail;
     for (const sensitivePath of [
       this.options.bridgePath,
-      this.options.runtimeHome,
+      this.options.dshHome,
+      this.options.stateDirectory,
+      this.options.vaultPath,
       this.options.workingDirectory,
-    ]) {
+    ].filter((value): value is string => value !== undefined)) {
       diagnostic = diagnostic.split(sensitivePath).join('[PATH]');
     }
     return redactDiagnostic(diagnostic).slice(-STDERR_LIMIT);
@@ -191,7 +211,7 @@ export class ManagedBridgeProcess {
 export function createBridgeOverlay(bridgePath: string): string {
   const bridgeUrl = pathToFileURL(bridgePath).href;
   return [
-    '# 由 DeepSeek Harness Workbench 生成；仅作用于隔离 DSH_HOME。',
+    '# 由 DeepSeek Harness Workbench 生成；仅作用于本次受管 bridge 启动。',
     '- id: code-runtime',
     '  disabled: true',
     '- id: headless-startup',
@@ -201,7 +221,7 @@ export function createBridgeOverlay(bridgePath: string): string {
     '- insert:',
     '    - id: obsidian-bridge',
     `      name: ${JSON.stringify(bridgeUrl)}`,
-    '      inject: [agents, agentDefaultModel]',
+    '      inject: [agents, agentDefaultModel, tools]',
     '',
   ].join('\n');
 }
@@ -234,7 +254,8 @@ function validateOptions(options: ManagedBridgeProcessOptions, platform: NodeJS.
   if (commandError) throw new Error(commandError);
   for (const [label, value] of [
     ['bridgePath', options.bridgePath],
-    ['runtimeHome', options.runtimeHome],
+    ['stateDirectory', options.stateDirectory],
+    ['vaultPath', options.vaultPath],
     ['workingDirectory', options.workingDirectory],
   ] as const) {
     if (!path.isAbsolute(value)) throw new Error(`${label} 必须是绝对路径`);

@@ -38,18 +38,18 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库选择、文件夹原子展开、预览、移除和不可变快照已通过本地完整质量门、双平台远端 CI 与专用隔离 Vault 运行验收；真实发送、对话和任务执行尚未接通 |');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与不可变快照已完成 Batch 6 验收；Batch 7 已实现只读真实发送、发送前审阅、流式回复、停止和错误终态，正在等待远端 CI 与专用隔离 Vault 运行验收；任务执行尚未接通 |');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
     expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
-    expect(readme).toContain('| DSH 路径配置与健康检查 | 已实现；只读检查已通过本地测试、双平台 CI 与专用隔离 Vault 的真实 `--version` 验收 |');
-    expect(readme).toContain('只有用户手动点击“检查 DSH”时才启动外部子进程');
-    expect(readme).toContain('当前健康检查精确支持 DSH `0.1.1-rc.1`');
-    expect(readme).toContain('| DSH 会话、流式事件与取消 | bridge 内部路径已实现并通过本地真实运行验收；Obsidian 宿主入口与上下文快照已实现，但模型调用链与任务执行尚未接通 |');
+    expect(readme).toContain('| DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标已统一为 `0.1.1-rc.2` 并通过本地测试，正在等待本批双平台 CI 与专用隔离 Vault 读回 |');
+    expect(readme).toContain('用户在发送前确认后，插件才启动正式 bridge');
+    expect(readme).toContain('当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`');
+    expect(readme).toContain('| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部 DSH 工具，任务执行尚未接通 |');
     expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
-    expect(readme).toContain('真实模型连接和最终用户 UI 验收尚未完成');
+    expect(readme).toContain('最终用户 UI 验收尚未完成');
     expect(readme).toContain('- 不采集客户端遥测。');
   });
 
@@ -144,12 +144,14 @@ describe('发布与治理契约', () => {
     }
   });
 
-  it('Batch 5A 固定插件反馈 UI、禁用边界与专用 Vault 证据', async () => {
-    const [main, workbench, quickAssistant, newTaskState, styles, designQa] = await Promise.all([
+  it('Batch 5A UI 基线与 Batch 7 插件级对话状态各自保持单一职责', async () => {
+    const [main, workbench, quickAssistant, newTaskState, conversation, styles, designQa]
+      = await Promise.all([
       readFile(path.join(repositoryRoot, 'src', 'main.ts'), 'utf8'),
       readFile(path.join(repositoryRoot, 'src', 'workbench-view.ts'), 'utf8'),
       readFile(path.join(repositoryRoot, 'src', 'quick-assistant-view.ts'), 'utf8'),
       readFile(path.join(repositoryRoot, 'src', 'new-task-state.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'new-task-conversation.ts'), 'utf8'),
       readFile(path.join(repositoryRoot, 'styles.css'), 'utf8'),
       readFile(path.join(repositoryRoot, 'design-qa.md'), 'utf8'),
     ]);
@@ -162,14 +164,16 @@ describe('发布与治理契约', () => {
     expect(workbench).toContain("private activeSection: WorkbenchSectionId = 'new-task'");
     expect(workbench).toContain("attr: { type: 'button', 'aria-disabled': 'true' }");
     expect(workbench).toContain('disabledModeEl.disabled = true');
-    expect(workbench).toContain('canSubmitNewTask(this.newTaskState)');
+    expect(workbench).toContain('canSubmitNewTask(this.newTaskState, phase)');
     expect(workbench).not.toMatch(/text:\s*['`](?:首发|规划中|尚未实现)/u);
     expect(quickAssistant).toContain("promptEl.disabled = true");
     expect(quickAssistant).toContain('新建任务是主对话入口');
     expect(newTaskState).toContain("mode: 'chat'");
-    expect(newTaskState).toContain("runtimeStatus: 'disconnected'");
-    expect(newTaskState).toContain("reviewStatus: 'pending'");
     expect(newTaskState).toContain("'awaiting_permission'");
+    expect(newTaskState).not.toContain('reviewStatus');
+    expect(conversation).toContain("runtimeStatus: 'disconnected'");
+    expect(conversation).toContain('NewTaskConversationController');
+    expect(workbench).toContain('NewTaskReviewModal');
     expect(styles).toContain('@container dsh-workbench-view (max-width: 760px)');
     expect(styles).toContain('.dsh-workbench-sidebar {');
     expect(styles).toContain('border-radius: 999px;');
@@ -274,14 +278,14 @@ describe('发布与治理契约', () => {
     expect(styles).toContain('.dsh-new-task-context__item');
     expect(styles).toMatch(/\.dsh-context-picker button\.dsh-context-picker__choice \{[\s\S]*?box-shadow: none;/u);
     expect(readme).toContain('## Batch 6：只读知识库（实现与运行门已通过）');
-    expect(design).toContain('只读知识库选择与文件夹原子展开已通过本地完整质量门、双平台远端 CI 与专用 Vault 运行验收');
+    expect(design).toContain('宿主 UI 与只读知识库已完成 Batch 6 验收');
     expect(hostContract).toContain('最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`');
     expect(roadmap).toContain('Batch 6 已实现只读知识库纯契约');
     expect(designQa).toContain('CI run 33031107880');
     expect(designQa).toContain('Ubuntu check `98383584575`、Windows check `98383584694`');
     expect(designQa).toContain('已选列表仍保持 `4` 项');
     expect(designQa).toContain('SHA-256 在运行前后均为 `97ADAA09E558EF57745C4304E12D67DD0B2789F31AAA56D16E10943FAE67C319`');
-    expect(designQa.trimEnd()).toMatch(/Batch 6 implementation and dedicated Vault result: passed; final Obsidian UI user acceptance: pending$/u);
+    expect(designQa).toContain('Batch 6 implementation and dedicated Vault result: passed; final Obsidian UI user acceptance: pending');
 
     for (const asset of [
       {
@@ -350,8 +354,9 @@ describe('发布与治理契约', () => {
     expect(assessment).toContain('健康检查成功只表示目标命令可执行');
   });
 
-  it('新建任务 v1 固定宿主边界、真实取消、最新预发布候选与只读自动演进', async () => {
-    const [requirements, hostContract, assessment, roadmap, releaseStatus] = await Promise.all([
+  it('新建任务 v1 固定宿主边界、真实取消、运行数据与只读自动演进', async () => {
+    const [requirements, hostContract, storageContract, assessment, roadmap, releaseStatus]
+      = await Promise.all([
       readFile(path.join(repositoryRoot, 'docs', 'requirements', 'new-task-v1.md'), 'utf8'),
       readFile(
         path.join(
@@ -359,6 +364,15 @@ describe('发布与治理契约', () => {
           'docs',
           'architecture',
           'ADR-005-new-task-v1-host-contract.md',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'ADR-006-conversation-runtime-storage.md',
         ),
         'utf8',
       ),
@@ -380,11 +394,15 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('每个 turn 只能产生一个终态');
     expect(requirements).toContain('`failed(runtime_terminated)`');
     expect(requirements).toContain('当前核验到的正式 bridge 目标是 `0.1.1-rc.2`');
-    expect(requirements).toContain('当前产品 UI 尚未启动模型发送路径');
+    expect(requirements).toContain('Batch 7 已把不可变快照接入产品发送链');
+    expect(requirements).toContain('任务结束后的已编辑文件');
     expect(requirements).toContain('插件自动安装或更新 DSH');
     expect(hostContract).toContain('状态：已接受');
     expect(hostContract).toContain('只读 `--version` 健康检查');
-    expect(hostContract).toContain('当前正式 bridge 精确锁定 DSH `0.1.1-rc.2`');
+    expect(hostContract).toContain('当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.1-rc.2`');
+    expect(storageContract).toContain('Claudian `15b78af785cda04fccc96f4effcfae6367f9be65`');
+    expect(storageContract).toContain('不复制 `.claudian/sessions`');
+    expect(storageContract).toContain('操作系统应用数据目录下按 Vault 绝对路径 SHA-256');
     expect(assessment).toContain('正式 bridge 最新预发布策略');
     expect(assessment).toContain('待验证候选');
     expect(roadmap).toContain('监测 workflow 尚未实现');
@@ -431,8 +449,8 @@ describe('发布与治理契约', () => {
     expect(spike).toContain('`d456a807215775e16da97ad60e388be2925249c2`');
     expect(spike).toContain('CI run 32708553927');
     expect(spike).toContain('原始 annotations API 后数组长度也均为 `0`');
-    expect(matrix).toContain('| `0.1.1-rc.1` | 健康检查 | 已实现并验证 |');
-    expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge | `windows_runtime_passed`；尚未 `supported` |');
+    expect(matrix).toContain('| `0.1.1-rc.2` | 健康检查 | 已实现并本地验证；本批远端/专用 Vault 待验收 |');
+    expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge + 产品对话 | `windows_runtime_passed`；Batch 7 产品发送链已实现；尚未 `supported` |');
     expect(matrix).toContain('新版本只产生“待验证候选”');
     expect(matrix).toContain('不得自动安装或更新用户 DSH');
     expect(matrix).toContain('不得自动合并、Release 或提交社区目录');
@@ -468,7 +486,7 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
     expect(roadmap).toContain('39023169811fc591be5fe33fde05662fbbc9657e');
     expect(roadmap).toContain('CI run 32711052033');
-    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；本地与 Windows CI 已由 DSH `0.1.1-rc.2` 真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；尚未由“新建任务”的发送链启动 |');
+    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；DSH `0.1.1-rc.2` 已真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；Batch 7 已由“新建任务”的对话发送链启动 |');
   });
 
   it('Batch 4 固定正式 bridge artifact、rc.2 夹具与 Windows 运行边界', async () => {
@@ -491,7 +509,7 @@ describe('发布与治理契约', () => {
       bridgeVersion: '0.1.0',
       protocolVersion: '1',
       dshVersion: '0.1.1-rc.2',
-      artifactSha256: '1cf83b3e977ed5b5da6ca5c59a5d42ceb70d67e475ce3b8dec0279a5b27139d6',
+      artifactSha256: 'f5ecd64ee9f2104bde9502469d841eff7dc8cf9f8bdb79da2bfcff6d9ac17ecf',
     });
     expect(manifest.dshIntegrity).toMatch(/^sha512-/u);
     expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.1.1-rc.2');
@@ -499,7 +517,7 @@ describe('发布与治理契约', () => {
     expect(protocol).toContain('CI run 32717711862');
     expect(protocol).toContain('Ubuntu check `97402381390`、Windows check `97402381253`');
     expect(protocol).toContain('两个原始 annotations 数组均为 `[]`');
-    expect(matrix).toContain('`windows_runtime_passed`；尚未 `supported`');
+    expect(matrix).toContain('`windows_runtime_passed`；Batch 7 产品发送链已实现；尚未 `supported`');
     expect(roadmap).toContain('环回模型请求后的 mid-turn cancel');
     expect(roadmap).toContain('CI `32717476733` 在干净检出中揭示进程单测依赖未跟踪构建产物');
     expect(roadmap).toContain('最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664`');

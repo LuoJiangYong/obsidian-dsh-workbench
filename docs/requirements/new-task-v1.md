@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：已批准的实现输入；正式 bridge、宿主 UI 与只读上下文子集已实现，且只读子集已通过双平台 CI 与专用 Vault 运行验收；完整“新建任务”仍在实施
+- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文与 Batch 7 对话发送链已实现，对话运行验收和外部工作区任务仍在实施
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -31,9 +31,9 @@
 
 发送前必须以“已选笔记”显示逐项来源并允许移除。文件夹展开必须先对全部候选完成去重、数量和字节校验，再一次性加入；失败不得留下部分笔记。发送动作建立不可变上下文快照；后续编辑原笔记或更换活动文件不得静默改变已经发送的 turn。空输入、已失效文件、二进制文件、越界路径和超限输入必须在启动 DSH 前以可定位错误失败，并保留草稿。
 
-v1 不把整个 Vault 作为默认上下文，不索引整个 Vault，也不写入、删除或移动 Vault 内容。上下文项目数、单项字节数与合计字节数已由 Batch 6 基于 frame 测量冻结；任务字符数仍由真实发送批次冻结，诊断尾部长度由受管进程契约固定。未完成测量的边界不得虚构数值。
+v1 不把整个 Vault 作为默认上下文，不索引整个 Vault，也不写入、删除或移动 Vault 内容。上下文项目数、单项字节数与合计字节数已由 Batch 6 基于 frame 测量冻结；Batch 7 将任务文本上限冻结为 UTF-8 `64 KiB`，诊断尾部固定为 `2 KiB`。未完成测量的边界不得虚构数值。
 
-Batch 6 已依据现有 `1 MiB` NDJSON frame 上限冻结上下文子集：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。测试把最大合计内容分别填充为引号与换行，经过上下文 JSON 和 `turn/start` wire frame 的双重转义后仍小于 `1 MiB`，为后续任务文本、标识和协议字段保留余量。最终实现状态 `7ee4b07d4afc0a67b8034e57c513599c7d562b19` 已通过远端 CI `33031107880` 的 Ubuntu/Windows job 与原始零 annotations，并在专用 Vault 完成选择、冻结、重载清理、宽窄屏和明暗主题运行验收。任务字符上限由真实发送批次冻结；当前诊断尾部已由受管进程实现固定为 `2 KiB`。
+Batch 6 已依据现有 `1 MiB` NDJSON frame 上限冻结上下文子集：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。测试把最大合计内容分别填充为引号与换行，经过上下文 JSON 和 `turn/start` wire frame 的双重转义后仍小于 `1 MiB`，为任务文本、标识和协议字段保留余量。最终实现状态 `7ee4b07d4afc0a67b8034e57c513599c7d562b19` 已通过远端 CI `33031107880` 的 Ubuntu/Windows job 与原始零 annotations，并在专用 Vault 完成选择、冻结、重载清理、宽窄屏和明暗主题运行验收。Batch 7 的 `64 KiB` 任务上限与确定性 `{ version, task, contexts, notice }` 信封由对话控制器测试固定。
 
 当前实现只在用户点击“选择知识库”后列出 Obsidian 已知的 Markdown 文件或非根文件夹元数据；不会预读整个 Vault。选择文件夹时递归枚举当下已有且尚未选择的 Markdown 笔记，冻结为逐篇文件 ID，不持续跟踪后来新增的文件。当前笔记和明确选择的 Vault 文件在发送前以 `Vault.cachedRead` 重新读取；当前选区是用户先在 Markdown 编辑器中选中的文本，在加入时固定。已选来源可见并可逐项移除。bridge 只接收后续宿主建立的快照，不获得 Vault API 或文件系统读取能力。
 
@@ -45,6 +45,17 @@ Batch 6 已依据现有 `1 MiB` NDJSON frame 上限冻结上下文子集：最�
 - v1 不提供任意 Shell 输入，不启用 `danger-full-access`，不扩大到全磁盘访问。
 - DSH 工具需要权限时，bridge 必须发出与当前 session/turn/request 绑定的权限请求；未知、过期、失联或无法关联的请求默认拒绝。
 - 权限决定只作用于当前明确请求；持久授权与更大写入范围不属于 v1。
+- Batch 7 “对话”模式不需要工具：DSH scoped context 同时隐藏并拒绝全部工具，防止标准 preset 的 Shell、文件系统或网络工具绕过只读边界。协议中的工具与权限投影保留给 Batch 8 任务模式，不等于对话已经开放权限。
+
+## 会话与运行数据
+
+- 运行所有权属于插件级 `NewTaskConversationController`；关闭 Workbench 视图只移除订阅，不取消活动 turn。插件禁用或 Obsidian 退出必须关闭受管进程。
+- 完整会话历史、DSH 设置和凭据以用户原生 `$DSH_HOME` 为唯一事实来源；插件不得在 Vault 或 `data.json` 复制 session 内容。
+- bridge overlay 与插件运行状态位于操作系统应用数据目录下的 Vault 哈希分区；目录名不得包含 Vault 原始路径。
+- 插件内存只保存当前草稿、已选笔记和公开消息投影；插件重载后清除，不伪造跨重启会话恢复。
+- `stateDirectory`、DSH `cwd` 或 `$DSH_HOME` 经真实路径/符号链接解析后位于 Vault 内时，必须在执行任何 DSH 检查或启动前 fail closed。
+
+详细归属与 Claudian 设计比较见 [ADR-006](../architecture/ADR-006-conversation-runtime-storage.md)。
 
 ## 状态机与失败语义
 
@@ -79,11 +90,20 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读知识库选择的隔离 Vault 门已通过，但当前产品 UI 尚未启动模型发送路径，兼容矩阵的完整会话与最终用户验收仍未完成。
+- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读知识库选择的隔离 Vault 门已通过；Batch 7 已把不可变快照接入产品发送链，正在等待远端 CI 和专用 Vault 运行验收。外部工作区、任务执行和最终用户验收仍未完成。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
-- 当前插件只读健康检查仍精确支持 `0.1.1-rc.1`；它与正式 bridge 候选 `0.1.1-rc.2` 是两条不同状态，不得合并为“已支持 rc.2”。
-- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；最终 bridge 状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过 CI `32717711862` 的 Ubuntu/Windows job 与原始零 annotations。宿主 UI 与只读上下文已实现并完成专用 Vault 运行验收，模型发送与任务执行仍待后续批次。
+- 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.1-rc.2`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。
+- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；最终 bridge 基线 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过 CI `32717711862` 的 Ubuntu/Windows job 与原始零 annotations。Batch 7 已接入宿主真实对话，任务执行仍待后续批次。
+
+## 任务结束后的已编辑文件
+
+该能力属于 Batch 8 外部工作区任务，不得在只读对话中显示空卡或假变更：
+
+- 每个任务 turn 结束后以真实变更证据显示“已编辑 N 个文件”、总新增/删除行数；默认展示 `3` 个文件，超出项可展开/收起。
+- 每个文件行显示相对工作区路径和新增/删除行数。右键使用 Obsidian 原生菜单，支持“在 VS Code 中打开”“打开方式”子菜单、“另存为…”“复制路径”“复制文件内容”“在资源管理器中显示”。操作前必须重新校验路径仍在用户显式工作区内。
+- “审核”打开该 turn 的真实 diff；“撤销”只允许撤销能够归属到该 turn 且基线仍匹配的变更，必须二次确认。不得调用 `git reset --hard`、覆盖无关用户修改或把运行时终止冒充撤销成功。
+- 外部工作区文件是内容真相；逐轮基线、diff 索引和撤销材料只允许进入 Vault 外状态目录，并必须限制大小、保留期与清理时机。数据契约和失败回滚由 Batch 8 冻结后实现。
 
 ## 自动同步演进计划
 
@@ -111,7 +131,7 @@ cancelled | completed | failed
 | 单元/契约 | 模式、输入、不可变上下文快照、状态迁移、单终态、失败码、权限关联 | 真实 DSH 或 Obsidian 运行通过 |
 | 假 bridge | 握手不匹配、乱序/重复事件、权限失联、取消确认与超时、EOF、关闭 | 正式 bridge 已兼容当前 DSH |
 | Windows 真实运行时 | 裸命令、绝对路径、`.cmd` shim、隐藏窗口、真实取消、正常关闭、强制终止回退、无残留进程 | UI 或 Vault 验收通过 |
-| 隔离 Vault | 上下文选择/预览/移除/快照、草稿保留、禁用与重载清理、最终宽窄屏与明暗主题 | 真实个人 Vault 安全 |
+| 隔离 Vault | 上下文选择/预览/移除/快照、发送前审阅、真实流式回复、停止/失败、重载与进程清理、最终宽窄屏与明暗主题 | 真实个人 Vault 安全 |
 | CI | Ubuntu/Windows 实际执行相关测试，构建与边界检查通过，原始 annotations 为 0 | 社区发布已批准 |
 | 用户验收 | 最终 Obsidian 运行 UI 与获批 Ardot 同步，用户明确批准 | 自动批准 Release 或社区提交 |
 

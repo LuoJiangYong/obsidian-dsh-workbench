@@ -1,6 +1,6 @@
 # DSH 运行时与正式 bridge 兼容矩阵
 
-- 更新时间：2026-08-24
+- 更新时间：2026-08-27
 - 权威范围：本仓库已实现健康检查、正式 bridge 候选和晋级证据
 - 相关证据：[Batch 2 bridge 能力证据尖峰](./batch-2-bridge-capability-spike.md)
 
@@ -8,11 +8,11 @@
 
 | DSH | 消费路径 | 状态 | bridge/协议 | 证据边界 |
 | --- | --- | --- | --- | --- |
-| `0.1.1-rc.1` | 健康检查 | 已实现并验证 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
-| `0.1.1-rc.2` | 正式 bridge | `windows_runtime_passed`；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `1cf83b3e977ed5b5da6ca5c59a5d42ceb70d67e475ce3b8dec0279a5b27139d6` | 本地与 Windows CI 已通过真实加载、握手、Agent session、mid-turn cancel、正常/强制清理；最终 bridge 状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 的 CI `32717711862` 双平台成功且原始 annotations 均为 `[]`；宿主 UI/只读上下文代码子集已实现并通过 Batch 6 专用 Vault 运行验收，模型发送链、外部工作区、完整会话与最终用户验收未通过 |
+| `0.1.1-rc.2` | 健康检查 | 已实现并本地验证；本批远端/专用 Vault 待验收 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
+| `0.1.1-rc.2` | 正式 bridge + 产品对话 | `windows_runtime_passed`；Batch 7 产品发送链已实现；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `f5ecd64ee9f2104bde9502469d841eff7dc8cf9f8bdb79da2bfcff6d9ac17ecf` | Batch 4 已通过真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读上下文已通过专用 Vault；Batch 7 已实现发送前审阅、原生 DSH session、流式回复、停止、对话工具双重拒绝和 Vault 外插件状态，正在等待本批远端 CI/专用 Vault；外部工作区、任务执行、跨重启恢复与最终用户验收未通过 |
 | 其他版本 | 无 | 不支持 | 无 fallback | 不尝试、不中和、不静默降级 |
 
-健康检查与正式 bridge 是两个独立消费路径。`rc.1` 健康检查通过不能推出 rc.2 bridge 兼容；rc.2 已通过的 bridge 运行门与 Batch 6 只读知识库专用 Vault 门也不能改变当前设置页健康检查目标，或冒充模型发送链、外部工作区、完整会话与用户验收已通过。
+健康检查与正式 bridge 仍是两个独立消费路径，但当前都精确锁定 `rc.2`。健康检查通过不能推出 bridge/session 可用；Batch 4 bridge 运行门、Batch 6 只读知识库门和 Batch 7 产品发送链实现也不能冒充外部工作区、任务执行、跨重启恢复或最终用户验收已通过。
 
 ## 兼容晋级状态机
 

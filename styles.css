@@ -246,7 +246,8 @@
 
 .dsh-new-task-composer:focus-within {
   border-color: var(--interactive-accent);
-  box-shadow: 0 0 0 1px var(--interactive-accent);
+  outline: 1px solid var(--interactive-accent);
+  outline-offset: -1px;
 }
 
 .dsh-new-task-composer__input {
@@ -439,6 +440,110 @@
 
 .dsh-new-task-composer__send {
   min-width: 62px;
+}
+
+.dsh-new-task-conversation:empty {
+  display: none;
+}
+
+.dsh-new-task-conversation {
+  border-block: 1px solid var(--background-modifier-border);
+  display: grid;
+  gap: 0;
+  margin-bottom: 18px;
+}
+
+.dsh-new-task-message {
+  display: grid;
+  gap: 5px;
+  padding: 14px 2px;
+}
+
+.dsh-new-task-message + .dsh-new-task-message,
+.dsh-new-task-tools,
+.dsh-new-task-permission,
+.dsh-new-task-conversation__error,
+.dsh-new-task-conversation__status {
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.dsh-new-task-message__role {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.dsh-new-task-message__content,
+.dsh-new-task-tools p,
+.dsh-new-task-permission p {
+  line-height: var(--line-height-normal);
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.dsh-new-task-message__status,
+.dsh-new-task-conversation__status {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+}
+
+.dsh-new-task-tools,
+.dsh-new-task-permission,
+.dsh-new-task-conversation__error,
+.dsh-new-task-conversation__status {
+  margin: 0;
+  padding: 12px 2px;
+}
+
+.dsh-new-task-tools,
+.dsh-new-task-permission {
+  display: grid;
+  gap: 6px;
+}
+
+.dsh-new-task-permission__actions,
+.dsh-new-task-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.dsh-workbench-view .dsh-new-task-permission button,
+.dsh-new-task-review__actions button {
+  box-shadow: none;
+}
+
+.dsh-new-task-conversation__error,
+.dsh-new-task-review__error {
+  color: var(--text-error);
+}
+
+.dsh-new-task-review__boundary {
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+
+.dsh-new-task-review__task {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  margin-block: 8px 16px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
+.dsh-new-task-review__contexts {
+  margin-block: 8px 16px;
+  max-height: 180px;
+  overflow: auto;
+  padding-inline-start: 24px;
+}
+
+.dsh-new-task-review__error:empty {
+  display: none;
 }
 
 .dsh-new-task-confirmation {

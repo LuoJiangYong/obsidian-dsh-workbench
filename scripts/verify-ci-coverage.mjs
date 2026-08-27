@@ -11,6 +11,9 @@ const formalBridgeTests = await readFile('tests/obsidian-bridge.test.ts', 'utf8'
 const ndjsonTests = await readFile('tests/bridge-ndjson-transport.test.ts', 'utf8');
 const managedBridgeTests = await readFile('tests/managed-bridge-process.test.ts', 'utf8');
 const realDshBridgeTests = await readFile('tests/real-dsh-bridge.test.ts', 'utf8');
+const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf8');
+const newTaskConversationTests = await readFile('tests/new-task-conversation.test.ts', 'utf8');
+const conversationUiTests = await readFile('tests/workbench-conversation-ui.test.ts', 'utf8');
 const runtimeFixture = JSON.parse(await readFile('tests/runtime-fixture/package.json', 'utf8'));
 
 const requiredCommands = [
@@ -75,6 +78,10 @@ assert(
   'test:runtime 必须覆盖正式 bridge 受管进程生命周期',
 );
 assert(
+  packageJson.scripts['test:runtime'].includes('tests/runtime-storage.test.ts'),
+  'test:runtime 必须覆盖 Vault 外运行数据边界',
+);
+assert(
   runtimeFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.1-rc.2',
   '运行夹具必须精确锁定 @deepseek-ai/dsh 0.1.1-rc.2',
 );
@@ -123,12 +130,12 @@ for (const ardotContract of [
   '不显示“首发”“规划中”“尚未实现”等开发阶段、发布批次或治理审批文案',
   '未实现模块不在插件导航中渲染',
   '模式分段控件在插件中使用左右半圆胶囊边界',
-  'Batch 5A 固定插件反馈 UI、禁用边界与专用 Vault 证据',
+  'Batch 5A UI 基线与 Batch 7 插件级对话状态各自保持单一职责',
 ]) {
   assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
 }
 for (const newTaskContract of [
-  '新建任务 v1 固定宿主边界、真实取消、最新预发布候选与只读自动演进',
+  '新建任务 v1 固定宿主边界、真实取消、运行数据与只读自动演进',
   'Batch 2 固定 rc.2 官方能力证据、兼容矩阵与生产未通过边界',
   '发送动作建立不可变上下文快照',
   '整个 Vault 不得成为 DSH 默认可写 `cwd`',
@@ -157,6 +164,7 @@ for (const bridgeProtocolContract of [
 
 for (const formalBridgeContract of [
   '正式 obsidian-bridge',
+  '禁止对话模式全部 DSH 工具',
   '窄投影 DSH session 事件',
   '只接管自有 Agent 的一次性权限请求',
   '正常 shutdown 前释放所有空闲 Agent',
@@ -171,15 +179,46 @@ for (const transportContract of [
 }
 for (const processContract of [
   '正式 bridge 受管进程',
-  '隔离 DSH_HOME',
+  '把 overlay 与 DSH 原生会话根分离',
   'shutdown 超时后终止整个子进程树',
   'Windows .cmd shim',
+  '运行目录落入 Vault 时在执行任何 DSH 检查前 fail closed',
 ]) {
   assert(managedBridgeTests.includes(processContract), `受管进程测试缺少契约：${processContract}`);
+}
+for (const storageContract of [
+  'Workbench 运行数据存储边界',
+  '按 Vault 哈希解析系统应用数据目录，并继承 DSH 原生会话根',
+  '拒绝 Vault 内的状态目录或 DSH_HOME',
+]) {
+  assert(runtimeStorageTests.includes(storageContract), `运行数据测试缺少契约：${storageContract}`);
+}
+for (const conversationContract of [
+  '新建任务真实对话控制器',
+  '发送前重读上下文，复用同一 session，并投影流式回复、工具、权限和完成终态',
+  '只有 bridge 的 cancelled 终态才显示已取消',
+  '取消已接受但终态超时后强制清理',
+  '意外 EOF 立即成为可见失败',
+]) {
+  assert(
+    newTaskConversationTests.includes(conversationContract),
+    `对话控制器测试缺少契约：${conversationContract}`,
+  );
+}
+for (const conversationUiContract of [
+  'Workbench 真实对话界面',
+  '发送前展示只读审阅，取消保留草稿，确认后清空草稿并显示流式结果',
+  '只提供本次权限决定并把错误作为可访问终态呈现',
+]) {
+  assert(
+    conversationUiTests.includes(conversationUiContract),
+    `对话 UI 测试缺少契约：${conversationUiContract}`,
+  );
 }
 for (const runtimeContract of [
   'DSH 0.1.1-rc.2 正式 bridge 运行验收',
   '真实加载 artifact',
+  '原生 DSH 会话落盘',
   'mid-turn cancel',
   '零残留',
 ]) {
@@ -187,7 +226,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库与文件夹原子展开、Ardot v2、新建任务 v1、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库、Vault 外运行数据、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

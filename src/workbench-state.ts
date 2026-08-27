@@ -1,4 +1,5 @@
 import { type DshHealthResult, TARGET_DSH_VERSION } from './dsh-health';
+import type { NewTaskRuntimeStatus } from './new-task-state';
 
 export interface WorkbenchState {
   readonly connectionStatus: string;
@@ -7,9 +8,12 @@ export interface WorkbenchState {
   readonly vaultPermissionStatus: string;
 }
 
-export function createWorkbenchState(health: DshHealthResult): WorkbenchState {
+export function createWorkbenchState(
+  health: DshHealthResult,
+  runtimeStatus: NewTaskRuntimeStatus = 'disconnected',
+): WorkbenchState {
   return Object.freeze({
-    connectionStatus: '尚未连接 DSH',
+    connectionStatus: runtimeStatus === 'connected' ? '已连接 DSH' : '尚未连接 DSH',
     healthCheckStatus: formatHealthStatus(health),
     platformStatus: '仅桌面端',
     vaultPermissionStatus: '只读上下文（显式选择）',

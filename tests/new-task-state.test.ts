@@ -8,19 +8,16 @@ import {
 import { createVaultFileContext } from '../src/new-task-context';
 
 describe('新建任务宿主状态', () => {
-  it('以对话、空草稿、未连接和待审阅的确定性空态开始', () => {
+  it('以对话与空草稿的确定性空态开始', () => {
     const state = createNewTaskState();
 
     expect(state).toEqual({
       draft: '',
       mode: 'chat',
-      phase: 'idle',
-      reviewStatus: 'pending',
-      runtimeStatus: 'disconnected',
       contextError: null,
       contexts: [],
     });
-    expect(canSubmitNewTask(state)).toBe(false);
+    expect(canSubmitNewTask(state, 'idle')).toBe(false);
   });
 
   it('加入、移除上下文或显示错误时保留草稿与其他状态', () => {
@@ -79,20 +76,17 @@ describe('新建任务宿主状态', () => {
     });
   });
 
-  it('只有非空草稿、已连接运行时、已完成审阅和空闲阶段同时满足时才可发送', () => {
+  it('只有对话模式、非空草稿和非活动阶段同时满足时才可发送', () => {
     let state = createNewTaskState();
     state = reduceNewTaskState(state, { type: 'draft-changed', draft: '总结当前上下文' });
-    state = reduceNewTaskState(state, { type: 'runtime-status-changed', status: 'connected' });
-    expect(canSubmitNewTask(state)).toBe(false);
+    expect(canSubmitNewTask(state, 'idle')).toBe(true);
+    expect(canSubmitNewTask(state, 'completed')).toBe(true);
+    expect(canSubmitNewTask(state, 'running')).toBe(false);
 
-    state = reduceNewTaskState(state, { type: 'review-status-changed', status: 'ready' });
-    expect(canSubmitNewTask(state)).toBe(true);
-
-    state = reduceNewTaskState(state, { type: 'phase-changed', phase: 'running' });
-    expect(canSubmitNewTask(state)).toBe(false);
-
-    state = reduceNewTaskState(state, { type: 'phase-changed', phase: 'idle' });
+    state = reduceNewTaskState(state, { type: 'mode-changed', mode: 'task' });
+    expect(canSubmitNewTask(state, 'idle')).toBe(false);
+    state = reduceNewTaskState(state, { type: 'mode-changed', mode: 'chat' });
     state = reduceNewTaskState(state, { type: 'draft-changed', draft: '   ' });
-    expect(canSubmitNewTask(state)).toBe(false);
+    expect(canSubmitNewTask(state, 'idle')).toBe(false);
   });
 });

@@ -1,6 +1,10 @@
-import { addIcon, Notice, Plugin, type WorkspaceLeaf } from 'obsidian';
+import path from 'node:path';
+
+import { addIcon, FileSystemAdapter, Notice, Plugin, type WorkspaceLeaf } from 'obsidian';
 
 import { DshHealthProbe, type DshHealthResult } from './dsh-health';
+import { ManagedBridgeProcess } from './managed-bridge-process';
+import { NewTaskConversationController } from './new-task-conversation';
 import { ObsidianNewTaskContextHost } from './obsidian-context-host';
 import {
   DEFAULT_DSH_SETTINGS,
@@ -10,6 +14,7 @@ import {
 } from './dsh-settings';
 import { WorkbenchSettingTab } from './settings-tab';
 import { DEEPSEEK_WHALE_ICON, DEEPSEEK_WHALE_SVG } from './icons';
+import { resolveWorkbenchRuntimeStorage } from './runtime-storage';
 import {
   QuickAssistantView,
   VIEW_TYPE_QUICK_ASSISTANT,
@@ -21,6 +26,9 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
 
   private readonly healthProbe = new DshHealthProbe();
   private readonly contextHost = new ObsidianNewTaskContextHost(this.app);
+  private readonly conversationHost = new NewTaskConversationController({
+    createProcess: () => Promise.resolve(this.createConversationProcess()),
+  });
   private health: DshHealthResult = { status: 'unchecked' };
 
   async onload(): Promise<void> {
@@ -34,6 +42,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     this.registerView(
       VIEW_TYPE_WORKBENCH,
       (leaf: WorkspaceLeaf) => new WorkbenchView(leaf, {
+        conversationHost: this.conversationHost,
         getDshHealth: () => this.health,
         contextHost: this.contextHost,
         onContextsChanged: () => this.refreshQuickAssistantViews(),
@@ -83,6 +92,9 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
   onunload(): void {
     this.contextHost.dispose();
     this.healthProbe.dispose();
+    void this.conversationHost.dispose().catch(() => {
+      new Notice('DSH 进程清理未正常完成，请在运行状态中重新检查。');
+    });
   }
 
   async updateDshCommand(rawCommand: string): Promise<void> {
@@ -158,5 +170,23 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     return leaf?.view instanceof WorkbenchView
       ? leaf.view.getContextSummary()
       : '未选择笔记或工作范围';
+  }
+
+  private createConversationProcess(): ManagedBridgeProcess {
+    const adapter = this.app.vault.adapter;
+    if (!(adapter instanceof FileSystemAdapter)) {
+      throw new Error('新建任务仅支持本地文件系统 Vault。');
+    }
+    const vaultPath = adapter.getBasePath();
+    const pluginDirectory = this.manifest.dir;
+    if (!pluginDirectory) throw new Error('无法定位插件安装目录。');
+    const storage = resolveWorkbenchRuntimeStorage({ vaultPath });
+    return new ManagedBridgeProcess({
+      bridgePath: path.join(vaultPath, pluginDirectory, 'obsidian-bridge.mjs'),
+      command: this.settings.dshCommand,
+      stateDirectory: storage.stateDirectory,
+      vaultPath,
+      workingDirectory: storage.stateDirectory,
+    });
   }
 }

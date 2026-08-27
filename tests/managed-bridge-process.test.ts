@@ -1,5 +1,5 @@
 import { constants } from 'node:fs';
-import { access, chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -22,6 +22,7 @@ beforeAll(async () => {
     setTimeout: globalThis.setTimeout,
   });
   temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'managed-bridge-test-'));
+  await mkdir(path.join(temporaryRoot, 'vault'));
   bridgePath = path.join(temporaryRoot, 'obsidian-bridge.mjs');
   await writeFile(bridgePath, 'export {};\n', 'utf8');
   fakeCommand = path.join(temporaryRoot, process.platform === 'win32' ? 'dsh.cmd' : 'dsh');
@@ -39,24 +40,35 @@ afterAll(async () => {
 });
 
 describe('正式 bridge 受管进程', () => {
-  it('在隔离 DSH_HOME 生成固定 overlay、隐藏启动、握手并正常关闭', async () => {
-    const runtimeHome = path.join(temporaryRoot, 'graceful-home');
-    const manager = createManager('managed-graceful', runtimeHome);
+  it('把 overlay 与 DSH 原生会话根分离、强制只读启动、握手并正常关闭', async () => {
+    const stateDirectory = path.join(temporaryRoot, 'graceful-state');
+    const dshHome = path.join(temporaryRoot, 'graceful-dsh-home');
+    const environmentFile = path.join(temporaryRoot, 'graceful-environment.json');
+    const manager = createManager('managed-graceful', stateDirectory, dshHome, {
+      FAKE_DSH_ENV_FILE: environmentFile,
+    });
     const client = await manager.start();
     expect(client.connectionState).toBe('ready');
     await expect(manager.shutdown()).resolves.toEqual({ outcome: 'graceful' });
 
-    const overlay = await readFile(path.join(runtimeHome, 'obsidian-bridge.cordis.patch.yml'), 'utf8');
+    const overlay = await readFile(path.join(stateDirectory, 'obsidian-bridge.cordis.patch.yml'), 'utf8');
     expect(overlay).toBe(createBridgeOverlay(bridgePath));
     expect(overlay).toContain('disabled: true');
-    expect(overlay).toContain('inject: [agents, agentDefaultModel]');
+    expect(overlay).toContain('inject: [agents, agentDefaultModel, tools]');
     expect(overlay).not.toContain('DEEPSEEK_API_KEY');
+    await expect(readFile(environmentFile, 'utf8').then((value) => JSON.parse(value) as unknown))
+      .resolves.toEqual({
+        dshHome,
+        permissionMode: 'read-only',
+        telemetryDisabled: '1',
+      });
   });
 
   it('shutdown 超时后终止整个子进程树，并只返回限长脱敏诊断', async () => {
-    const runtimeHome = path.join(temporaryRoot, 'forced-home');
+    const stateDirectory = path.join(temporaryRoot, 'forced-state');
+    const dshHome = path.join(temporaryRoot, 'forced-dsh-home');
     const pidFile = path.join(temporaryRoot, 'managed-child.pid');
-    const manager = createManager('managed-hang-with-child', runtimeHome, {
+    const manager = createManager('managed-hang-with-child', stateDirectory, dshHome, {
       FAKE_DSH_PID_FILE: pidFile,
     });
     await manager.start();
@@ -85,25 +97,46 @@ describe('正式 bridge 受管进程', () => {
       '""C:\\Program Files\\dsh\\dsh.cmd" "--profile" "headless" "--patch" "C:\\runtime home\\bridge.yml""',
     ]);
   });
+
+  it('运行目录落入 Vault 时在执行任何 DSH 检查前 fail closed', async () => {
+    const vaultPath = path.join(temporaryRoot, 'vault');
+    const missingCommand = path.join(
+      temporaryRoot,
+      process.platform === 'win32' ? 'missing-dsh.cmd' : 'missing-dsh',
+    );
+    const manager = new ManagedBridgeProcess({
+      bridgePath,
+      command: missingCommand,
+      dshHome: path.join(temporaryRoot, 'boundary-dsh-home'),
+      stateDirectory: path.join(vaultPath, '.runtime'),
+      vaultPath,
+      workingDirectory: process.cwd(),
+    });
+
+    await expect(manager.start()).rejects.toThrow('插件运行状态目录 不得位于 Vault 内');
+  });
 });
 
 function createManager(
   scenario: string,
-  runtimeHome: string,
+  stateDirectory: string,
+  dshHome: string,
   extraEnvironment: NodeJS.ProcessEnv = {},
 ): ManagedBridgeProcess {
   return new ManagedBridgeProcess({
     bridgePath,
     command: fakeCommand,
+    dshHome,
     environment: {
       ...process.env,
       ...extraEnvironment,
       FAKE_DSH_SCENARIO: scenario,
     },
     requestTimeoutMs: 1_500,
-    runtimeHome,
+    stateDirectory,
     shutdownTimeoutMs: 250,
     startTimeoutMs: 2_000,
+    vaultPath: path.join(temporaryRoot, 'vault'),
     workingDirectory: process.cwd(),
   });
 }

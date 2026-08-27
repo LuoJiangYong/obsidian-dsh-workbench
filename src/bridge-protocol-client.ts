@@ -131,6 +131,7 @@ export class BridgeProtocolClient {
   connectionState: BridgeConnectionState = 'new';
   failure: BridgeProtocolError | undefined;
 
+  private readonly connectionStateListeners = new Set<() => void>();
   private readonly eventListeners = new Set<(event: KnownBridgeEvent) => void>();
   private readonly pendingRequests = new Map<string, PendingRequest>();
   private readonly requestTimeoutMs: number;
@@ -155,7 +156,7 @@ export class BridgeProtocolClient {
     if (this.connectionState !== 'new') {
       throw this.invalidState('initialize 只能在新连接上调用');
     }
-    this.connectionState = 'initializing';
+    this.setConnectionState('initializing');
     return await this.sendRequest(
       (id) => ({
         type: 'request',
@@ -176,7 +177,7 @@ export class BridgeProtocolClient {
               'bridge、DSH、协议版本或 capability 不匹配',
             );
           }
-          this.connectionState = 'ready';
+          this.setConnectionState('ready');
         },
         onRemoteError: () => {
           throw new BridgeProtocolError('handshake_mismatch', 'bridge 拒绝 initialize');
@@ -335,13 +336,13 @@ export class BridgeProtocolClient {
     if ([...this.sessions.values()].some((session) => session.activeTurn !== undefined)) {
       throw this.invalidState('存在活动 turn 时不能正常 shutdown');
     }
-    this.connectionState = 'shutting_down';
+    this.setConnectionState('shutting_down');
     return await this.sendRequest(
       (id) => ({ type: 'request', id, method: 'shutdown', params: {} }),
       {
         parse: parseAcceptedResult,
-        onSuccess: () => { this.connectionState = 'closing'; },
-        onRemoteError: () => { this.connectionState = 'ready'; },
+        onSuccess: () => { this.setConnectionState('closing'); },
+        onRemoteError: () => { this.setConnectionState('ready'); },
       },
     );
   }
@@ -373,6 +374,11 @@ export class BridgeProtocolClient {
   onEvent(listener: (event: KnownBridgeEvent) => void): () => void {
     this.eventListeners.add(listener);
     return () => this.eventListeners.delete(listener);
+  }
+
+  onConnectionStateChange(listener: () => void): () => void {
+    this.connectionStateListeners.add(listener);
+    return () => this.connectionStateListeners.delete(listener);
   }
 
   private sendRequest<TResult>(
@@ -525,7 +531,7 @@ export class BridgeProtocolClient {
   private handleClose(): void {
     if (this.connectionState === 'closed' || this.connectionState === 'failed') return;
     if (this.connectionState === 'closing') {
-      this.connectionState = 'closed';
+      this.setConnectionState('closed');
       this.detach();
       return;
     }
@@ -534,8 +540,8 @@ export class BridgeProtocolClient {
 
   private fail(error: BridgeProtocolError): void {
     if (this.connectionState === 'failed' || this.connectionState === 'closed') return;
-    this.connectionState = 'failed';
     this.failure = error;
+    this.setConnectionState('failed');
     this.detach();
     for (const pending of this.pendingRequests.values()) {
       window.clearTimeout(pending.timer);
@@ -547,6 +553,17 @@ export class BridgeProtocolClient {
   private detach(): void {
     this.detachTransport?.();
     this.detachTransport = undefined;
+  }
+
+  private setConnectionState(state: BridgeConnectionState): void {
+    this.connectionState = state;
+    for (const listener of this.connectionStateListeners) {
+      try {
+        listener();
+      } catch {
+        // Connection observers cannot change protocol validity or lifecycle ownership.
+      }
+    }
   }
 
   private requireReady(): void {
