@@ -9,7 +9,7 @@
 | DSH | 消费路径 | 状态 | bridge/协议 | 证据边界 |
 | --- | --- | --- | --- | --- |
 | `0.1.1-rc.2` | 健康检查 | 已实现并本地验证；本批远端/专用 Vault 待验收 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
-| `0.1.1-rc.2` | 正式 bridge + 产品对话 | `conversation_runtime_passed`；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `be5b2f1c9803498ff540989254fe60331abd92ead7e9e94adfecf1be9e75f4c5` | Batch 4 已通过真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读上下文已通过专用 Vault；Batch 7 已通过发送前审阅、Vault 外 session cwd、原生 DSH session、真实模型回复、流式停止、对话工具枚举/执行/系统提示三重拒绝、双平台 CI 与真实模型冻结上下文复验；外部工作区、任务执行、跨重启恢复与最终用户验收未通过 |
+| `0.1.1-rc.2` | 正式 bridge + 产品对话 | `conversation_runtime_passed`；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `7d1133ecbdcd6e585770791ad2615985432c6f9dca1bb1e3cd6e1757669e50fe` | Batch 4 已通过真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读上下文已通过专用 Vault；Batch 7 已通过发送前审阅、Vault 外 session cwd、原生 DSH session、真实模型回复、流式停止、对话工具枚举/执行/系统提示三重拒绝、双平台 CI 与真实模型冻结上下文复验；Batch 8A 已固定 `workspace-write + ask` 与六个工作区文件工具的任务 bridge 边界，但外部工作区 UI、任务执行、变更账本、跨重启恢复与最终用户验收仍未通过 |
 | 其他版本 | 无 | 不支持 | 无 fallback | 不尝试、不中和、不静默降级 |
 
 健康检查与正式 bridge 仍是两个独立消费路径，但当前都精确锁定 `rc.2`。健康检查通过不能推出 bridge/session 可用；Batch 4 bridge 运行门、Batch 6 只读知识库门和 Batch 7 产品发送链实现也不能冒充外部工作区、任务执行、跨重启恢复或最终用户验收已通过。

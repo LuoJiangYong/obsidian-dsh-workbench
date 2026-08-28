@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events';
+import path from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
 
@@ -23,6 +24,7 @@ import {
   type DshMessage,
   type DshScopedContext,
   type DshSession,
+  type DshToolExecution,
 } from '../src/obsidian-bridge';
 
 const SESSION_ID = 'session-real-bridge';
@@ -33,7 +35,8 @@ describe('正式 obsidian-bridge', () => {
     const harness = await createReadySession();
     expect(harness.context.createdOptions?.meta).toEqual({ cwd: process.cwd() });
     expect(harness.context.scoped.restrictions).toEqual([{ allow: [] }]);
-    expect(harness.context.scoped.guards[0]?.()).toBe('Obsidian 对话模式不允许调用 DSH 工具。');
+    expect(harness.context.scoped.guards[0]?.(toolExecution('read', { file_path: 'README.md' })))
+      .toBe('Obsidian 对话模式不允许调用 DSH 工具。');
     const assembly = await harness.context.scoped.assemble({
       contexts: [],
       sections: [{ name: 'deployment:persona', text: '基础 persona' }],
@@ -109,6 +112,38 @@ describe('正式 obsidian-bridge', () => {
     expect(lastFrame(harness.wire.frames)).toEqual(eventFrame(
       'turn.ended', 1, { outcome: 'cancelled' }, 2,
     ));
+  });
+
+  it('任务模式只开放工作区文件工具，并拒绝路径穿越与权限升级', async () => {
+    const harness = await createReadySession('task');
+    expect(harness.context.scoped.restrictions).toEqual([{
+      allow: ['edit', 'glob', 'grep', 'read', 'read_image', 'write'],
+    }]);
+    const guard = harness.context.scoped.guards[0];
+    expect(guard).toBeDefined();
+    if (!guard) throw new Error('任务工具 guard 未安装');
+    expect(guard(toolExecution('read', { file_path: 'src/main.ts' }))).toBeUndefined();
+    expect(guard(toolExecution('grep', { pattern: 'Workbench' }))).toBeUndefined();
+    expect(guard(toolExecution('write', {
+      file_path: 'src/main.ts',
+      content: 'x',
+      sandbox_permissions: 'danger-full-access',
+    }))).toBe('Obsidian 任务执行模式不允许权限升级。');
+    expect(guard(toolExecution('read', { file_path: path.join('..', 'outside.txt') })))
+      .toBe('工具路径不得越过当前工作区。');
+    expect(guard(toolExecution('glob', { pattern: '../*.md' })))
+      .toBe('glob pattern 不得越过工作区。');
+    expect(guard(toolExecution('pwsh', { command: 'Get-ChildItem' })))
+      .toBe('Obsidian 任务执行模式只允许工作区文件工具。');
+
+    const assembly = await harness.context.scoped.assemble({
+      sections: [],
+      tools: [{ name: 'read' }, { name: 'pwsh' }],
+    });
+    expect(assembly.sections).toEqual([expect.objectContaining({ name: 'obsidian:task-boundary' })]);
+    expect((assembly.sections as Array<{ text: string }>)[0]?.text).toContain(
+      '不得调用 Shell、PowerShell、网络、Skill、子代理或其他工具',
+    );
   });
 
   it('只接管自有 Agent 的一次性权限请求，并在 resolve 响应后结算', async () => {
@@ -244,14 +279,14 @@ class FakeWire implements BridgeWire {
 }
 
 class FakeScopedContext {
-  readonly guards: Array<() => string | undefined> = [];
+  readonly guards: Array<(execution: DshToolExecution) => string | undefined> = [];
   readonly listeners = new Map<string, unknown[]>();
   readonly restrictions: Array<{
     readonly allow?: readonly string[];
     readonly deny?: readonly string[];
   }> = [];
   readonly tools = {
-    guard: (guard: () => string | undefined): (() => void) => {
+    guard: (guard: (execution: DshToolExecution) => string | undefined): (() => void) => {
       this.guards.push(guard);
       return () => undefined;
     },
@@ -408,7 +443,7 @@ class FakeOutput implements BridgeStdioOutput {
   }
 }
 
-async function createReadySession(): Promise<{
+async function createReadySession(mode: 'chat' | 'task' = 'chat'): Promise<{
   agent: FakeAgent;
   context: FakeContext;
   handle: FakeHandle;
@@ -421,9 +456,13 @@ async function createReadySession(): Promise<{
   await server.receive(initializeRequest('request-1'));
   await server.receive({
     type: 'request', id: 'request-2', method: 'session/create',
-    params: { sessionId: SESSION_ID, mode: 'chat' },
+    params: { sessionId: SESSION_ID, mode },
   });
   return { agent: context.agent, context, handle: context.handle, server, wire };
+}
+
+function toolExecution(name: string, args: unknown): DshToolExecution {
+  return { arguments: args, name };
 }
 
 async function createRunningTurn(): Promise<Awaited<ReturnType<typeof createReadySession>>> {

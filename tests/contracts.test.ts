@@ -555,7 +555,7 @@ describe('发布与治理契约', () => {
       bridgeVersion: '0.1.0',
       protocolVersion: '1',
       dshVersion: '0.1.1-rc.2',
-      artifactSha256: 'be5b2f1c9803498ff540989254fe60331abd92ead7e9e94adfecf1be9e75f4c5',
+      artifactSha256: '7d1133ecbdcd6e585770791ad2615985432c6f9dca1bb1e3cd6e1757669e50fe',
     });
     expect(manifest.dshIntegrity).toMatch(/^sha512-/u);
     expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.1.1-rc.2');

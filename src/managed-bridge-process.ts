@@ -24,6 +24,7 @@ export interface ManagedBridgeProcessOptions {
   readonly dshHome?: string;
   readonly environment?: NodeJS.ProcessEnv;
   readonly platform?: NodeJS.Platform;
+  readonly permissionMode?: 'read-only' | 'workspace-write';
   readonly requestTimeoutMs?: number;
   readonly stateDirectory: string;
   readonly shutdownTimeoutMs?: number;
@@ -117,7 +118,7 @@ export class ManagedBridgeProcess {
       env: {
         ...this.environment,
         DSH_HOME: storage.dshHome,
-        DSH_PERMISSION_MODE: 'read-only',
+        DSH_PERMISSION_MODE: this.options.permissionMode ?? 'read-only',
         DSH_TELEMETRY_DISABLED: '1',
       },
       stdio: ['pipe', 'pipe', 'pipe'],

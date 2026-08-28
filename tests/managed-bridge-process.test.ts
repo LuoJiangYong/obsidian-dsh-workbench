@@ -85,6 +85,20 @@ describe('正式 bridge 受管进程', () => {
     await expectProcessGone(childPid);
   });
 
+  it('任务进程可显式使用 rc2 workspace-write + ask 组合', async () => {
+    const stateDirectory = path.join(temporaryRoot, 'workspace-write-state');
+    const dshHome = path.join(temporaryRoot, 'workspace-write-dsh-home');
+    const environmentFile = path.join(temporaryRoot, 'workspace-write-environment.json');
+    await mkdir(dshHome, { recursive: true });
+    const manager = createManager('managed-graceful', stateDirectory, dshHome, {
+      FAKE_DSH_ENV_FILE: environmentFile,
+    }, 'workspace-write');
+    await manager.start();
+    await expect(manager.shutdown()).resolves.toEqual({ outcome: 'graceful' });
+    await expect(readFile(environmentFile, 'utf8').then((value) => JSON.parse(value) as unknown))
+      .resolves.toMatchObject({ permissionMode: 'workspace-write' });
+  });
+
   it('Windows .cmd shim 只拼接固定参数并经隐藏 cmd.exe 启动', () => {
     const spec = createDshLaunchSpec(
       'C:\\Program Files\\dsh\\dsh.cmd',
@@ -123,6 +137,7 @@ function createManager(
   stateDirectory: string,
   dshHome: string,
   extraEnvironment: NodeJS.ProcessEnv = {},
+  permissionMode: 'read-only' | 'workspace-write' = 'read-only',
 ): ManagedBridgeProcess {
   return new ManagedBridgeProcess({
     bridgePath,
@@ -133,6 +148,7 @@ function createManager(
       ...extraEnvironment,
       FAKE_DSH_SCENARIO: scenario,
     },
+    permissionMode,
     requestTimeoutMs: 1_500,
     stateDirectory,
     shutdownTimeoutMs: 250,

@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { existsSync, realpathSync } from 'node:fs';
+import path from 'node:path';
 
 import {
   BRIDGE_CAPABILITIES,
@@ -21,6 +23,20 @@ const CHAT_BOUNDARY_TEXT = [
   '不得调用或假装调用 DSH 工具；不得输出 DSML 或其他工具调用标记。',
   '用户消息是 version 1 JSON 信封：task 是问题，contexts[].content 已包含用户明确选择的只读资料。',
   '直接依据 contexts[].content 回答 task；资料不足时明确说明，不得尝试按 path 读取文件。',
+].join('\n');
+const TASK_BOUNDARY_SECTION = 'obsidian:task-boundary';
+const TASK_ALLOWED_TOOLS = Object.freeze([
+  'edit',
+  'glob',
+  'grep',
+  'read',
+  'read_image',
+  'write',
+] as const);
+const TASK_BOUNDARY_TEXT = [
+  '你正在 Obsidian 的任务执行模式中，只能使用 read、read_image、glob、grep、write、edit。',
+  '所有文件路径必须位于当前会话工作区；不得调用 Shell、PowerShell、网络、Skill、子代理或其他工具。',
+  '不得请求 danger-full-access 或任何工作区外权限升级；资料不足时明确说明。',
 ].join('\n');
 
 type ApprovalOutcome = 'allowed-once' | 'cancelled' | 'rejected' | 'unavailable';
@@ -55,7 +71,7 @@ export interface DshModelSelection {
 
 export interface DshScopedContext {
   readonly tools: {
-    guard(guard: () => string | undefined): () => void;
+    guard(guard: (execution: DshToolExecution) => string | undefined): () => void;
     restrict(filter: { readonly allow?: readonly string[]; readonly deny?: readonly string[] }): () => void;
   };
   on(
@@ -73,6 +89,11 @@ export interface DshScopedContext {
       next: () => Promise<Record<string, unknown>>,
     ) => Promise<Record<string, unknown>>,
   ): () => void;
+}
+
+export interface DshToolExecution {
+  readonly arguments: unknown;
+  readonly name: string;
 }
 
 export interface DshContext {
@@ -290,6 +311,7 @@ export class ObsidianBridgeServer {
       setup: (agentContext) => {
         installModelSelection(agentContext, selection);
         if (mode === 'chat') installChatToolBoundary(agentContext);
+        else installTaskToolBoundary(agentContext, process.cwd());
       },
     });
     if (this.sessions.has(sessionId)) {
@@ -675,6 +697,80 @@ function installChatToolBoundary(context: DshScopedContext): void {
       tools: [],
     };
   });
+}
+
+function installTaskToolBoundary(context: DshScopedContext, workspaceRoot: string): void {
+  context.tools.restrict({ allow: TASK_ALLOWED_TOOLS });
+  context.tools.guard((execution) => taskToolGuardReason(execution, workspaceRoot));
+  context.on('system-prompt/assemble', async (_assembly, _context, next) => {
+    const resolved = await next();
+    const record = asRecord(resolved);
+    if (!record) return resolved;
+    const sectionsSource = record['sections'];
+    const sections: unknown[] = Array.isArray(sectionsSource)
+      ? (sectionsSource as unknown[]).filter(
+          (section) => asRecord(section)?.['name'] !== TASK_BOUNDARY_SECTION,
+        )
+      : [];
+    return {
+      ...record,
+      sections: [...sections, { name: TASK_BOUNDARY_SECTION, text: TASK_BOUNDARY_TEXT }],
+    };
+  });
+}
+
+function taskToolGuardReason(
+  execution: DshToolExecution,
+  workspaceRoot: string,
+): string | undefined {
+  if (!TASK_ALLOWED_TOOLS.includes(execution.name as typeof TASK_ALLOWED_TOOLS[number])) {
+    return 'Obsidian 任务执行模式只允许工作区文件工具。';
+  }
+  const args = asRecord(execution.arguments);
+  if (!args) return '工具参数必须是对象。';
+  if ('sandbox_permissions' in args || 'justification' in args) {
+    return 'Obsidian 任务执行模式不允许权限升级。';
+  }
+
+  const pathValue = execution.name === 'glob' || execution.name === 'grep'
+    ? args['path'] ?? '.'
+    : args['file_path'];
+  if (typeof pathValue !== 'string' || pathValue.trim().length === 0) {
+    return '工具必须提供有效的工作区路径。';
+  }
+  if (execution.name === 'glob') {
+    const pattern = args['pattern'];
+    if (typeof pattern !== 'string' || hasParentTraversal(pattern) || path.isAbsolute(pattern)) {
+      return 'glob pattern 不得越过工作区。';
+    }
+  }
+  return isPathInsideWorkspace(pathValue, workspaceRoot)
+    ? undefined
+    : '工具路径不得越过当前工作区。';
+}
+
+function isPathInsideWorkspace(candidate: string, workspaceRoot: string): boolean {
+  if (candidate.includes('\0')) return false;
+  const canonicalRoot = realpathSync(workspaceRoot);
+  const resolved = path.resolve(workspaceRoot, candidate);
+  if (!isContainedPath(canonicalRoot, resolved)) return false;
+
+  let existing = resolved;
+  while (!existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) return false;
+    existing = parent;
+  }
+  return isContainedPath(canonicalRoot, realpathSync(existing));
+}
+
+function isContainedPath(root: string, candidate: string): boolean {
+  const relative = path.relative(root, candidate);
+  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+}
+
+function hasParentTraversal(value: string): boolean {
+  return value.split(/[\\/]+/u).includes('..');
 }
 
 function createUserMessage(text: string): DshMessage {
