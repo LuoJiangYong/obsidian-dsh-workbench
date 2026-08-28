@@ -51,6 +51,8 @@
 - `tests/task-workspace.test.ts` 覆盖 Vault/状态目录隔离、排除目录、真实变更、行数、删除目录恢复、新建文件移除、后续编辑冲突、篡改和大小上限。
 - `tests/obsidian-bridge.test.ts` 覆盖任务模式对依赖、缓存、构建产物和版本控制目录的执行拒绝。
 - 双平台完整 `npm test` 执行上述测试；Windows `npm run test:runtime` 再显式执行任务工作区账本测试。
+- 实现提交 `5f88c95b7795dd2494aee30da4bf01d29b7d86ac` 的首轮 [CI run 33148906025](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33148906025) 仅在 Windows 暴露 `GetTempPath` 短路径与 `realpath` 长路径断言差异；生产边界没有放宽。最小测试修复 `e9563cda85bbf6cb05d18984d0c5c8b47af6cf74` 改为按真实路径比较。
+- 修复后的 [CI run 33149126275](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33149126275) 已通过 Ubuntu check `98776774841` 与 Windows check `98776774966`，两个原始 annotations 数组均为 `[]`。
 - 本 ADR 证明纯文件边界与账本契约已实现并进入 CI；任务控制器、文件操作 UI、真实 DSH 工作区执行、隔离 Vault 运行验收和最终用户 UI 验收仍未通过。
 
 Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）在本批未修改，只按用户要求只读核对。

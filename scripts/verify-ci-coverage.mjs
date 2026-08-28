@@ -127,6 +127,7 @@ for (const hostContextContract of [
 }
 for (const ardotContract of [
   'Ardot v2 固定用户审阅真相、AI 只读边界、插件反馈差异和社区首发门',
+  'Codex 参考路线固定正式会话、原生右侧栏与 DSH 能力投影边界',
   'https://ardot.tencent.com/file/718186366720195',
   'Ardot 是用户审阅和完善 UI 的专属界面，AI 默认只读',
   '除非用户对当前批次明确要求修改 Ardot',
@@ -136,6 +137,9 @@ for (const ardotContract of [
   '未实现模块不在插件导航中渲染',
   '模式分段控件在插件中使用左右半圆胶囊边界',
   'Batch 5A UI 基线与 Batch 7 插件级对话状态各自保持单一职责',
+  '同一个 Workbench leaf 内切换为正式会话页',
+  '右侧信息应使用 Obsidian 原生右侧 leaf，默认关闭且可选打开',
+  '不提供完全权限、跨会话永久授权或任意 Shell',
 ]) {
   assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
 }

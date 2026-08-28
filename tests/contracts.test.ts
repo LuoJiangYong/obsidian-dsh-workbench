@@ -73,6 +73,39 @@ describe('发布与治理契约', () => {
     expect(adr).toContain('不建立公共模块注册器、动态加载器或数据协议');
   });
 
+  it('Codex 参考路线固定正式会话、原生右侧栏与 DSH 能力投影边界', async () => {
+    const [assessment, design, roadmap, readme] = await Promise.all([
+      readFile(
+        path.join(repositoryRoot, 'docs', 'design', 'codex-reference-ui-assessment.md'),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+    ]);
+
+    expect(assessment).toContain('Ardot 文件 `718186366720195`');
+    expect(assessment).toContain('保持 AI 只读且未修改');
+    expect(assessment).toContain('同一个 Workbench leaf 内切换为正式会话页');
+    expect(assessment).toContain('右侧信息应使用 Obsidian 原生右侧 leaf，默认关闭且可选打开');
+    expect(assessment).toContain('不显示私有推理');
+    expect(assessment).toContain('不提供完全权限、跨会话永久授权或任意 Shell');
+    expect(assessment).toContain('DSH 原生 session 保存；插件只在官方契约支持后建立最小 Vault 外索引');
+    expect(assessment).toContain('Batch 8C');
+    expect(assessment).toContain('Batch 8D');
+    expect(assessment).toContain('Batch 9');
+    expect(assessment).toContain('Batch 10');
+    expect(assessment).toContain('精确 `700px` 容器无水平滚动');
+    expect(design).toContain('### 4.2 正式会话页（Batch 9 目标）');
+    expect(design).toContain('开启页主标题与正式页会话标题互斥');
+    expect(design).toContain('## 6.1 DSH 原生能力投影');
+    expect(design).toContain('不提供完全权限、跨会话永久授权、任意 Shell');
+    expect(roadmap).toContain('`startup → conversation` 同 leaf 正式会话切换');
+    expect(roadmap).toContain('默认关闭的 Obsidian 原生右侧环境栏');
+    expect(readme).toContain('Ardot 未修改');
+    expect(readme).toContain('Codex 参考界面评估与正式会话路线');
+  });
+
   it('Ardot v2 固定用户审阅真相、AI 只读边界、插件反馈差异和社区首发门', async () => {
     const [agents, design, readme, designQa, adr, releaseGateAdr] = await Promise.all([
       readFile(path.join(repositoryRoot, 'AGENTS.md'), 'utf8'),

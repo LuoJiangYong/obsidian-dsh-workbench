@@ -27,6 +27,8 @@
 
 最新获用户批准的 [Ardot UI 真相 v2](https://ardot.tencent.com/file/718186366720195)仍是用户审阅基线，Ardot 由用户审阅和完善，AI 默认只读。`2026-08-26` 与 `2026-08-27` 的直接反馈只授权修改插件：未实现模块从插件导航移除，任务模式控件使用左右半圆胶囊边界；知识库选择入口使用“选择知识库 / 已选笔记”，选择项去除方框阴影并增加文件夹入口；Batch 7 新增真实对话记录、发送前确认与停止/错误状态，并移除重复页头、缩短输入框、增加无阴影浅底对话区。Ardot 未修改。Obsidian ribbon、活动标签页、Workbench 左上角和快速助手继续使用同一 DeepSeek 鲸鱼几何；最终用户 UI 验收尚未完成。
 
+`2026-08-28` 的插件路线进一步吸收 Codex 的会话导航、中央工作流和可选环境栏关系，但不复制桌面窗口或 Git 专属操作：确认首条消息后，开启页计划在同一个 Workbench leaf 内切换为正式会话；右侧信息使用默认关闭的 Obsidian 原生 leaf。DSH 原生配置继续管理模型、插件、Agent 预设、凭据和完整 session，插件只投影当前公开且实际启用的能力。该方向已写入 [Codex 参考界面评估与正式会话路线](./docs/design/codex-reference-ui-assessment.md)，Ardot 未修改。
+
 “新建任务”承担未来的 DeepSeek Harness 主对话、任务执行、上下文和权限审阅。它是首个 Obsidian 社区插件发布功能：只有完整实现、双平台 CI 与隔离 Vault 运行验收通过，并获得用户对最终 Obsidian 运行 UI 的明确验收后，才允许进入社区发布审批。Ardot、CI 或 GitHub Release 单独通过都不能越过此门。
 
 “新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生“选择知识库”流程显式加入当前笔记、当前选区、单个 Vault Markdown 文件或文件夹当下已有的 Markdown 笔记集合。文件夹选择递归包含子文件夹，但在选择时即冻结为逐篇笔记 ID，不会静默追踪后来新增的文件；超限时整体失败，不部分加入。已选笔记可预览来源并逐项移除，文件内容在确认发送后由 Obsidian 宿主重新读取并建立不可变快照。当前“对话”会启动受管 DSH `0.1.1-rc.2` session、显示流式回复并支持真实停止；该模式通过空工具清单、执行 guard 和只消费冻结上下文的系统提示三重禁止 DSH 工具，并禁止把 DSML 工具标记作为回答输出，因此只读且不会写入 Vault。“任务执行”的 bridge 已限为六个 Vault 外工作区文件工具，逐轮变更账本也已实现并进入 CI，但产品工作区选择、控制器、审核/右键/撤销 UI 尚未接通，所以发送仍保持禁用。“代码协作”与附件继续禁用；可选右侧快速助手仍不承担主对话。
@@ -79,6 +81,8 @@ npm run test:bridge:runtime
 当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`；其他版本会明确显示不受支持，不做兼容 fallback。插件不会安装或更新 DSH；只有用户确认发送只读对话后，`main.ts` 才启动正式 bridge 与模型请求。
 
 正式 `obsidian-bridge` 是独立 ESM artifact，只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容。插件用固定 `--profile headless --patch <Vault 外 overlay>` 参数启动用户配置的 DSH；DSH 原生 `$DSH_HOME` 继续保存其设置、凭据和 session，插件生成的 overlay 位于操作系统应用数据目录下按 Vault 哈希分区的状态目录。任何状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 都会在启动 DSH 前失败。对话模式在 DSH 层以空工具清单、执行 guard 和只读系统提示拒绝全部工具；任务模式只允许 `edit/glob/grep/read/read_image/write`，拒绝 Shell、网络、Skill、子代理、路径越界和依赖/缓存/构建/版本控制目录。逐轮基线与撤销材料以受限账本保存在同一 Vault 外状态分区，默认 `7` 天且每工作区最多 `20` 个。关闭时先请求协议退出，超时后终止整棵进程树。Batch 7 最终 bridge 修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的双平台 job 与原始零 annotations；兼容矩阵仍要等 Batch 8–10 和最终用户验收后才能进入 `supported`。
+
+Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI run 33135433215](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33135433215) 的 Ubuntu check `98734194893`、Windows check `98734195115` 和两个原始 `[]` annotations。Batch 8B 实现提交 `5f88c95b7795dd2494aee30da4bf01d29b7d86ac` 首轮 CI 只暴露 Windows 临时路径断言差异；最小测试修复 `e9563cda85bbf6cb05d18984d0c5c8b47af6cf74` 后，[CI run 33149126275](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33149126275) 的 Ubuntu check `98776774841`、Windows check `98776774966` 均成功，原始 annotations 均为 `[]`。这证明任务安全边界和逐轮账本已进入 CI，不证明任务 UI 或 Obsidian 运行验收通过。
 
 后续兼容批次继续以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
 
@@ -165,6 +169,14 @@ npm run test:bridge:runtime
 - 最终本地门为 `89` 项通过、`1` 项既有跳过；Windows 进程专项 `17` 项通过、`1` 项既有跳过；rc.2 正式 artifact 运行验收 `1` 项通过。远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的 Windows check `98726441325` 与 Ubuntu check `98726441475` 均成功，原始 annotations 均为 `[]`。
 - 为避免覆盖用户正在进行的专用 Vault 会话，修复后的资产没有自动重载到该窗口；该项与 Batch 8–10 完整界面一起进入最终 Obsidian UI 用户验收，不影响已完成的 bridge/真实模型技术门。Ardot 未修改、只读核对。
 
+## Batch 8A/8B：任务安全边界与逐轮账本（实现与 CI 已通过）
+
+- 任务 session 只允许 `edit/glob/grep/read/read_image/write` 六个文件工具，并以共享路径 guard 拒绝 Shell、网络、Skill、子代理、Vault、状态目录、依赖、缓存、构建和版本控制目录。
+- Vault 外逐轮账本记录真实 created/modified/deleted、文本增删与审核前后内容；默认上限为 `10,000` 个文件、单文件 `2 MiB`、基线 `64 MiB`、保留 `7` 天且每工作区最多 `20` 个。
+- 撤销先校验账本与全部当前文件 SHA；冲突或篡改时零写入，成功时只恢复该 turn 的修改/删除并移除该 turn 新建文件，中途失败执行 after 快照回滚。
+- Batch 8A 的 [CI run 33135433215](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33135433215) 与 Batch 8B 修复后的 [CI run 33149126275](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33149126275) 均双平台成功且原始 annotations 为 `[]`。
+- 工作区选择、正式任务控制器、已编辑文件卡、右键操作、diff 审核、撤销二次确认和专用 Vault 运行验收仍属于 Batch 8C/8D，当前不冒充可用。Ardot 未修改、只读核对。
+
 ## 开发治理
 
 - 项目开发宪法：[AGENTS.md](./AGENTS.md)
@@ -176,6 +188,7 @@ npm run test:bridge:runtime
 - 设计验收：[design-qa.md](./design-qa.md)
 - 开发宪法评估：[docs/governance/development-constitution-assessment.md](./docs/governance/development-constitution-assessment.md)
 - CI/CD 路线图：[docs/ci-cd-roadmap.md](./docs/ci-cd-roadmap.md)
+- Codex 参考界面评估与正式会话路线：[docs/design/codex-reference-ui-assessment.md](./docs/design/codex-reference-ui-assessment.md)
 - P0 运行时路线评估：[docs/architecture/p0-runtime-route-assessment.md](./docs/architecture/p0-runtime-route-assessment.md)
 - 生产运行时 ADR：[docs/architecture/ADR-001-runtime-integration.md](./docs/architecture/ADR-001-runtime-integration.md)
 - 新建任务 v1 需求：[docs/requirements/new-task-v1.md](./docs/requirements/new-task-v1.md)

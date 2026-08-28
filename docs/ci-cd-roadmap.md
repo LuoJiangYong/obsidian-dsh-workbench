@@ -107,7 +107,7 @@ Batch 7 已实现插件级 `NewTaskConversationController`、发送前任务/只
 
 Batch 8A 已把任务 session 固定为六个文件工具、共享路径 guard、无 Shell/网络/Skill/子代理，并只在任务受管进程显式使用 rc.2 `workspace-write + ask`。正式 bridge artifact 和 Windows rc.2 真实运行门已同步验证。实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过远端 [CI run 33135433215](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33135433215)：Ubuntu check `98734194893`、Windows check `98734195115` 均成功，两个原始 annotations 数组均为 `[]`。
 
-Batch 8B 已实现 [ADR-007](./architecture/ADR-007-task-workspace-ledger.md) 的 Vault 外逐轮变更账本：工作区/Vault/状态目录隔离、共享排除目录、文件数与大小上限、真实 created/modified/deleted、确定性文本行数与审核材料、`7` 天/每工作区 `20` 个账本清理、全量冲突预检、账本完整性校验与精确回滚。测试已进入双平台完整 `npm test`，Windows `npm run test:runtime` 也显式执行；任务控制器、工作区选择和变更 UI 尚未接通，因此当前不能声明任务执行或 Obsidian 运行验收通过。
+Batch 8B 已实现 [ADR-007](./architecture/ADR-007-task-workspace-ledger.md) 的 Vault 外逐轮变更账本：工作区/Vault/状态目录隔离、共享排除目录、文件数与大小上限、真实 created/modified/deleted、确定性文本行数与审核材料、`7` 天/每工作区 `20` 个账本清理、全量冲突预检、账本完整性校验与精确回滚。实现提交 `5f88c95b7795dd2494aee30da4bf01d29b7d86ac` 的首轮 [CI run 33148906025](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33148906025) 只在 Windows 暴露临时目录短路径与 `realpath` 长路径的测试断言差异；最小测试修复 `e9563cda85bbf6cb05d18984d0c5c8b47af6cf74` 未放宽生产边界。修复后的 [CI run 33149126275](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33149126275) 已通过 Ubuntu check `98776774841` 与 Windows check `98776774966`，两个原始 annotations 数组均为 `[]`。任务控制器、工作区选择和变更 UI 尚未接通，因此当前不能声明任务执行或 Obsidian 运行验收通过。
 
 这些证据证明正式 bridge、Obsidian 宿主 UI、只读上下文和产品对话发送链已形成代码与技术运行闭环，任务文件工具与逐轮变更账本也已形成纯契约闭环；任务控制器、工作区与变更 UI、跨重启恢复及最终用户 UI 验收尚未通过，因此 Phase C 整体仍是“部分建立”。
 
@@ -162,4 +162,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A、Batch 6 与 Batch 7 的实现、本地完整门、双平台 CI、原始零 annotations 及对应技术运行门均已通过；下一步进入 Batch 8，接通 Vault 外工作区任务，并实现用户新增的逐轮“已编辑文件”卡片：默认三项、可展开、原生右键操作、真实 diff 审核与安全逐轮撤销。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A、Batch 6、Batch 7、Batch 8A 与 Batch 8B 的精确范围已经通过本地门、双平台 CI 和原始零 annotations；下一步按 [Codex 参考界面评估与正式会话路线](./design/codex-reference-ui-assessment.md) 完成 Batch 8C/8D：接通 Vault 外工作区任务、逐轮“已编辑文件”卡片（默认三项、可展开）、原生右键操作、真实 diff 审核与安全逐轮撤销。Batch 9 再实现 `startup → conversation` 同 leaf 正式会话切换、明确“新建任务”、可验证的 session 恢复边界，以及默认关闭的 Obsidian 原生右侧环境栏；DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Batch 10 完成专用隔离 Vault、完整 UI 与最终用户验收。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
