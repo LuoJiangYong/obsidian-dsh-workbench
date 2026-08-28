@@ -131,6 +131,10 @@ describe('正式 obsidian-bridge', () => {
     }))).toBe('Obsidian 任务执行模式不允许权限升级。');
     expect(guard(toolExecution('read', { file_path: path.join('..', 'outside.txt') })))
       .toBe('工具路径不得越过当前工作区。');
+    expect(guard(toolExecution('read', { file_path: 'node_modules/pkg/index.js' })))
+      .toBe('依赖、缓存、构建产物与版本控制目录不属于可编辑工作区。');
+    expect(guard(toolExecution('write', { file_path: 'dist', content: 'x' })))
+      .toBe('依赖、缓存、构建产物与版本控制目录不属于可编辑工作区。');
     expect(guard(toolExecution('glob', { pattern: '../*.md' })))
       .toBe('glob pattern 不得越过工作区。');
     expect(guard(toolExecution('pwsh', { command: 'Get-ChildItem' })))

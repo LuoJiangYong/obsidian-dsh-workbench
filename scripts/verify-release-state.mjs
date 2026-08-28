@@ -26,7 +26,7 @@ assert(
   'README 误报健康检查状态',
 );
 assert(
-  readme.includes('DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部 DSH 工具，任务执行尚未接通'),
+  readme.includes('DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部工具，任务模式只允许六个工作区文件工具但尚未接入产品控制器'),
   'README 会话能力边界漂移',
 );
 assert(

@@ -3,8 +3,8 @@
 - 协议版本：`1`
 - 目标 bridge 版本：`0.1.0`
 - 目标 DSH：`0.1.1-rc.2`
-- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.1-rc.2` 真实运行已实现；Batch 7 已接入“新建任务”只读对话发送链
-- 未通过：外部工作区权限、任务执行、跨重启恢复与最终用户 UI 验收
+- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.1-rc.2` 真实运行已实现；Batch 7 已接入“新建任务”只读对话发送链；Batch 8 已固定任务模式文件工具安全边界与 Vault 外逐轮变更账本
+- 未通过：任务控制器与工作区选择 UI、文件审核/操作 UI、跨重启恢复、隔离 Vault 任务运行与最终用户 UI 验收
 
 ## 目标与边界
 
@@ -118,6 +118,14 @@ client 第一个请求固定为：
 - 没有 cancel 请求却收到 cancelled、或终态后再收到第二终态，均为协议失败。
 - cancelling 竞态中若上游先完成，可接受 completed/failed；不得把进程终止映射为 cancelled。
 - Batch 7 对话模式使用 `tools.restrict({ allow: [] })`、`tools.guard(...)` 和 `obsidian:chat-boundary` 系统提示三重拒绝全部 DSH 工具；最终 assembly 的 `tools` 必须为空，模型只回答信封中的 `task` 与 `contexts[].content`，不得按 path 读取或把 DSML 工具标记作为文本返回。因此当前对话正常情况下不会产生权限请求。协议保留该事件与决定，供 Batch 8 任务模式在独立权限政策下复用。
+
+## Batch 8 任务模式文件边界
+
+- 任务 session 只枚举并允许 `edit`、`glob`、`grep`、`read`、`read_image`、`write` 六个 DSH 文件工具；Shell、PowerShell、网络、Skill、子代理和其他工具同时从工具列表与执行 guard 拒绝。
+- 受管 DSH 进程只有在任务模式下显式使用 rc.2 的 `workspace-write + ask` 组合；它不是全局设置，也没有 `allow-always`。
+- 所有工具路径必须位于已校验的 Vault 外工作区。绝对越界、`..`、不存在祖先越界、符号链接越界和权限升级参数 fail closed。
+- `.git`、`node_modules`、`dist` 等依赖、缓存、构建产物与版本控制目录使用 [ADR-007](./ADR-007-task-workspace-ledger.md) 的共享排除表，不能由文件工具访问或进入变更基线。
+- bridge 只负责执行边界与窄事件投影；逐轮变更事实、审核材料和安全撤销由 Vault 外 `TaskWorkspaceLedger` 提供。任务控制器和 UI 尚未接通，不得把该契约表述为任务功能已可验收。
 
 ## 关闭、EOF 与超时
 

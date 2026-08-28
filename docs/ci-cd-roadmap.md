@@ -105,7 +105,11 @@ Batch 6 已实现只读知识库纯契约、Obsidian 宿主适配与 Workbench U
 
 Batch 7 已实现插件级 `NewTaskConversationController`、发送前任务/只读笔记确认、确定性 `64 KiB` 任务信封、DSH session 复用、流式回复、真实 turn cancel、取消超时强制清理和可见错误终态。运行数据按 [ADR-006](./architecture/ADR-006-conversation-runtime-storage.md) 分层：完整历史/设置/凭据保留在用户原生 `$DSH_HOME`，bridge overlay 位于 Vault 哈希分区的操作系统状态目录，Workbench 只保存内存投影；所有运行目录在启动 DSH 前校验不位于 Vault。对话 session 使用空工具清单、执行 guard 与只读系统提示三重拒绝工具；专用 Vault 已完成真实回复、流式停止、重载清理与视觉技术验收，合成冻结笔记的本机真实模型复验确认不再输出 DSML。最终修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545)：Windows check `98726441325` 与 Ubuntu check `98726441475` 均成功，原始 annotations 均为 `[]`。
 
-这些证据证明正式 bridge、Obsidian 宿主 UI、只读上下文和产品对话发送链已形成代码与技术运行闭环；外部工作区权限、任务执行、跨重启恢复与最终用户 UI 验收尚未通过，因此 Phase C 整体仍是“部分建立”。
+Batch 8A 已把任务 session 固定为六个文件工具、共享路径 guard、无 Shell/网络/Skill/子代理，并只在任务受管进程显式使用 rc.2 `workspace-write + ask`。正式 bridge artifact 和 Windows rc.2 真实运行门已同步验证。实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过远端 [CI run 33135433215](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33135433215)：Ubuntu check `98734194893`、Windows check `98734195115` 均成功，两个原始 annotations 数组均为 `[]`。
+
+Batch 8B 已实现 [ADR-007](./architecture/ADR-007-task-workspace-ledger.md) 的 Vault 外逐轮变更账本：工作区/Vault/状态目录隔离、共享排除目录、文件数与大小上限、真实 created/modified/deleted、确定性文本行数与审核材料、`7` 天/每工作区 `20` 个账本清理、全量冲突预检、账本完整性校验与精确回滚。测试已进入双平台完整 `npm test`，Windows `npm run test:runtime` 也显式执行；任务控制器、工作区选择和变更 UI 尚未接通，因此当前不能声明任务执行或 Obsidian 运行验收通过。
+
+这些证据证明正式 bridge、Obsidian 宿主 UI、只读上下文和产品对话发送链已形成代码与技术运行闭环，任务文件工具与逐轮变更账本也已形成纯契约闭环；任务控制器、工作区与变更 UI、跨重启恢复及最终用户 UI 验收尚未通过，因此 Phase C 整体仍是“部分建立”。
 
 ## Phase D：隔离 Vault 与发布门
 

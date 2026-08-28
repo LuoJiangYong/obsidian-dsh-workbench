@@ -3,6 +3,10 @@ import { existsSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 
 import {
+  isPathContained,
+  taskPathHasExcludedDirectory,
+} from './task-workspace-policy';
+import {
   BRIDGE_CAPABILITIES,
   BRIDGE_PROTOCOL_VERSION,
   TARGET_BRIDGE_DSH_VERSION,
@@ -738,6 +742,9 @@ function taskToolGuardReason(
   if (typeof pathValue !== 'string' || pathValue.trim().length === 0) {
     return '工具必须提供有效的工作区路径。';
   }
+  if (taskPathHasExcludedDirectory(workspaceRoot, pathValue)) {
+    return '依赖、缓存、构建产物与版本控制目录不属于可编辑工作区。';
+  }
   if (execution.name === 'glob') {
     const pattern = args['pattern'];
     if (typeof pattern !== 'string' || hasParentTraversal(pattern) || path.isAbsolute(pattern)) {
@@ -753,7 +760,7 @@ function isPathInsideWorkspace(candidate: string, workspaceRoot: string): boolea
   if (candidate.includes('\0')) return false;
   const canonicalRoot = realpathSync(workspaceRoot);
   const resolved = path.resolve(workspaceRoot, candidate);
-  if (!isContainedPath(canonicalRoot, resolved)) return false;
+  if (!isPathContained(canonicalRoot, resolved)) return false;
 
   let existing = resolved;
   while (!existsSync(existing)) {
@@ -761,12 +768,7 @@ function isPathInsideWorkspace(candidate: string, workspaceRoot: string): boolea
     if (parent === existing) return false;
     existing = parent;
   }
-  return isContainedPath(canonicalRoot, realpathSync(existing));
-}
-
-function isContainedPath(root: string, candidate: string): boolean {
-  const relative = path.relative(root, candidate);
-  return relative === '' || (!relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative));
+  return isPathContained(canonicalRoot, realpathSync(existing));
 }
 
 function hasParentTraversal(value: string): boolean {

@@ -12,6 +12,7 @@ const ndjsonTests = await readFile('tests/bridge-ndjson-transport.test.ts', 'utf
 const managedBridgeTests = await readFile('tests/managed-bridge-process.test.ts', 'utf8');
 const realDshBridgeTests = await readFile('tests/real-dsh-bridge.test.ts', 'utf8');
 const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf8');
+const taskWorkspaceTests = await readFile('tests/task-workspace.test.ts', 'utf8');
 const newTaskConversationTests = await readFile('tests/new-task-conversation.test.ts', 'utf8');
 const conversationUiTests = await readFile('tests/workbench-conversation-ui.test.ts', 'utf8');
 const runtimeFixture = JSON.parse(await readFile('tests/runtime-fixture/package.json', 'utf8'));
@@ -80,6 +81,10 @@ assert(
 assert(
   packageJson.scripts['test:runtime'].includes('tests/runtime-storage.test.ts'),
   'test:runtime 必须覆盖 Vault 外运行数据边界',
+);
+assert(
+  packageJson.scripts['test:runtime'].includes('tests/task-workspace.test.ts'),
+  'test:runtime 必须覆盖任务工作区变更账本',
 );
 assert(
   runtimeFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.1-rc.2',
@@ -165,6 +170,7 @@ for (const bridgeProtocolContract of [
 for (const formalBridgeContract of [
   '正式 obsidian-bridge',
   '禁止对话模式全部 DSH 工具',
+  '依赖、缓存、构建产物与版本控制目录不属于可编辑工作区',
   '窄投影 DSH session 事件',
   '只接管自有 Agent 的一次性权限请求',
   '正常 shutdown 前释放所有空闲 Agent',
@@ -192,6 +198,21 @@ for (const storageContract of [
   '拒绝 Vault 内的状态目录或 DSH_HOME',
 ]) {
   assert(runtimeStorageTests.includes(storageContract), `运行数据测试缺少契约：${storageContract}`);
+}
+for (const taskWorkspaceContract of [
+  '任务工作区变更账本',
+  '只接受与 Vault、Vault 外状态目录完全分离的普通目录',
+  '只报告真实文件变化并排除依赖与构建目录',
+  '确认撤销后恢复修改和删除的文件，并移除本 turn 新建文件',
+  '检测后续编辑时不改写任何文件',
+  '账本被篡改时 fail closed',
+  '账本目录哈希必须继续绑定原工作区',
+  '按有效期和每工作区账本上限清理',
+]) {
+  assert(
+    taskWorkspaceTests.includes(taskWorkspaceContract),
+    `任务工作区测试缺少契约：${taskWorkspaceContract}`,
+  );
 }
 for (const conversationContract of [
   '新建任务真实对话控制器',
@@ -226,7 +247,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库、Vault 外运行数据、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库、Vault 外运行数据与任务变更账本、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

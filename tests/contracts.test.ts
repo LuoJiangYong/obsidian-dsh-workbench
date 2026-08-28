@@ -38,14 +38,14 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；最终用户 UI 验收待完整功能后统一执行，任务执行尚未接通 |');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8 任务文件安全边界与 Vault 外变更账本已进入 CI，任务控制器和运行 UI 尚未接通，最终用户 UI 验收待完整功能后统一执行 |');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
     expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
     expect(readme).toContain('| DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标统一为 `0.1.1-rc.2`，本地、双平台 CI 与专用隔离 Vault 读回均通过 |');
     expect(readme).toContain('用户在发送前确认后，插件才启动正式 bridge');
     expect(readme).toContain('当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`');
-    expect(readme).toContain('| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部 DSH 工具，任务执行尚未接通 |');
+    expect(readme).toContain('| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部工具，任务模式只允许六个工作区文件工具但尚未接入产品控制器 |');
     expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
@@ -359,7 +359,7 @@ describe('发布与治理契约', () => {
   });
 
   it('新建任务 v1 固定宿主边界、真实取消、运行数据与只读自动演进', async () => {
-    const [requirements, hostContract, storageContract, assessment, roadmap, releaseStatus, designQa]
+    const [requirements, hostContract, storageContract, taskLedgerContract, assessment, roadmap, releaseStatus, designQa]
       = await Promise.all([
       readFile(path.join(repositoryRoot, 'docs', 'requirements', 'new-task-v1.md'), 'utf8'),
       readFile(
@@ -377,6 +377,15 @@ describe('发布与治理契约', () => {
           'docs',
           'architecture',
           'ADR-006-conversation-runtime-storage.md',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'ADR-007-task-workspace-ledger.md',
         ),
         'utf8',
       ),
@@ -410,6 +419,11 @@ describe('发布与治理契约', () => {
     expect(storageContract).toContain('不复制 `.claudian/sessions`');
     expect(storageContract).toContain('操作系统应用数据目录下按 Vault 绝对路径 SHA-256');
     expect(storageContract).toContain('不得把 DSML/工具调用标记当作回答输出');
+    expect(taskLedgerContract).toContain('状态：已接受');
+    expect(taskLedgerContract).toContain('每个工作区最多 `20` 个账本');
+    expect(taskLedgerContract).toContain('账本有效期 `7` 天');
+    expect(taskLedgerContract).toContain('当前文件任一 SHA-256 与 turn 结束快照不一致时，整个撤销不写任何文件');
+    expect(taskLedgerContract).toContain('Ardot 文件 `718186366720195`');
     expect(assessment).toContain('正式 bridge 最新预发布策略');
     expect(assessment).toContain('待验证候选');
     expect(roadmap).toContain('监测 workflow 尚未实现');
@@ -532,7 +546,7 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
     expect(roadmap).toContain('39023169811fc591be5fe33fde05662fbbc9657e');
     expect(roadmap).toContain('CI run 32711052033');
-    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；DSH `0.1.1-rc.2` 已真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；Batch 7 已由“新建任务”的对话发送链启动 |');
+    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | 已实现；DSH `0.1.1-rc.2` 已真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；Batch 7 已由对话发送链启动，Batch 8 已验证文件工具限定的任务 session |');
   });
 
   it('Batch 4 固定正式 bridge artifact、rc.2 夹具与 Windows 运行边界', async () => {
@@ -555,7 +569,7 @@ describe('发布与治理契约', () => {
       bridgeVersion: '0.1.0',
       protocolVersion: '1',
       dshVersion: '0.1.1-rc.2',
-      artifactSha256: '7d1133ecbdcd6e585770791ad2615985432c6f9dca1bb1e3cd6e1757669e50fe',
+      artifactSha256: '3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c',
     });
     expect(manifest.dshIntegrity).toMatch(/^sha512-/u);
     expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.1.1-rc.2');
