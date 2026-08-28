@@ -15,6 +15,14 @@ export const name = 'obsidian-bridge';
 export const inject = ['agents', 'agentDefaultModel', 'tools'] as const;
 export const MAX_BRIDGE_FRAME_BYTES = 1024 * 1024;
 
+const CHAT_BOUNDARY_SECTION = 'obsidian:chat-boundary';
+const CHAT_BOUNDARY_TEXT = [
+  '你正在 Obsidian 的只读对话模式中，此模式没有任何可用工具。',
+  '不得调用或假装调用 DSH 工具；不得输出 DSML 或其他工具调用标记。',
+  '用户消息是 version 1 JSON 信封：task 是问题，contexts[].content 已包含用户明确选择的只读资料。',
+  '直接依据 contexts[].content 回答 task；资料不足时明确说明，不得尝试按 path 读取文件。',
+].join('\n');
+
 type ApprovalOutcome = 'allowed-once' | 'cancelled' | 'rejected' | 'unavailable';
 
 export interface DshMessage {
@@ -651,6 +659,22 @@ function installModelSelection(
 function installChatToolBoundary(context: DshScopedContext): void {
   context.tools.restrict({ allow: [] });
   context.tools.guard(() => 'Obsidian 对话模式不允许调用 DSH 工具。');
+  context.on('system-prompt/assemble', async (_assembly, _context, next) => {
+    const resolved = await next();
+    const record = asRecord(resolved);
+    if (!record) return resolved;
+    const sectionsSource = record['sections'];
+    const sections: unknown[] = Array.isArray(sectionsSource)
+      ? (sectionsSource as unknown[]).filter(
+          (section) => asRecord(section)?.['name'] !== CHAT_BOUNDARY_SECTION,
+        )
+      : [];
+    return {
+      ...record,
+      sections: [...sections, { name: CHAT_BOUNDARY_SECTION, text: CHAT_BOUNDARY_TEXT }],
+      tools: [],
+    };
+  });
 }
 
 function createUserMessage(text: string): DshMessage {

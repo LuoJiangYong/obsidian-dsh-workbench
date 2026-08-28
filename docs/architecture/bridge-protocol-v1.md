@@ -10,7 +10,7 @@
 
 协议 v1 只服务首发“新建任务”的对话与任务执行共同运行时需求。它不是通用 DSH API，不复制 DSH session 日志，不提供 SDK/ACP/CLI fallback，也不读取 Vault、接受任意 Shell 或保存凭据。
 
-Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文；Batch 7 由插件级控制器把发送时快照交给真实 bridge，投影流式文本、一次性权限、取消和明确终态。对话模式在 DSH scoped context 中隐藏并拒绝全部工具，不表示外部工作区任务或最终用户验收已经通过。
+Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文；Batch 7 由插件级控制器把发送时快照交给真实 bridge，投影流式文本、一次性权限、取消和明确终态。对话模式在 DSH scoped context 中隐藏并拒绝全部工具，并在最终系统提示中要求只消费信封内的 `contexts[].content`、不输出 DSML 或其他工具调用标记；这不表示外部工作区任务或最终用户验收已经通过。
 
 ## 精确握手
 
@@ -117,7 +117,7 @@ client 第一个请求固定为：
 - 只有当前 turn 已进入 `cancelling` 且收到 `turn.ended { outcome: "cancelled" }`，宿主才建立取消终态。
 - 没有 cancel 请求却收到 cancelled、或终态后再收到第二终态，均为协议失败。
 - cancelling 竞态中若上游先完成，可接受 completed/failed；不得把进程终止映射为 cancelled。
-- Batch 7 对话模式使用 `tools.restrict({ allow: [] })` 与 `tools.guard(...)` 双重拒绝全部 DSH 工具；因此当前对话正常情况下不会产生权限请求。协议保留该事件与决定，供 Batch 8 任务模式在独立权限政策下复用。
+- Batch 7 对话模式使用 `tools.restrict({ allow: [] })`、`tools.guard(...)` 和 `obsidian:chat-boundary` 系统提示三重拒绝全部 DSH 工具；最终 assembly 的 `tools` 必须为空，模型只回答信封中的 `task` 与 `contexts[].content`，不得按 path 读取或把 DSML 工具标记作为文本返回。因此当前对话正常情况下不会产生权限请求。协议保留该事件与决定，供 Batch 8 任务模式在独立权限政策下复用。
 
 ## 关闭、EOF 与超时
 
@@ -135,7 +135,7 @@ client 第一个请求固定为：
 - `src/obsidian-bridge.ts`：正式 Cordis plugin、DSH 事件窄投影、Agent 所有权与一次性权限回路。
 - `src/bridge-ndjson-transport.ts` 与 `src/managed-bridge-process.ts`：1 MiB 封闭 framing、精确版本预检、用户原生 `$DSH_HOME`、Vault 外插件 overlay、隐藏启动、正常退出与强制清理。
 - `src/new-task-conversation.ts` 与 `src/workbench-view.ts`：插件级 session 所有权、确定性上下文信封、发送前确认、流式投影、取消超时与错误终态。
-- `tests/real-dsh-bridge.test.ts`：独立精确锁定 rc.2，真实加载 artifact、以 Vault 外 cwd 创建 Agent、完成一次模型回复、DSH 原生 session 落盘、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
+- `tests/real-dsh-bridge.test.ts`：独立精确锁定 rc.2，真实加载 artifact、以 Vault 外 cwd 创建 Agent、读回模型请求中的只读系统提示且确认没有 `tools`、完成一次模型回复、DSH 原生 session 落盘、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
 - 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 
 Batch 4 最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)：Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。本地及远端证据证明 rc.2 artifact 加载、环回模型请求、mid-turn cancel、Windows 隐藏进程、正常/强制关闭与清理；它不证明真实外部模型账号、Vault、Obsidian UI 或发布验收通过。

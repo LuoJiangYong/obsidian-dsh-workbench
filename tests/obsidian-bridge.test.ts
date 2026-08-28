@@ -34,6 +34,19 @@ describe('正式 obsidian-bridge', () => {
     expect(harness.context.createdOptions?.meta).toEqual({ cwd: process.cwd() });
     expect(harness.context.scoped.restrictions).toEqual([{ allow: [] }]);
     expect(harness.context.scoped.guards[0]?.()).toBe('Obsidian 对话模式不允许调用 DSH 工具。');
+    const assembly = await harness.context.scoped.assemble({
+      contexts: [],
+      sections: [{ name: 'deployment:persona', text: '基础 persona' }],
+      tools: [{ name: 'read' }],
+      variables: { cwd: process.cwd() },
+    });
+    expect(assembly.tools).toEqual([]);
+    const sections = assembly.sections as unknown[];
+    expect(sections[0]).toEqual({ name: 'deployment:persona', text: '基础 persona' });
+    expect(sections[1]).toMatchObject({ name: 'obsidian:chat-boundary' });
+    expect((sections[1] as { readonly text: string }).text).toContain(
+      '不得输出 DSML 或其他工具调用标记',
+    );
     await harness.server.receive(turnStartRequest('request-3'));
 
     expect(harness.agent.messages).toHaveLength(1);
@@ -232,7 +245,7 @@ class FakeWire implements BridgeWire {
 
 class FakeScopedContext {
   readonly guards: Array<() => string | undefined> = [];
-  readonly listeners = new Map<string, unknown>();
+  readonly listeners = new Map<string, unknown[]>();
   readonly restrictions: Array<{
     readonly allow?: readonly string[];
     readonly deny?: readonly string[];
@@ -252,8 +265,29 @@ class FakeScopedContext {
   };
 
   on(event: string, listener: unknown): () => void {
-    this.listeners.set(event, listener);
-    return () => this.listeners.delete(event);
+    const listeners = this.listeners.get(event) ?? [];
+    listeners.push(listener);
+    this.listeners.set(event, listeners);
+    return () => {
+      const remaining = (this.listeners.get(event) ?? []).filter(item => item !== listener);
+      if (remaining.length === 0) this.listeners.delete(event);
+      else this.listeners.set(event, remaining);
+    };
+  }
+
+  async assemble(assembly: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const listeners = (this.listeners.get('system-prompt/assemble') ?? []) as Array<(
+      assembly: unknown,
+      context: unknown,
+      next: () => Promise<unknown>,
+    ) => Promise<unknown>>;
+    let index = 0;
+    const next = async (): Promise<unknown> => {
+      const listener = listeners[index];
+      index += 1;
+      return listener ? listener(assembly, {}, next) : assembly;
+    };
+    return await next() as Record<string, unknown>;
   }
 }
 

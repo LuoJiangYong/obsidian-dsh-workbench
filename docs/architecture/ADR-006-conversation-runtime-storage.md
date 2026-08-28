@@ -53,6 +53,7 @@ Windows 状态目录固定为 `%LOCALAPPDATA%\DeepSeek Harness Workbench\vaults\
 ### 4. 对话最小权限
 
 - Batch 7 “对话” session 在 DSH scoped context 同时使用 `tools.restrict({ allow: [] })` 与 `tools.guard(...)`，枚举与执行两层都拒绝全部 DSH 工具。
+- 同一 scoped context 在 `system-prompt/assemble` 末端写入命名为 `obsidian:chat-boundary` 的只读边界，并把最终 `tools` 固定为空；模型只能回答用户信封的 `task` 与 `contexts[].content`，不得尝试按路径读取文件，也不得把 DSML/工具调用标记当作回答输出。
 - 只读笔记由 Obsidian 宿主在发送前重读并封装进确定性文本信封；bridge 不获得 Vault API 或文件系统工具。
 - bridge 协议保留工具/一次性权限的窄投影，是 Batch 8 任务模式的公共传输契约，不代表 Batch 7 对话已开放工具。
 
@@ -66,10 +67,10 @@ Batch 8 必须先冻结真实变更来源与数据留存：外部工作区文件
 
 - `tests/runtime-storage.test.ts`：系统目录解析、Vault 哈希、不暴露原始路径、显式 `$DSH_HOME`、Vault/符号链接包含关系。
 - `tests/managed-bridge-process.test.ts`：边界检查先于 DSH、原生 `$DSH_HOME`、Vault 外 overlay、只读环境、隐藏启动、正常/强制清理与脱敏诊断。
-- `tests/real-dsh-bridge.test.ts`：rc.2 真实 artifact、原生 DSH session 落盘、插件 overlay 分离、mid-turn cancel 与零残留。
+- `tests/real-dsh-bridge.test.ts`：rc.2 真实 artifact、发送给模型的只读系统提示且无 tools、原生 DSH session 落盘、插件 overlay 分离、mid-turn cancel 与零残留。
 - `tests/new-task-conversation.test.ts`：插件级 session 复用、发送时快照、流式投影、一次性权限、取消确认/超时和视图订阅分离。
 - `tests/workbench-conversation-ui.test.ts`：发送前审阅、取消保留草稿、流式消息、停止入口、一次性权限和错误终态。
-- `tests/obsidian-bridge.test.ts`：对话模式工具枚举与执行双重拒绝。
+- `tests/obsidian-bridge.test.ts`：对话模式工具枚举、执行与系统提示三重拒绝，并验证既有 persona 不被覆盖。
 - 上述测试由双平台 `npm test` 执行；运行存储与进程边界另由 Windows `npm run test:runtime` 显式执行，rc.2 artifact 由 `npm run test:bridge:runtime` 执行。
 
 Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）在本批仅只读核对，未新增、删除、移动或修改任何节点、画板、文案、样式、变量或截图。

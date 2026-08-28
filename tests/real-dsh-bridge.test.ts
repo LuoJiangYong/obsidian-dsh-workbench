@@ -33,7 +33,7 @@ afterAll(async () => {
 });
 
 describe.runIf(existsSync(dshCommand))('DSH 0.1.1-rc.2 正式 bridge 运行验收', () => {
-  it('真实加载 artifact，以 Vault 外 cwd 完成回复、mid-turn cancel、原生 DSH 会话落盘与零残留', async () => {
+  it('真实加载 artifact，以 Vault 外 cwd 和只读系统提示边界完成回复、mid-turn cancel、原生 DSH 会话落盘与零残留', async () => {
     const model = await createModelServer();
     const dshHome = path.join(temporaryRoot, 'dsh-home');
     const stateDirectory = path.join(temporaryRoot, 'plugin-state');
@@ -71,6 +71,9 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.1-rc.2 正式 bridge 运行验�
       });
       await expect(firstReply).resolves.toMatchObject({ payload: { text: '好' } });
       await expect(firstTerminal).resolves.toMatchObject({ payload: { outcome: 'completed' } });
+      const chatRequest = model.requests.find(body => body.includes('contexts[].content'));
+      expect(chatRequest).toContain('不得输出 DSML 或其他工具调用标记');
+      expect(JSON.parse(chatRequest ?? '{}')).not.toHaveProperty('tools');
 
       const terminal = waitForEvent(client, event => (
         event.event === 'turn.ended' && event.turnId === 'real-turn-2'
@@ -121,13 +124,18 @@ function waitForEvent(
 
 async function createModelServer(): Promise<{
   readonly close: () => Promise<void>;
+  readonly requests: string[];
   readonly url: string;
 }> {
   let requestCount = 0;
+  const requests: string[] = [];
   const server = createServer((request, response) => {
-    request.resume();
+    let body = '';
+    request.setEncoding('utf8');
+    request.on('data', (chunk: string) => { body += chunk; });
     request.on('end', () => {
       requestCount += 1;
+      requests.push(body);
       response.writeHead(200, { 'content-type': 'text/event-stream' });
       response.write('data: {"choices":[{"delta":{"role":"assistant","content":null}}]}\n\n');
       if (requestCount === 1) {
@@ -147,6 +155,7 @@ async function createModelServer(): Promise<{
   if (!address || typeof address === 'string') throw new Error('本地模型服务器没有端口');
   return {
     url: `http://127.0.0.1:${address.port}`,
+    requests,
     close: () => closeServer(server),
   };
 }
