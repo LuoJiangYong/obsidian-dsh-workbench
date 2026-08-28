@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -26,7 +26,7 @@ describe('任务工作区变更账本', () => {
 
     await expect(ledger.validateWorkspace(fixture.workspace)).resolves.toMatchObject({
       name: 'workspace',
-      path: fixture.workspace,
+      path: await realpath(fixture.workspace),
     });
     await expect(ledger.validateWorkspace(fixture.vault)).rejects.toMatchObject({
       code: 'workspace_vault_overlap',
