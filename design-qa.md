@@ -292,7 +292,8 @@ Batch 7 implementation and technical runtime: passed; final Obsidian UI user acc
 - 权限边界：任务进程使用所选工作区 cwd、`workspace-write + ask` 与六个文件工具；不开放 Shell、网络、Skill、子代理、Vault 写入、完全权限或跨会话永久授权。完整绝对路径不进入普通 UI。
 - 失败边界：缺少工作区不启动进程；路径身份变化、账本建立/完成失败、启动失败、意外断开、取消超时与插件卸载均核对或明确报告失败，无法核对时不得显示任务完成。
 - 完整本地门通过：`typecheck`、零警告 `lint`、完整 `npm test` 为 `112 passed / 1 skipped`；runtime jobs 为 `27 passed / 1 skipped`；真实 rc.2 bridge 为 `1 passed`；生产构建、仓库边界、CI 覆盖与 bridge artifact 自检均通过。
-- 精确提交与远端双平台 CI 尚待本批后续证据；专用 Vault 任务运行和视觉验收进入 Batch 8D/10 完整 UI 门。
+- 实现提交 `91b21345a52657520633475dfc9e86db7b720e65` 已通过远端 [CI run 33188573187](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33188573187)：Ubuntu check `98907874384` 与 Windows check `98907874519` 均成功，两个原始 annotations 数组均为 `[]`。
+- 专用 Vault 任务运行和视觉验收进入 Batch 8D/10 完整 UI 门。
 - Batch 8D 的默认三项/展开、原生右键菜单、真实 diff 与二次确认撤销未在本批伪造。
 
-Batch 8C implementation: in progress; final Obsidian UI user acceptance: pending
+Batch 8C implementation and CI: passed; final Obsidian UI user acceptance: pending

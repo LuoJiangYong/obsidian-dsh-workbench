@@ -642,6 +642,10 @@ describe('发布与治理契约', () => {
     expect(adr).toContain('workspace-write + ask');
     expect(adr).toContain('无法核对变更时不得显示“任务完成”');
     expect(adr).toContain('Ardot 未修改、只读核对');
+    expect(adr).toContain('91b21345a52657520633475dfc9e86db7b720e65');
+    expect(adr).toContain('CI run 33188573187');
+    expect(adr).toContain('Ubuntu check `98907874384` 与 Windows check `98907874519`');
+    expect(adr).toContain('两个原始 annotations 数组均为 `[]`');
     expect(host).toContain("properties: ['openDirectory']");
     expect(host).toContain('validateWorkspace(selectedPath)');
     expect(controller).toContain('taskLedger.beginTurn');
@@ -653,6 +657,7 @@ describe('发布与治理契约', () => {
     expect(view).toContain('已编辑 ${String(latestTaskTurn.changes.length)} 个文件');
     expect(design).toContain('任务执行已接通单一 Vault 外工作区');
     expect(roadmap).toContain('Batch 8C 已接通');
+    expect(roadmap).toContain('CI run 33188573187');
   });
 
   it('CI 路线图保持 Release 自动化未获批准', async () => {

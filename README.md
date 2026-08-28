@@ -11,14 +11,14 @@
 | 能力 | 状态 |
 | --- | --- |
 | Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
-| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C 已接通 Vault 外工作区选择、任务控制器与真实变更摘要并通过完整本地门，远端 CI 待本批闭环，详细文件操作 UI 与最终用户验收仍未完成 |
+| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C 已接通 Vault 外工作区选择、任务控制器与真实变更摘要并通过完整本地门和双平台 CI，详细文件操作 UI 与最终用户验收仍未完成 |
 | 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge、宿主 UI、只读上下文、对话发送链、任务文件工具边界、逐轮账本及任务控制器已实现，Batch 8D 的已编辑文件详情、审核与撤销 UI 仍在实施路线中 |
 | 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
 | ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
 | 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |
 | DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标统一为 `0.1.1-rc.2`，本地、双平台 CI 与专用隔离 Vault 读回均通过 |
 | 正式 bridge、协议 v1 与 NDJSON | 已实现；DSH `0.1.1-rc.2` 已真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；Batch 7 已由对话发送链启动，Batch 8 已验证文件工具限定的任务 session |
-| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；任务模式在用户选择并通过校验的单一 Vault 外工作区使用六个文件工具和逐请求确认，完整本地门已通过，远端 CI 与后续运行验收待完成 |
+| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；任务模式在用户选择并通过校验的单一 Vault 外工作区使用六个文件工具和逐请求确认，完整本地门与双平台 CI 已通过，后续完整 UI 运行验收待完成 |
 | Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |
 | GitHub Release | 未创建 |
 | Obsidian 社区提交 | 尚未进行 |
@@ -175,7 +175,8 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 - Vault 外逐轮账本记录真实 created/modified/deleted、文本增删与审核前后内容；默认上限为 `10,000` 个文件、单文件 `2 MiB`、基线 `64 MiB`、保留 `7` 天且每工作区最多 `20` 个。
 - 撤销先校验账本与全部当前文件 SHA；冲突或篡改时零写入，成功时只恢复该 turn 的修改/删除并移除该 turn 新建文件，中途失败执行 after 快照回滚。
 - Batch 8A 的 [CI run 33135433215](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33135433215) 与 Batch 8B 修复后的 [CI run 33149126275](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33149126275) 均双平台成功且原始 annotations 为 `[]`。
-- Batch 8C 已实现 Obsidian 桌面原生目录选择、Vault/状态目录隔离复验、工作区与 session 绑定、`workspace-write + ask` 进程路由、逐次权限、所有终止路径的变更核对，以及“已编辑 N 个文件”真实摘要；完整本地门为 `112 passed / 1 skipped`、runtime `27 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建和完整自检通过，远端 CI 待本批后续证据。
+- Batch 8C 已实现 Obsidian 桌面原生目录选择、Vault/状态目录隔离复验、工作区与 session 绑定、`workspace-write + ask` 进程路由、逐次权限、所有终止路径的变更核对，以及“已编辑 N 个文件”真实摘要；完整本地门为 `112 passed / 1 skipped`、runtime `27 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建和完整自检通过。
+- 实现提交 `91b21345a52657520633475dfc9e86db7b720e65` 已通过 [CI run 33188573187](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33188573187)：Ubuntu check `98907874384` 与 Windows check `98907874519` 均成功，两个原始 annotations 数组均为 `[]`。
 - 默认三项/展开、原生右键操作、diff 审核、撤销二次确认和专用 Vault 运行验收仍属于 Batch 8D/10，当前不冒充可用。Ardot 未修改、只读核对。
 
 ## 开发治理

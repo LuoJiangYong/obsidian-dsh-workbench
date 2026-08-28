@@ -1,6 +1,6 @@
 # ADR-008：Vault 外任务执行控制器
 
-- 状态：已接受，Batch 8C 已实现；完整本地质量门通过，远端 CI 待本批后续证据，Obsidian 运行验收进入后续完整 UI 门
+- 状态：已接受，Batch 8C 已实现并通过完整本地门与双平台 CI；Obsidian 运行验收进入后续完整 UI 门
 - 日期：2026-08-28
 - 关联：[ADR-005](./ADR-005-new-task-v1-host-contract.md)、[ADR-006](./ADR-006-conversation-runtime-storage.md)、[ADR-007](./ADR-007-task-workspace-ledger.md)
 - UI 审阅真相：Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）；本批 Ardot 未修改、只读核对
@@ -52,3 +52,4 @@
 - 故障测试证明：变更捕获失败不会伪装完成，意外断开仍先核对已发生的实际变化。
 - UI 测试证明：选择工作区前发送禁用，发送前显示边界，完成后只显示真实摘要。
 - `npm test` 由 Ubuntu/Windows CI 双平台执行；任务账本与正式 rc.2 bridge 继续进入既有 runtime jobs。
+- 实现提交 `91b21345a52657520633475dfc9e86db7b720e65` 已通过远端 [CI run 33188573187](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33188573187)：Ubuntu check `98907874384` 与 Windows check `98907874519` 均成功，两个原始 annotations 数组均为 `[]`。
