@@ -47,6 +47,7 @@ Windows 状态目录固定为 `%LOCALAPPDATA%\DeepSeek Harness Workbench\vaults\
 - `stateDirectory`、DSH `cwd` 或 `$DSH_HOME` 解析后位于 Vault 内时 fail closed。
 - 检查必须解析已存在祖先和符号链接，并在创建状态目录后再次读回真实路径。
 - 路径边界在执行 `dsh --version` 或启动正式 bridge 之前完成；失败不得产生 DSH 子进程。
+- 对话 session 的 `cwd` 固定为上述已校验的 Vault 外插件状态目录，并显式传给 `ctx.agents.create({ meta: { cwd } })`；这只补齐 DSH prompt/workspace 身份，不开放任何工具或写入能力。
 - 正式 bridge artifact 仍从插件安装目录只读加载；其 overlay、cwd、会话、日志和凭据均不得写在该目录或 Vault 中。
 
 ### 4. 对话最小权限

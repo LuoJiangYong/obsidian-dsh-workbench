@@ -135,7 +135,7 @@ client 第一个请求固定为：
 - `src/obsidian-bridge.ts`：正式 Cordis plugin、DSH 事件窄投影、Agent 所有权与一次性权限回路。
 - `src/bridge-ndjson-transport.ts` 与 `src/managed-bridge-process.ts`：1 MiB 封闭 framing、精确版本预检、用户原生 `$DSH_HOME`、Vault 外插件 overlay、隐藏启动、正常退出与强制清理。
 - `src/new-task-conversation.ts` 与 `src/workbench-view.ts`：插件级 session 所有权、确定性上下文信封、发送前确认、流式投影、取消超时与错误终态。
-- `tests/real-dsh-bridge.test.ts`：独立精确锁定 rc.2，真实加载 artifact、创建 Agent、DSH 原生 session 落盘、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
+- `tests/real-dsh-bridge.test.ts`：独立精确锁定 rc.2，真实加载 artifact、以 Vault 外 cwd 创建 Agent、完成一次模型回复、DSH 原生 session 落盘、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
 - 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 
 Batch 4 最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)：Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。本地及远端证据证明 rc.2 artifact 加载、环回模型请求、mid-turn cancel、Windows 隐藏进程、正常/强制关闭与清理；它不证明真实外部模型账号、Vault、Obsidian UI 或发布验收通过。

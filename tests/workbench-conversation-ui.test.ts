@@ -32,6 +32,8 @@ describe('Workbench 真实对话界面', () => {
     const content = view.contentEl as unknown as MockElement;
     const textarea = content.findAllByTag('textarea')[0];
     if (!textarea) throw new Error('任务输入未渲染');
+    expect(textarea.attributes.get('rows')).toBe('4');
+    expect(content.allText()).not.toContain('与 DeepSeek Harness 对话，定义任务、选择知识库内容');
     textarea.value = '总结本轮材料';
     await textarea.trigger('input');
     const send = content.findAllByClass('dsh-new-task-composer__send')[0];

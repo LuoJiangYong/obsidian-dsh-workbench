@@ -1,5 +1,5 @@
 import { constants } from 'node:fs';
-import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, chmod, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -44,6 +44,7 @@ describe('正式 bridge 受管进程', () => {
     const stateDirectory = path.join(temporaryRoot, 'graceful-state');
     const dshHome = path.join(temporaryRoot, 'graceful-dsh-home');
     const environmentFile = path.join(temporaryRoot, 'graceful-environment.json');
+    await mkdir(dshHome, { recursive: true });
     const manager = createManager('managed-graceful', stateDirectory, dshHome, {
       FAKE_DSH_ENV_FILE: environmentFile,
     });
@@ -58,7 +59,7 @@ describe('正式 bridge 受管进程', () => {
     expect(overlay).not.toContain('DEEPSEEK_API_KEY');
     await expect(readFile(environmentFile, 'utf8').then((value) => JSON.parse(value) as unknown))
       .resolves.toEqual({
-        dshHome,
+        dshHome: await realpath(dshHome),
         permissionMode: 'read-only',
         telemetryDisabled: '1',
       });

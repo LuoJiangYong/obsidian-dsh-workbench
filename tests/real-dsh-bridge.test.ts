@@ -33,8 +33,8 @@ afterAll(async () => {
 });
 
 describe.runIf(existsSync(dshCommand))('DSH 0.1.1-rc.2 正式 bridge 运行验收', () => {
-  it('真实加载 artifact，以原生 DSH 会话落盘并完成 mid-turn cancel、关闭与零残留', async () => {
-    const model = await createSlowModelServer();
+  it('真实加载 artifact，以 Vault 外 cwd 完成回复、mid-turn cancel、原生 DSH 会话落盘与零残留', async () => {
+    const model = await createModelServer();
     const dshHome = path.join(temporaryRoot, 'dsh-home');
     const stateDirectory = path.join(temporaryRoot, 'plugin-state');
     const workingDirectory = path.join(temporaryRoot, 'workspace');
@@ -62,15 +62,29 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.1-rc.2 正式 bridge 运行验�
     try {
       const client = await manager.start();
       await client.createSession({ sessionId: 'real-session-1', mode: 'chat' });
-      const terminal = waitForEvent(client, event => event.event === 'turn.ended');
-      const started = waitForEvent(client, event => event.event === 'turn.started');
+      const firstReply = waitForEvent(client, event => event.event === 'assistant.message');
+      const firstTerminal = waitForEvent(client, event => event.event === 'turn.ended');
       await client.startTurn({
         sessionId: 'real-session-1',
         turnId: 'real-turn-1',
         text: '只回复一个字：好',
       });
+      await expect(firstReply).resolves.toMatchObject({ payload: { text: '好' } });
+      await expect(firstTerminal).resolves.toMatchObject({ payload: { outcome: 'completed' } });
+
+      const terminal = waitForEvent(client, event => (
+        event.event === 'turn.ended' && event.turnId === 'real-turn-2'
+      ));
+      const started = waitForEvent(client, event => (
+        event.event === 'turn.started' && event.turnId === 'real-turn-2'
+      ));
+      await client.startTurn({
+        sessionId: 'real-session-1',
+        turnId: 'real-turn-2',
+        text: '持续回复，直到我停止',
+      });
       await started;
-      await client.cancelTurn({ sessionId: 'real-session-1', turnId: 'real-turn-1' });
+      await client.cancelTurn({ sessionId: 'real-session-1', turnId: 'real-turn-2' });
       await expect(terminal).resolves.toMatchObject({
         event: 'turn.ended',
         payload: { outcome: 'cancelled' },
@@ -105,15 +119,23 @@ function waitForEvent(
   });
 }
 
-async function createSlowModelServer(): Promise<{
+async function createModelServer(): Promise<{
   readonly close: () => Promise<void>;
   readonly url: string;
 }> {
+  let requestCount = 0;
   const server = createServer((request, response) => {
     request.resume();
     request.on('end', () => {
+      requestCount += 1;
       response.writeHead(200, { 'content-type': 'text/event-stream' });
       response.write('data: {"choices":[{"delta":{"role":"assistant","content":null}}]}\n\n');
+      if (requestCount === 1) {
+        response.write('data: {"choices":[{"delta":{"content":"好"}}]}\n\n');
+        response.write('data: [DONE]\n\n');
+        response.end();
+        return;
+      }
       const timer = setInterval(() => {
         response.write('data: {"choices":[{"delta":{"content":"好"}}]}\n\n');
       }, 1_000);

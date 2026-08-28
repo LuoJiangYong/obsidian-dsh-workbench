@@ -29,8 +29,9 @@ const SESSION_ID = 'session-real-bridge';
 const TURN_ID = 'turn-real-bridge';
 
 describe('正式 obsidian-bridge', () => {
-  it('完成精确握手、禁止对话模式全部 DSH 工具并窄投影 DSH session 事件', async () => {
+  it('完成精确握手、绑定 Vault 外 cwd、禁止对话模式全部 DSH 工具并窄投影 DSH session 事件', async () => {
     const harness = await createReadySession();
+    expect(harness.context.createdOptions?.meta).toEqual({ cwd: process.cwd() });
     expect(harness.context.scoped.restrictions).toEqual([{ allow: [] }]);
     expect(harness.context.scoped.guards[0]?.()).toBe('Obsidian 对话模式不允许调用 DSH 工具。');
     await harness.server.receive(turnStartRequest('request-3'));
@@ -290,6 +291,11 @@ class FakeContext {
   readonly handle = new FakeHandle(this.agent);
   readonly scoped = new FakeScopedContext();
   readonly exitCodes: number[] = [];
+  createdOptions: {
+    readonly agentOptions: { readonly provider: string; readonly model: string };
+    readonly meta?: { readonly cwd?: string };
+    readonly sessionId: string;
+  } | undefined;
   private sessionListener: ((session: DshSession, event: unknown) => void) | undefined;
   private approvalListener: ((
     request: DshApprovalRequest,
@@ -298,10 +304,13 @@ class FakeContext {
 
   readonly agents = {
     create: async (options: {
+      readonly agentOptions: { readonly provider: string; readonly model: string };
+      readonly meta?: { readonly cwd?: string };
       readonly sessionId: string;
       readonly setup: (context: DshScopedContext) => void;
     }): Promise<DshAgentHandle> => {
       expect(options.sessionId).toBe(SESSION_ID);
+      this.createdOptions = options;
       options.setup(this.scoped);
       return this.handle;
     },

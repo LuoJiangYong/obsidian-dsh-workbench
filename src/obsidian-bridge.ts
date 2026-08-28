@@ -71,6 +71,7 @@ export interface DshContext {
   readonly agents: {
     create(options: {
       readonly sessionId: string;
+      readonly meta?: { readonly cwd?: string };
       readonly agentOptions: { readonly provider: string; readonly model: string };
       readonly setup: (agentContext: DshScopedContext) => void;
     }): Promise<DshAgentHandle>;
@@ -276,6 +277,7 @@ export class ObsidianBridgeServer {
     const selection = this.context.agentDefaultModel.currentSelection();
     const handle = await this.context.agents.create({
       sessionId,
+      meta: { cwd: process.cwd() },
       agentOptions: { provider: selection.provider, model: selection.model },
       setup: (agentContext) => {
         installModelSelection(agentContext, selection);

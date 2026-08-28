@@ -174,13 +174,6 @@ export class WorkbenchView extends ItemView {
   }
 
   private renderNewTask(parentEl: HTMLElement): void {
-    this.renderPageHeader(
-      parentEl,
-      '新建任务',
-      '与 DeepSeek Harness 对话，定义任务、选择知识库内容，并在执行前审阅权限与变更边界。',
-      '与 DeepSeek Harness 对话，选择知识库内容，并在执行前审阅权限与变更边界。',
-    );
-
     const taskEl = parentEl.createEl('section', { cls: 'dsh-new-task' });
     taskEl.createEl('h3', { text: NEW_TASK_HEADING });
     this.renderNewTaskModes(taskEl);
@@ -199,7 +192,7 @@ export class WorkbenchView extends ItemView {
       attr: {
         'aria-label': '任务描述',
         placeholder: NEW_TASK_PLACEHOLDER,
-        rows: '7',
+        rows: '4',
       },
     });
     this.textareaEl = textareaEl;

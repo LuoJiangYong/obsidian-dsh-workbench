@@ -9,7 +9,7 @@
 | DSH | 消费路径 | 状态 | bridge/协议 | 证据边界 |
 | --- | --- | --- | --- | --- |
 | `0.1.1-rc.2` | 健康检查 | 已实现并本地验证；本批远端/专用 Vault 待验收 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
-| `0.1.1-rc.2` | 正式 bridge + 产品对话 | `windows_runtime_passed`；Batch 7 产品发送链已实现；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `f5ecd64ee9f2104bde9502469d841eff7dc8cf9f8bdb79da2bfcff6d9ac17ecf` | Batch 4 已通过真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读上下文已通过专用 Vault；Batch 7 已实现发送前审阅、原生 DSH session、流式回复、停止、对话工具双重拒绝和 Vault 外插件状态，正在等待本批远端 CI/专用 Vault；外部工作区、任务执行、跨重启恢复与最终用户验收未通过 |
+| `0.1.1-rc.2` | 正式 bridge + 产品对话 | `windows_runtime_passed`；Batch 7 产品发送链已实现；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `cef62ee2f2db91fa6b8691892e9ac99796bb482be73b1fb15277b065200a1840` | Batch 4 已通过真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读上下文已通过专用 Vault；Batch 7 已实现发送前审阅、以 Vault 外插件状态目录作为 session cwd、原生 DSH session、真实模型回复、流式回复、停止、对话工具双重拒绝和 Vault 外插件状态，正在等待本批远端 CI/专用 Vault；外部工作区、任务执行、跨重启恢复与最终用户验收未通过 |
 | 其他版本 | 无 | 不支持 | 无 fallback | 不尝试、不中和、不静默降级 |
 
 健康检查与正式 bridge 仍是两个独立消费路径，但当前都精确锁定 `rc.2`。健康检查通过不能推出 bridge/session 可用；Batch 4 bridge 运行门、Batch 6 只读知识库门和 Batch 7 产品发送链实现也不能冒充外部工作区、任务执行、跨重启恢复或最终用户验收已通过。

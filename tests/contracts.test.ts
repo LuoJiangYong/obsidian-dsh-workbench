@@ -179,6 +179,9 @@ describe('发布与治理契约', () => {
     expect(styles).toContain('border-radius: 999px;');
     expect(styles).toContain('.dsh-workbench-view button.dsh-new-task-mode__button:first-child');
     expect(styles).toContain('.dsh-workbench-view button.dsh-new-task-mode__button:last-child');
+    expect(styles).toContain('var(--background-secondary) 58%');
+    expect(styles).not.toContain('min-height: 258px');
+    expect(styles).not.toContain('min-height: 175px');
     expect(designQa).toContain('D:\\codex workspace\\_test-vaults\\obsidian-dsh-workbench-evidence');
     expect(designQa).toContain('原 Batch 5A 运行截图和 DOM 读回使用了');
     expect(designQa).toContain('已撤回');
@@ -509,7 +512,7 @@ describe('发布与治理契约', () => {
       bridgeVersion: '0.1.0',
       protocolVersion: '1',
       dshVersion: '0.1.1-rc.2',
-      artifactSha256: 'f5ecd64ee9f2104bde9502469d841eff7dc8cf9f8bdb79da2bfcff6d9ac17ecf',
+      artifactSha256: 'cef62ee2f2db91fa6b8691892e9ac99796bb482be73b1fb15277b065200a1840',
     });
     expect(manifest.dshIntegrity).toMatch(/^sha512-/u);
     expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.1.1-rc.2');

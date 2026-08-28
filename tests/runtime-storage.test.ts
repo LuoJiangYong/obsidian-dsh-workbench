@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, symlink } from 'node:fs/promises';
+import { mkdir, mkdtemp, realpath, rm, symlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -110,5 +110,5 @@ async function createTemporaryRoot(): Promise<string> {
 
 async function realPathForAssertion(candidate: string): Promise<string> {
   await mkdir(candidate, { recursive: true });
-  return candidate;
+  return realpath(candidate);
 }

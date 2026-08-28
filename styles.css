@@ -184,7 +184,7 @@
 }
 
 .dsh-new-task {
-  margin: 62px auto 0;
+  margin: 32px auto 0;
   max-width: 882px;
 }
 
@@ -240,7 +240,7 @@
   border-radius: calc(var(--radius-s) + 2px);
   display: flex;
   flex-direction: column;
-  min-height: 280px;
+  min-height: 188px;
   overflow: hidden;
 }
 
@@ -259,7 +259,7 @@
   font-family: var(--font-interface);
   font-size: var(--font-ui-medium);
   line-height: var(--line-height-normal);
-  min-height: 205px;
+  min-height: 112px;
   padding: 18px;
   resize: none;
   width: 100%;
@@ -447,16 +447,23 @@
 }
 
 .dsh-new-task-conversation {
-  border-block: 1px solid var(--background-modifier-border);
+  background: color-mix(
+    in srgb,
+    var(--background-secondary) 58%,
+    var(--background-primary)
+  );
+  border: 1px solid var(--background-modifier-border);
+  border-radius: calc(var(--radius-s) + 2px);
   display: grid;
   gap: 0;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
+  overflow: hidden;
 }
 
 .dsh-new-task-message {
   display: grid;
   gap: 5px;
-  padding: 14px 2px;
+  padding: 14px;
 }
 
 .dsh-new-task-message + .dsh-new-task-message,
@@ -492,7 +499,7 @@
 .dsh-new-task-conversation__error,
 .dsh-new-task-conversation__status {
   margin: 0;
-  padding: 12px 2px;
+  padding: 12px 14px;
 }
 
 .dsh-new-task-tools,
@@ -806,11 +813,11 @@
   }
 
   .dsh-new-task-composer {
-    min-height: 258px;
+    min-height: 188px;
   }
 
   .dsh-new-task-composer__input {
-    min-height: 175px;
+    min-height: 112px;
   }
 
   .dsh-new-task-composer__tool.is-attachment .dsh-new-task-composer__tool-label {
