@@ -324,6 +324,64 @@
   padding: 10px 14px;
 }
 
+.dsh-task-workspace {
+  align-items: center;
+  background: var(--background-secondary);
+  border-top: 1px solid var(--background-modifier-border);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
+
+.dsh-task-workspace__copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dsh-task-workspace__copy strong,
+.dsh-task-workspace__name {
+  font-size: var(--font-ui-smaller);
+}
+
+.dsh-task-workspace__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsh-task-workspace__boundary {
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  line-height: var(--line-height-tight);
+}
+
+.dsh-task-workspace__error {
+  color: var(--text-error);
+  font-size: var(--font-ui-smaller);
+  margin: 0;
+}
+
+.dsh-workbench-view button.dsh-task-workspace__remove {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--text-muted);
+  display: inline-flex;
+  flex: none;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+}
+
+.dsh-task-workspace__remove svg {
+  height: 15px;
+  width: 15px;
+}
+
 .dsh-new-task-context__header,
 .dsh-new-task-context__item {
   align-items: center;
@@ -469,6 +527,7 @@
 .dsh-new-task-message + .dsh-new-task-message,
 .dsh-new-task-tools,
 .dsh-new-task-permission,
+.dsh-task-result-summary,
 .dsh-new-task-conversation__error,
 .dsh-new-task-conversation__status {
   border-top: 1px solid var(--background-modifier-border);
@@ -496,6 +555,7 @@
 
 .dsh-new-task-tools,
 .dsh-new-task-permission,
+.dsh-task-result-summary,
 .dsh-new-task-conversation__error,
 .dsh-new-task-conversation__status {
   margin: 0;
@@ -503,9 +563,17 @@
 }
 
 .dsh-new-task-tools,
-.dsh-new-task-permission {
+.dsh-new-task-permission,
+.dsh-task-result-summary {
   display: grid;
   gap: 6px;
+}
+
+.dsh-task-result-summary p,
+.dsh-new-task-review__workspace {
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+  margin: 0;
 }
 
 .dsh-new-task-permission__actions,
@@ -675,6 +743,8 @@
 .dsh-new-task-mode__button:focus-visible,
 .dsh-new-task-composer__tool:focus-visible,
 .dsh-new-task-context__remove:focus-visible,
+.dsh-task-workspace__open:focus-visible,
+.dsh-task-workspace__remove:focus-visible,
 .dsh-new-task-composer__send:focus-visible,
 .dsh-action:focus-visible {
   outline: 2px solid var(--interactive-accent);

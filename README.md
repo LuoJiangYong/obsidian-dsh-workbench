@@ -11,14 +11,14 @@
 | 能力 | 状态 |
 | --- | --- |
 | Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
-| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8 任务文件安全边界与 Vault 外变更账本已进入 CI，任务控制器和运行 UI 尚未接通，最终用户 UI 验收待完整功能后统一执行 |
-| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge、宿主 UI、只读上下文、对话发送链、任务文件工具边界与逐轮账本已实现，外部工作区选择、任务控制器和变更 UI 仍在实施 |
+| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C 已接通 Vault 外工作区选择、任务控制器与真实变更摘要并通过完整本地门，远端 CI 待本批闭环，详细文件操作 UI 与最终用户验收仍未完成 |
+| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge、宿主 UI、只读上下文、对话发送链、任务文件工具边界、逐轮账本及任务控制器已实现，Batch 8D 的已编辑文件详情、审核与撤销 UI 仍在实施路线中 |
 | 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
 | ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
 | 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |
 | DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标统一为 `0.1.1-rc.2`，本地、双平台 CI 与专用隔离 Vault 读回均通过 |
 | 正式 bridge、协议 v1 与 NDJSON | 已实现；DSH `0.1.1-rc.2` 已真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；Batch 7 已由对话发送链启动，Batch 8 已验证文件工具限定的任务 session |
-| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部工具，任务模式只允许六个工作区文件工具但尚未接入产品控制器 |
+| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；任务模式在用户选择并通过校验的单一 Vault 外工作区使用六个文件工具和逐请求确认，完整本地门已通过，远端 CI 与后续运行验收待完成 |
 | Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |
 | GitHub Release | 未创建 |
 | Obsidian 社区提交 | 尚未进行 |
@@ -31,7 +31,7 @@
 
 “新建任务”承担未来的 DeepSeek Harness 主对话、任务执行、上下文和权限审阅。它是首个 Obsidian 社区插件发布功能：只有完整实现、双平台 CI 与隔离 Vault 运行验收通过，并获得用户对最终 Obsidian 运行 UI 的明确验收后，才允许进入社区发布审批。Ardot、CI 或 GitHub Release 单独通过都不能越过此门。
 
-“新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生“选择知识库”流程显式加入当前笔记、当前选区、单个 Vault Markdown 文件或文件夹当下已有的 Markdown 笔记集合。文件夹选择递归包含子文件夹，但在选择时即冻结为逐篇笔记 ID，不会静默追踪后来新增的文件；超限时整体失败，不部分加入。已选笔记可预览来源并逐项移除，文件内容在确认发送后由 Obsidian 宿主重新读取并建立不可变快照。当前“对话”会启动受管 DSH `0.1.1-rc.2` session、显示流式回复并支持真实停止；该模式通过空工具清单、执行 guard 和只消费冻结上下文的系统提示三重禁止 DSH 工具，并禁止把 DSML 工具标记作为回答输出，因此只读且不会写入 Vault。“任务执行”的 bridge 已限为六个 Vault 外工作区文件工具，逐轮变更账本也已实现并进入 CI，但产品工作区选择、控制器、审核/右键/撤销 UI 尚未接通，所以发送仍保持禁用。“代码协作”与附件继续禁用；可选右侧快速助手仍不承担主对话。
+“新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生“选择知识库”流程显式加入当前笔记、当前选区、单个 Vault Markdown 文件或文件夹当下已有的 Markdown 笔记集合。文件夹选择递归包含子文件夹，但在选择时即冻结为逐篇笔记 ID，不会静默追踪后来新增的文件；超限时整体失败，不部分加入。已选笔记可预览来源并逐项移除，文件内容在确认发送后由 Obsidian 宿主重新读取并建立不可变快照。当前“对话”会启动受管 DSH `0.1.1-rc.2` session、显示流式回复并支持真实停止；该模式通过空工具清单、执行 guard 和只消费冻结上下文的系统提示三重禁止 DSH 工具，并禁止把 DSML 工具标记作为回答输出，因此只读且不会写入 Vault。“任务执行”已接通单一 Vault 外工作区：用户使用 Obsidian 桌面原生目录选择器明确选择，统一边界校验通过后才允许发送；发送前显示工作区名称与逐请求权限边界，任务以六个文件工具运行，并在结束、失败或意外断开时由逐轮账本核对真实变更。当前只显示文件数量与文本增删摘要；默认三项/展开、原生右键操作、diff 审核和安全撤销仍属于 Batch 8D。“代码协作”与附件继续禁用；可选右侧快速助手仍不承担主对话。
 
 ## 开发运行
 
@@ -78,7 +78,7 @@ npm run test:bridge:runtime
 - 插件不安装或更新 DSH、Node、Python 或其他外部依赖。
 - 仓库内 `tests/runtime-fixture` 只供开发与 Windows CI 精确复现 rc.2，不由插件安装，不进入用户 DSH profile 或 Release 运行依赖。
 
-当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`；其他版本会明确显示不受支持，不做兼容 fallback。插件不会安装或更新 DSH；只有用户确认发送只读对话后，`main.ts` 才启动正式 bridge 与模型请求。
+当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`；其他版本会明确显示不受支持，不做兼容 fallback。插件不会安装或更新 DSH；只有用户确认发送只读对话或已校验的 Vault 外任务后，`main.ts` 才启动正式 bridge 与模型请求。
 
 正式 `obsidian-bridge` 是独立 ESM artifact，只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容。插件用固定 `--profile headless --patch <Vault 外 overlay>` 参数启动用户配置的 DSH；DSH 原生 `$DSH_HOME` 继续保存其设置、凭据和 session，插件生成的 overlay 位于操作系统应用数据目录下按 Vault 哈希分区的状态目录。任何状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 都会在启动 DSH 前失败。对话模式在 DSH 层以空工具清单、执行 guard 和只读系统提示拒绝全部工具；任务模式只允许 `edit/glob/grep/read/read_image/write`，拒绝 Shell、网络、Skill、子代理、路径越界和依赖/缓存/构建/版本控制目录。逐轮基线与撤销材料以受限账本保存在同一 Vault 外状态分区，默认 `7` 天且每工作区最多 `20` 个。关闭时先请求协议退出，超时后终止整棵进程树。Batch 7 最终 bridge 修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的双平台 job 与原始零 annotations；兼容矩阵仍要等 Batch 8–10 和最终用户验收后才能进入 `supported`。
 
@@ -169,13 +169,14 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 - 最终本地门为 `89` 项通过、`1` 项既有跳过；Windows 进程专项 `17` 项通过、`1` 项既有跳过；rc.2 正式 artifact 运行验收 `1` 项通过。远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的 Windows check `98726441325` 与 Ubuntu check `98726441475` 均成功，原始 annotations 均为 `[]`。
 - 为避免覆盖用户正在进行的专用 Vault 会话，修复后的资产没有自动重载到该窗口；该项与 Batch 8–10 完整界面一起进入最终 Obsidian UI 用户验收，不影响已完成的 bridge/真实模型技术门。Ardot 未修改、只读核对。
 
-## Batch 8A/8B：任务安全边界与逐轮账本（实现与 CI 已通过）
+## Batch 8A–8C：任务安全边界、逐轮账本与控制器
 
 - 任务 session 只允许 `edit/glob/grep/read/read_image/write` 六个文件工具，并以共享路径 guard 拒绝 Shell、网络、Skill、子代理、Vault、状态目录、依赖、缓存、构建和版本控制目录。
 - Vault 外逐轮账本记录真实 created/modified/deleted、文本增删与审核前后内容；默认上限为 `10,000` 个文件、单文件 `2 MiB`、基线 `64 MiB`、保留 `7` 天且每工作区最多 `20` 个。
 - 撤销先校验账本与全部当前文件 SHA；冲突或篡改时零写入，成功时只恢复该 turn 的修改/删除并移除该 turn 新建文件，中途失败执行 after 快照回滚。
 - Batch 8A 的 [CI run 33135433215](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33135433215) 与 Batch 8B 修复后的 [CI run 33149126275](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33149126275) 均双平台成功且原始 annotations 为 `[]`。
-- 工作区选择、正式任务控制器、已编辑文件卡、右键操作、diff 审核、撤销二次确认和专用 Vault 运行验收仍属于 Batch 8C/8D，当前不冒充可用。Ardot 未修改、只读核对。
+- Batch 8C 已实现 Obsidian 桌面原生目录选择、Vault/状态目录隔离复验、工作区与 session 绑定、`workspace-write + ask` 进程路由、逐次权限、所有终止路径的变更核对，以及“已编辑 N 个文件”真实摘要；完整本地门为 `112 passed / 1 skipped`、runtime `27 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建和完整自检通过，远端 CI 待本批后续证据。
+- 默认三项/展开、原生右键操作、diff 审核、撤销二次确认和专用 Vault 运行验收仍属于 Batch 8D/10，当前不冒充可用。Ardot 未修改、只读核对。
 
 ## 开发治理
 
@@ -193,6 +194,7 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 - 生产运行时 ADR：[docs/architecture/ADR-001-runtime-integration.md](./docs/architecture/ADR-001-runtime-integration.md)
 - 新建任务 v1 需求：[docs/requirements/new-task-v1.md](./docs/requirements/new-task-v1.md)
 - 新建任务 v1 宿主契约 ADR：[docs/architecture/ADR-005-new-task-v1-host-contract.md](./docs/architecture/ADR-005-new-task-v1-host-contract.md)
+- Vault 外任务执行控制器 ADR：[docs/architecture/ADR-008-task-execution-controller.md](./docs/architecture/ADR-008-task-execution-controller.md)
 
 ## License
 

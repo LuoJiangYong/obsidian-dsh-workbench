@@ -284,3 +284,15 @@ Batch 6 implementation and dedicated Vault result: passed; final Obsidian UI use
 - Ardot 文件、页面和画板保持用户审阅原状，AI 只读且未修改。
 
 Batch 7 implementation and technical runtime: passed; final Obsidian UI user acceptance: pending
+
+## Batch 8C：Vault 外任务控制器实施门
+
+- 日期：`2026-08-28`；Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）与产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360`、QA `12:530` 保持只读，Ardot 未修改。
+- 用户结果：任务模式通过 Obsidian 桌面原生目录选择器选择一个 Vault 外工作区；只有统一真实路径与隔离校验通过后才启用发送。发送前显示工作区名称和逐次确认边界，任务结束显示逐轮账本确认的文件数与文本增删摘要。
+- 权限边界：任务进程使用所选工作区 cwd、`workspace-write + ask` 与六个文件工具；不开放 Shell、网络、Skill、子代理、Vault 写入、完全权限或跨会话永久授权。完整绝对路径不进入普通 UI。
+- 失败边界：缺少工作区不启动进程；路径身份变化、账本建立/完成失败、启动失败、意外断开、取消超时与插件卸载均核对或明确报告失败，无法核对时不得显示任务完成。
+- 完整本地门通过：`typecheck`、零警告 `lint`、完整 `npm test` 为 `112 passed / 1 skipped`；runtime jobs 为 `27 passed / 1 skipped`；真实 rc.2 bridge 为 `1 passed`；生产构建、仓库边界、CI 覆盖与 bridge artifact 自检均通过。
+- 精确提交与远端双平台 CI 尚待本批后续证据；专用 Vault 任务运行和视觉验收进入 Batch 8D/10 完整 UI 门。
+- Batch 8D 的默认三项/展开、原生右键菜单、真实 diff 与二次确认撤销未在本批伪造。
+
+Batch 8C implementation: in progress; final Obsidian UI user acceptance: pending

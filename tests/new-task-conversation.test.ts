@@ -1,4 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 
 import type {
   BridgeConnectionState,
@@ -15,6 +18,8 @@ import {
   createNewTaskTurnText,
   type NewTaskBridgeClient,
   type NewTaskBridgeProcess,
+  type NewTaskProcessInput,
+  type NewTaskTaskLedger,
 } from '../src/new-task-conversation';
 import {
   createCurrentSelectionContext,
@@ -22,6 +27,11 @@ import {
   createVaultFileContext,
   type NewTaskContextReader,
 } from '../src/new-task-context';
+import type {
+  TaskWorkspaceSelection,
+  TaskWorkspaceTurnResult,
+} from '../src/task-workspace';
+import { TaskWorkspaceLedger } from '../src/task-workspace';
 
 beforeAll(() => vi.stubGlobal('window', globalThis));
 
@@ -152,6 +162,253 @@ describe('新建任务真实对话控制器', () => {
     });
   });
 
+  it('任务模式在已校验 Vault 外工作区建立基线，以 task session 执行并在终态生成变更事实', async () => {
+    const client = new FakeBridgeClient();
+    const process = new FakeBridgeProcess(client);
+    const ledger = new FakeTaskLedger();
+    let processInput: NewTaskProcessInput | undefined;
+    const controller = new NewTaskConversationController({
+      createProcess: async (input) => {
+        processInput = input;
+        return process;
+      },
+      taskLedger: ledger,
+    });
+    const workspace = {
+      name: 'external-project',
+      path: 'C:\\workspaces\\external-project',
+    } as const;
+
+    await expect(controller.submit({
+      contexts: [],
+      draft: '更新 README',
+      mode: 'task',
+      reader: readerReturning(''),
+      workspace,
+    })).resolves.toBe(true);
+
+    expect(processInput).toEqual({
+      mode: 'task',
+      workingDirectory: workspace.path,
+    });
+    expect(client.createdModes).toEqual(['task']);
+    expect(ledger.validatedPaths).toEqual([workspace.path]);
+    expect(ledger.started).toHaveLength(1);
+    expect(ledger.started[0]?.workspacePath).toBe(workspace.path);
+    const turnId = ledger.started[0]?.turnId;
+    if (!turnId) throw new Error('任务 turn 未建立');
+
+    client.emit(event('turn.started', 0, {}, turnId));
+    client.emit(event('tool.started', 1, {
+      callId: 'call-write',
+      toolName: 'edit',
+    }, turnId));
+    client.emit(event('permission.requested', 2, {
+      requestId: 'permission-write',
+      toolName: 'edit',
+      reason: '修改 README.md',
+    }, turnId));
+    expect(controller.getSnapshot()).toMatchObject({
+      phase: 'awaiting_permission',
+      tools: [{ callId: 'call-write', toolName: 'edit', turnId }],
+    });
+    await controller.resolvePermission('allow-once');
+    client.emit(event('turn.ended', 3, { outcome: 'completed' }, turnId));
+
+    await vi.waitFor(() => {
+      expect(controller.getSnapshot()).toMatchObject({
+        error: null,
+        phase: 'completed',
+        taskTurns: [{
+          additions: 3,
+          deletions: 1,
+          turnId,
+          workspace,
+        }],
+      });
+    });
+    expect(ledger.completed).toEqual([turnId]);
+  });
+
+  it('任务模式缺少工作区时 fail closed，不启动进程或建立账本', async () => {
+    const createProcess = vi.fn(async () => new FakeBridgeProcess(new FakeBridgeClient()));
+    const ledger = new FakeTaskLedger();
+    const controller = new NewTaskConversationController({ createProcess, taskLedger: ledger });
+
+    await expect(controller.submit({
+      contexts: [],
+      draft: '修改文件',
+      mode: 'task',
+      reader: readerReturning(''),
+      workspace: null,
+    })).resolves.toBe(false);
+
+    expect(createProcess).not.toHaveBeenCalled();
+    expect(ledger.started).toEqual([]);
+    expect(controller.getSnapshot()).toMatchObject({
+      error: { code: 'workspace_required' },
+      phase: 'failed',
+    });
+  });
+
+  it('任务控制器与真实 Vault 外账本共用同一 turn，终态只报告实际文件变化', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'dsh-task-controller-'));
+    const vaultPath = path.join(root, 'vault');
+    const stateDirectory = path.join(root, 'state');
+    const workspacePath = path.join(root, 'workspace');
+    await Promise.all([
+      mkdir(vaultPath),
+      mkdir(stateDirectory),
+      mkdir(workspacePath),
+    ]);
+    await writeFile(path.join(workspacePath, 'README.md'), 'before\n', 'utf8');
+    const client = new FakeBridgeClient();
+    const controller = new NewTaskConversationController({
+      createProcess: async () => new FakeBridgeProcess(client),
+      taskLedger: new TaskWorkspaceLedger({ stateDirectory, vaultPath }),
+    });
+    try {
+      await controller.submit({
+        contexts: [],
+        draft: '更新 README',
+        mode: 'task',
+        reader: readerReturning(''),
+        workspace: { name: 'workspace', path: workspacePath },
+      });
+      const turnId = client.startedTurnIds[0];
+      if (!turnId) throw new Error('任务 turn 未启动');
+      await writeFile(path.join(workspacePath, 'README.md'), 'before\nafter\n', 'utf8');
+      await writeFile(path.join(workspacePath, 'new.md'), 'new\n', 'utf8');
+      client.emit(event('turn.started', 0, {}, turnId));
+      client.emit(event('turn.ended', 1, { outcome: 'completed' }, turnId));
+
+      await vi.waitFor(() => {
+        expect(controller.getSnapshot()).toMatchObject({
+          phase: 'completed',
+          taskTurns: [{
+            additions: 2,
+            deletions: 0,
+            changes: [
+              { kind: 'created', relativePath: 'new.md' },
+              { kind: 'modified', relativePath: 'README.md' },
+            ],
+          }],
+        });
+      });
+    } finally {
+      await controller.dispose();
+      await rm(root, { force: true, recursive: true });
+    }
+  });
+
+  it('任务终态的变更捕获失败时不伪装完成，并关闭失去审计能力的运行时', async () => {
+    const client = new FakeBridgeClient();
+    const process = new FakeBridgeProcess(client);
+    const ledger = new FakeTaskLedger();
+    ledger.completeFailure = new NewTaskConversationError(
+      'task_change_capture_failed',
+      '无法核对本次文件变更。',
+    );
+    const controller = new NewTaskConversationController({
+      createProcess: async () => process,
+      taskLedger: ledger,
+    });
+
+    await controller.submit({
+      contexts: [],
+      draft: '修改文件',
+      mode: 'task',
+      reader: readerReturning(''),
+      workspace: { name: 'external-project', path: 'C:\\workspaces\\external-project' },
+    });
+    const turnId = client.startedTurnIds[0];
+    if (!turnId) throw new Error('任务 turn 未启动');
+    client.emit(event('turn.started', 0, {}, turnId));
+    client.emit(event('turn.ended', 1, { outcome: 'completed' }, turnId));
+
+    await vi.waitFor(() => {
+      expect(controller.getSnapshot()).toMatchObject({
+        error: { code: 'task_change_capture_failed' },
+        phase: 'failed',
+        taskTurns: [],
+      });
+    });
+    expect(process.disposeCount).toBe(1);
+  });
+
+  it('任务运行时意外断开仍先捕获已发生的实际变化，再显示连接失败', async () => {
+    const client = new FakeBridgeClient();
+    const ledger = new FakeTaskLedger();
+    const controller = new NewTaskConversationController({
+      createProcess: async () => new FakeBridgeProcess(client),
+      taskLedger: ledger,
+    });
+
+    await controller.submit({
+      contexts: [],
+      draft: '修改文件',
+      mode: 'task',
+      reader: readerReturning(''),
+      workspace: { name: 'external-project', path: 'C:\\workspaces\\external-project' },
+    });
+    const turnId = client.startedTurnIds[0];
+    if (!turnId) throw new Error('任务 turn 未启动');
+    client.emit(event('turn.started', 0, {}, turnId));
+    client.failConnection('unexpected_eof', 'bridge 在任务终态前关闭');
+
+    await vi.waitFor(() => {
+      expect(controller.getSnapshot()).toMatchObject({
+        error: { code: 'unexpected_eof' },
+        phase: 'failed',
+        taskTurns: [{ turnId }],
+      });
+    });
+    expect(ledger.completed).toEqual([turnId]);
+  });
+
+  it('已经收到任务终态时，变更核对期间的 transport 关闭不覆盖有效终态', async () => {
+    const client = new FakeBridgeClient();
+    const ledger = new FakeTaskLedger();
+    let releaseCapture: (() => void) | undefined;
+    ledger.completeGate = new Promise<void>((resolve) => {
+      releaseCapture = resolve;
+    });
+    const controller = new NewTaskConversationController({
+      createProcess: async () => new FakeBridgeProcess(client),
+      taskLedger: ledger,
+    });
+
+    await controller.submit({
+      contexts: [],
+      draft: '修改文件',
+      mode: 'task',
+      reader: readerReturning(''),
+      workspace: { name: 'external-project', path: 'C:\\workspaces\\external-project' },
+    });
+    const turnId = client.startedTurnIds[0];
+    if (!turnId) throw new Error('任务 turn 未启动');
+    client.emit(event('turn.started', 0, {}, turnId));
+    client.emit(event('turn.ended', 1, { outcome: 'completed' }, turnId));
+    expect(controller.getSnapshot().phase).toBe('finalizing');
+
+    client.failConnection('unexpected_eof', '终态后 transport 关闭');
+    expect(controller.getSnapshot()).toMatchObject({
+      error: null,
+      phase: 'finalizing',
+      runtimeStatus: 'disconnected',
+    });
+    releaseCapture?.();
+
+    await vi.waitFor(() => {
+      expect(controller.getSnapshot()).toMatchObject({
+        error: null,
+        phase: 'completed',
+        taskTurns: [{ turnId }],
+      });
+    });
+    expect(ledger.completed).toEqual([turnId]);
+  });
+
   it('只有 bridge 的 cancelled 终态才显示已取消', async () => {
     const client = new FakeBridgeClient();
     const controller = new NewTaskConversationController({
@@ -256,6 +513,7 @@ class FakeBridgeClient implements NewTaskBridgeClient {
   cancelCount = 0;
   readonly permissionDecisions: BridgePermissionDecision[] = [];
   readonly startedTexts: string[] = [];
+  readonly startedTurnIds: string[] = [];
   private readonly connectionListeners = new Set<() => void>();
   private readonly eventListeners = new Set<(event: KnownBridgeEvent) => void>();
 
@@ -296,9 +554,57 @@ class FakeBridgeClient implements NewTaskBridgeClient {
     return { accepted: true };
   }
 
-  async startTurn(input: { readonly text: string }): Promise<{ readonly accepted: true }> {
+  async startTurn(input: {
+    readonly sessionId: string;
+    readonly text: string;
+    readonly turnId: string;
+  }): Promise<{ readonly accepted: true }> {
     this.startedTexts.push(input.text);
+    this.startedTurnIds.push(input.turnId);
     return { accepted: true };
+  }
+}
+
+class FakeTaskLedger implements NewTaskTaskLedger {
+  completeGate: Promise<void> | undefined;
+  completeFailure: Error | undefined;
+  readonly completed: string[] = [];
+  readonly started: Array<{ readonly turnId: string; readonly workspacePath: string }> = [];
+  readonly validatedPaths: string[] = [];
+
+  async beginTurn(turnId: string, workspacePath: string): Promise<TaskWorkspaceSelection> {
+    this.started.push({ turnId, workspacePath });
+    return { name: 'external-project', path: workspacePath };
+  }
+
+  async completeTurn(turnId: string): Promise<TaskWorkspaceTurnResult> {
+    this.completed.push(turnId);
+    if (this.completeGate) await this.completeGate;
+    if (this.completeFailure) throw this.completeFailure;
+    const workspacePath = this.started.find((item) => item.turnId === turnId)?.workspacePath;
+    if (!workspacePath) throw new Error('没有活动任务账本');
+    return {
+      additions: 3,
+      canUndo: true,
+      changes: [{
+        additions: 3,
+        deletions: 1,
+        kind: 'modified',
+        relativePath: 'README.md',
+        review: { after: 'after', before: 'before' },
+        undoable: true,
+      }],
+      completedAt: '2026-08-28T00:00:00.000Z',
+      deletions: 1,
+      turnId,
+      undone: false,
+      workspace: { name: 'external-project', path: workspacePath },
+    };
+  }
+
+  async validateWorkspace(workspacePath: string): Promise<TaskWorkspaceSelection> {
+    this.validatedPaths.push(workspacePath);
+    return { name: 'external-project', path: workspacePath };
   }
 }
 
@@ -310,12 +616,13 @@ function event(
   eventName: KnownBridgeEvent['event'],
   seq: number,
   payload: KnownBridgeEvent['payload'],
+  turnId = 'turn-1',
 ): KnownBridgeEvent {
   return {
     type: 'event',
     event: eventName,
     sessionId: 'session-1',
-    turnId: 'turn-1',
+    turnId,
     seq,
     payload,
   } as KnownBridgeEvent;

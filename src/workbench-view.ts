@@ -21,6 +21,8 @@ import {
   reduceNewTaskState,
 } from './new-task-state';
 import type { NewTaskContextHost } from './obsidian-context-host';
+import type { TaskWorkspaceHost } from './task-workspace-host';
+import type { TaskWorkspaceSelection } from './task-workspace';
 import { createWorkbenchState } from './workbench-state';
 
 export const VIEW_TYPE_WORKBENCH = 'deepseek-harness-workbench-view';
@@ -47,6 +49,7 @@ interface WorkbenchViewOptions {
   readonly getDshHealth: () => DshHealthResult;
   readonly onContextsChanged: () => void;
   readonly runDshHealthCheck: () => Promise<void>;
+  readonly taskWorkspaceHost: TaskWorkspaceHost;
 }
 
 export class WorkbenchView extends ItemView {
@@ -198,12 +201,18 @@ export class WorkbenchView extends ItemView {
     this.textareaEl = textareaEl;
     textareaEl.value = this.newTaskState.draft;
 
+    this.renderSelectedWorkspace(composerEl);
     this.renderSelectedContexts(composerEl);
     const footerEl = composerEl.createDiv({ cls: 'dsh-new-task-composer__footer' });
     const toolsEl = footerEl.createDiv({ cls: 'dsh-new-task-composer__tools' });
     this.renderDisabledComposerTool(toolsEl, 'circle-plus', '添加附件', 'attachment');
     this.renderContextTool(toolsEl);
-    this.renderDisabledComposerTool(toolsEl, 'shield-check', '默认权限');
+    if (this.newTaskState.mode === 'task') this.renderWorkspaceTool(toolsEl);
+    this.renderDisabledComposerTool(
+      toolsEl,
+      'shield-check',
+      this.newTaskState.mode === 'task' ? '逐次确认' : '只读对话',
+    );
 
     const submitEl = footerEl.createDiv({ cls: 'dsh-new-task-composer__submit' });
     submitEl.createSpan({
@@ -240,7 +249,9 @@ export class WorkbenchView extends ItemView {
     const confirmationCopyEl = confirmationEl.createDiv();
     confirmationCopyEl.createEl('strong', { text: '执行前确认' });
     confirmationCopyEl.createEl('p', {
-      text: '发送前确认任务和只读笔记；对话不开放 DSH 工具，也不会写入知识库。',
+      text: this.newTaskState.mode === 'task'
+        ? '发送前确认任务、只读笔记与 Vault 外工作区；文件工具逐次授权，不写入知识库。'
+        : '发送前确认任务和只读笔记；对话不开放 DSH 工具，也不会写入知识库。',
     });
     this.syncConversationSurface();
   }
@@ -264,6 +275,7 @@ export class WorkbenchView extends ItemView {
           'aria-selected': isActive ? 'true' : 'false',
         },
       });
+      buttonEl.disabled = !canChangeMode(this.options.conversationHost.getSnapshot().phase);
       buttonEl.addEventListener('click', () => this.selectNewTaskMode(mode.id));
     }
 
@@ -322,6 +334,86 @@ export class WorkbenchView extends ItemView {
         onError: (message) => this.setContextError(message),
       });
     });
+  }
+
+  private renderWorkspaceTool(parentEl: HTMLElement): void {
+    const buttonEl = parentEl.createEl('button', {
+      cls: 'dsh-new-task-composer__tool dsh-task-workspace__open',
+      attr: {
+        type: 'button',
+        'aria-label': this.newTaskState.workspace
+          ? `更换任务工作区：${this.newTaskState.workspace.name}`
+          : '选择 Vault 外任务工作区',
+      },
+    });
+    setIcon(buttonEl, 'folder-open');
+    buttonEl.createSpan({
+      cls: 'dsh-new-task-composer__tool-label',
+      text: this.newTaskState.workspace?.name ?? '选择工作区',
+    });
+    buttonEl.addEventListener('click', () => {
+      void this.selectTaskWorkspace();
+    });
+  }
+
+  private renderSelectedWorkspace(parentEl: HTMLElement): void {
+    if (this.newTaskState.mode !== 'task'
+      || (!this.newTaskState.workspace && !this.newTaskState.workspaceError)) return;
+    const workspaceEl = parentEl.createEl('section', {
+      cls: 'dsh-task-workspace',
+      attr: { 'aria-label': '任务工作区' },
+    });
+    if (this.newTaskState.workspace) {
+      const copyEl = workspaceEl.createDiv({ cls: 'dsh-task-workspace__copy' });
+      copyEl.createEl('strong', { text: '任务工作区' });
+      copyEl.createSpan({
+        cls: 'dsh-task-workspace__name',
+        text: this.newTaskState.workspace.name,
+      });
+      copyEl.createSpan({
+        cls: 'dsh-task-workspace__boundary',
+        text: 'Vault 外目录 · 仅本次任务会话可写 · 文件工具逐次确认',
+      });
+      const removeEl = workspaceEl.createEl('button', {
+        cls: 'dsh-task-workspace__remove',
+        attr: {
+          type: 'button',
+          'aria-label': `移除任务工作区 ${this.newTaskState.workspace.name}`,
+        },
+      });
+      setIcon(removeEl, 'x');
+      removeEl.addEventListener('click', () => {
+        this.newTaskState = reduceNewTaskState(this.newTaskState, {
+          type: 'workspace-changed',
+          workspace: null,
+        });
+        this.render();
+      });
+    }
+    if (this.newTaskState.workspaceError) {
+      workspaceEl.createEl('p', {
+        cls: 'dsh-task-workspace__error',
+        text: this.newTaskState.workspaceError,
+        attr: { role: 'alert' },
+      });
+    }
+  }
+
+  private async selectTaskWorkspace(): Promise<void> {
+    try {
+      const workspace = await this.options.taskWorkspaceHost.selectWorkspace();
+      if (workspace === null) return;
+      this.newTaskState = reduceNewTaskState(this.newTaskState, {
+        type: 'workspace-changed',
+        workspace,
+      });
+    } catch (error) {
+      this.newTaskState = reduceNewTaskState(this.newTaskState, {
+        type: 'workspace-error-changed',
+        message: error instanceof Error ? error.message : '无法选择任务工作区。',
+      });
+    }
+    this.render();
   }
 
   private renderSelectedContexts(parentEl: HTMLElement): void {
@@ -411,16 +503,20 @@ export class WorkbenchView extends ItemView {
     const draft = this.newTaskState.draft;
     const contexts = this.newTaskState.contexts;
     const mode = this.newTaskState.mode;
+    const workspace = this.newTaskState.workspace;
     new NewTaskReviewModal(
       this.app,
       draft,
       contexts,
+      mode,
+      workspace,
       async () => {
         const accepted = await this.options.conversationHost.submit({
           contexts,
           draft,
           mode,
           reader: this.options.contextHost,
+          workspace,
         });
         if (accepted) {
           this.newTaskState = reduceNewTaskState(this.newTaskState, {
@@ -476,6 +572,20 @@ export class WorkbenchView extends ItemView {
       });
     }
 
+    const latestTaskTurn = snapshot.taskTurns[snapshot.taskTurns.length - 1];
+    if (latestTaskTurn) {
+      const resultEl = conversationEl.createEl('section', {
+        cls: 'dsh-task-result-summary',
+        attr: { 'aria-label': '任务变更摘要' },
+      });
+      resultEl.createEl('strong', {
+        text: `已编辑 ${String(latestTaskTurn.changes.length)} 个文件`,
+      });
+      resultEl.createEl('p', {
+        text: taskTurnSummary(latestTaskTurn),
+      });
+    }
+
     if (snapshot.permission) this.renderPermission(conversationEl, snapshot);
     if (snapshot.error) {
       conversationEl.createEl('p', {
@@ -485,7 +595,7 @@ export class WorkbenchView extends ItemView {
       });
     }
 
-    const status = conversationPhaseStatus(snapshot);
+    const status = conversationPhaseStatus(snapshot, snapshot.mode ?? this.newTaskState.mode);
     if (status) {
       conversationEl.createEl('p', {
         cls: 'dsh-new-task-conversation__status',
@@ -540,6 +650,9 @@ export class WorkbenchView extends ItemView {
       buttonEl.disabled = true;
     } else if (phase === 'cancelling') {
       buttonEl.setText('正在停止…');
+      buttonEl.disabled = true;
+    } else if (phase === 'finalizing') {
+      buttonEl.setText('正在核对变更…');
       buttonEl.disabled = true;
     } else {
       buttonEl.setText('发送');
@@ -644,6 +757,8 @@ class NewTaskReviewModal extends Modal {
     app: WorkbenchView['app'],
     private readonly draft: string,
     private readonly contexts: readonly NewTaskContextSelection[],
+    private readonly mode: NewTaskMode,
+    private readonly workspace: TaskWorkspaceSelection | null,
     private readonly onConfirm: () => Promise<boolean>,
   ) {
     super(app);
@@ -653,7 +768,9 @@ class NewTaskReviewModal extends Modal {
     this.setTitle('确认发送');
     this.contentEl.createEl('p', {
       cls: 'dsh-new-task-review__boundary',
-      text: '本次为只读对话：仅发送下列任务和你明确选择的笔记；不开放 DSH 工具，不写入知识库。',
+      text: this.mode === 'task'
+        ? '本次任务只允许访问所选 Vault 外工作区；文件工具逐次确认，不开放 Shell、网络、Skill 或子代理，也不写入知识库。'
+        : '本次为只读对话：仅发送下列任务和你明确选择的笔记；不开放 DSH 工具，不写入知识库。',
     });
     this.contentEl.createEl('strong', { text: '任务' });
     this.contentEl.createEl('pre', {
@@ -668,6 +785,15 @@ class NewTaskReviewModal extends Modal {
       for (const context of this.contexts) {
         listEl.createEl('li', { text: contextSelectionLabel(context) });
       }
+    }
+    if (this.mode === 'task') {
+      this.contentEl.createEl('strong', { text: '任务工作区' });
+      this.contentEl.createEl('p', {
+        cls: 'dsh-new-task-review__workspace',
+        text: this.workspace
+          ? `${this.workspace.name}（Vault 外目录）`
+          : '未选择',
+      });
     }
 
     const errorEl = this.contentEl.createEl('p', {
@@ -721,16 +847,34 @@ function conversationMessageStatus(message: NewTaskConversationMessage): string 
   return undefined;
 }
 
-function conversationPhaseStatus(snapshot: NewTaskConversationSnapshot): string | undefined {
+function conversationPhaseStatus(
+  snapshot: NewTaskConversationSnapshot,
+  mode: NewTaskMode,
+): string | undefined {
   const statuses: Readonly<Partial<Record<NewTaskConversationSnapshot['phase'], string>>> = {
     awaiting_permission: '等待本次权限决定',
     cancelled: '已停止',
     cancelling: '正在停止…',
-    completed: '回复完成',
-    failed: '本次对话失败',
-    running: 'DSH 正在回复…',
+    completed: mode === 'task' ? '任务完成' : '回复完成',
+    failed: mode === 'task' ? '本次任务失败' : '本次对话失败',
+    finalizing: '正在核对文件变更…',
+    running: mode === 'task' ? 'DSH 正在执行任务…' : 'DSH 正在回复…',
     starting: '正在连接 DSH…',
-    validating: '正在校验只读笔记…',
+    validating: mode === 'task' ? '正在校验工作区和只读笔记…' : '正在校验只读笔记…',
   };
   return statuses[snapshot.phase];
+}
+
+function canChangeMode(phase: NewTaskConversationSnapshot['phase']): boolean {
+  return phase === 'idle'
+    || phase === 'cancelled'
+    || phase === 'completed'
+    || phase === 'failed';
+}
+
+function taskTurnSummary(result: NewTaskConversationSnapshot['taskTurns'][number]): string {
+  if (result.additions === null || result.deletions === null) {
+    return `${result.workspace.name} · 包含二进制或过大文本`;
+  }
+  return `${result.workspace.name} · +${String(result.additions)} -${String(result.deletions)} · 变更事实已记录`;
 }

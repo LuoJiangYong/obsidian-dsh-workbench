@@ -4,6 +4,7 @@ import {
   removeNewTaskContextSelection,
   type NewTaskContextSelection,
 } from './new-task-context';
+import type { TaskWorkspaceSelection } from './task-workspace';
 
 export type NewTaskMode = 'chat' | 'task';
 
@@ -14,6 +15,7 @@ export type NewTaskPhase =
   | 'running'
   | 'awaiting_permission'
   | 'cancelling'
+  | 'finalizing'
   | 'cancelled'
   | 'completed'
   | 'failed';
@@ -24,6 +26,8 @@ export interface NewTaskState {
   readonly contexts: readonly NewTaskContextSelection[];
   readonly draft: string;
   readonly mode: NewTaskMode;
+  readonly workspace: TaskWorkspaceSelection | null;
+  readonly workspaceError: string | null;
 }
 
 export type NewTaskAction =
@@ -32,7 +36,9 @@ export type NewTaskAction =
   | { readonly type: 'context-error-changed'; readonly message: string | null }
   | { readonly type: 'context-removed'; readonly id: string }
   | { readonly type: 'draft-changed'; readonly draft: string }
-  | { readonly type: 'mode-changed'; readonly mode: NewTaskMode };
+  | { readonly type: 'mode-changed'; readonly mode: NewTaskMode }
+  | { readonly type: 'workspace-changed'; readonly workspace: TaskWorkspaceSelection | null }
+  | { readonly type: 'workspace-error-changed'; readonly message: string | null };
 
 export function createNewTaskState(): NewTaskState {
   return Object.freeze({
@@ -40,6 +46,8 @@ export function createNewTaskState(): NewTaskState {
     contexts: Object.freeze([]),
     draft: '',
     mode: 'chat',
+    workspace: null,
+    workspaceError: null,
   });
 }
 
@@ -72,12 +80,20 @@ export function reduceNewTaskState(
       return Object.freeze({ ...state, draft: action.draft });
     case 'mode-changed':
       return Object.freeze({ ...state, mode: action.mode });
+    case 'workspace-changed':
+      return Object.freeze({
+        ...state,
+        workspace: action.workspace,
+        workspaceError: null,
+      });
+    case 'workspace-error-changed':
+      return Object.freeze({ ...state, workspaceError: action.message });
   }
 }
 
 export function canSubmitNewTask(state: NewTaskState, phase: NewTaskPhase): boolean {
   return state.draft.trim().length > 0
-    && state.mode === 'chat'
+    && (state.mode === 'chat' || state.workspace !== null)
     && (phase === 'idle'
       || phase === 'cancelled'
       || phase === 'completed'

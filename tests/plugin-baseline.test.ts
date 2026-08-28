@@ -90,7 +90,7 @@ describe('原生 Workbench 插件基线', () => {
       '代码协作',
       '添加附件',
       '选择知识库',
-      '默认权限',
+      '只读对话',
       '模型由 DSH 配置管理',
       '发送',
       '执行前确认',
@@ -127,6 +127,11 @@ describe('原生 Workbench 插件基线', () => {
     await modeButtons[1]?.click();
     const rerenderedModeButtons = content.findAllByClass('dsh-new-task-mode__button');
     expect(rerenderedModeButtons[1]?.classes.has('is-active')).toBe(true);
+    expect(content.allText()).toEqual(expect.arrayContaining([
+      '选择工作区',
+      '逐次确认',
+      '发送前确认任务、只读笔记与 Vault 外工作区；文件工具逐次授权，不写入知识库。',
+    ]));
 
     const rerenderedComposer = content.findAllByTag('textarea')[0];
     if (!rerenderedComposer) throw new Error('任务输入未渲染');

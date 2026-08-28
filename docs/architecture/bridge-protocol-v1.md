@@ -125,7 +125,7 @@ client 第一个请求固定为：
 - 受管 DSH 进程只有在任务模式下显式使用 rc.2 的 `workspace-write + ask` 组合；它不是全局设置，也没有 `allow-always`。
 - 所有工具路径必须位于已校验的 Vault 外工作区。绝对越界、`..`、不存在祖先越界、符号链接越界和权限升级参数 fail closed。
 - `.git`、`node_modules`、`dist` 等依赖、缓存、构建产物与版本控制目录使用 [ADR-007](./ADR-007-task-workspace-ledger.md) 的共享排除表，不能由文件工具访问或进入变更基线。
-- bridge 只负责执行边界与窄事件投影；逐轮变更事实、审核材料和安全撤销由 Vault 外 `TaskWorkspaceLedger` 提供。任务控制器和 UI 尚未接通，不得把该契约表述为任务功能已可验收。
+- bridge 只负责执行边界与窄事件投影；逐轮变更事实、审核材料和安全撤销由 Vault 外 `TaskWorkspaceLedger` 提供。Batch 8C 已接通控制器与真实摘要，但详细文件、审核和撤销 UI 仍未实现，不得把该协议契约表述为完整任务功能或最终 UI 已可验收。
 
 ## 关闭、EOF 与超时
 

@@ -16,6 +16,8 @@ describe('新建任务宿主状态', () => {
       mode: 'chat',
       contextError: null,
       contexts: [],
+      workspace: null,
+      workspaceError: null,
     });
     expect(canSubmitNewTask(state, 'idle')).toBe(false);
   });
@@ -76,7 +78,7 @@ describe('新建任务宿主状态', () => {
     });
   });
 
-  it('只有对话模式、非空草稿和非活动阶段同时满足时才可发送', () => {
+  it('对话只需非空草稿，任务还必须选择工作区，且活动阶段都不可发送', () => {
     let state = createNewTaskState();
     state = reduceNewTaskState(state, { type: 'draft-changed', draft: '总结当前上下文' });
     expect(canSubmitNewTask(state, 'idle')).toBe(true);
@@ -85,8 +87,36 @@ describe('新建任务宿主状态', () => {
 
     state = reduceNewTaskState(state, { type: 'mode-changed', mode: 'task' });
     expect(canSubmitNewTask(state, 'idle')).toBe(false);
+    state = reduceNewTaskState(state, {
+      type: 'workspace-changed',
+      workspace: { name: 'workspace', path: 'C:\\workspace' },
+    });
+    expect(canSubmitNewTask(state, 'idle')).toBe(true);
+    expect(canSubmitNewTask(state, 'finalizing')).toBe(false);
     state = reduceNewTaskState(state, { type: 'mode-changed', mode: 'chat' });
     state = reduceNewTaskState(state, { type: 'draft-changed', draft: '   ' });
     expect(canSubmitNewTask(state, 'idle')).toBe(false);
+  });
+
+  it('选择或移除 Vault 外工作区时清除旧错误并保留草稿', () => {
+    let state = reduceNewTaskState(createNewTaskState(), {
+      type: 'draft-changed',
+      draft: '更新外部项目',
+    });
+    state = reduceNewTaskState(state, {
+      type: 'workspace-error-changed',
+      message: '任务工作区不能是 Obsidian Vault。',
+    });
+    expect(state.workspaceError).toBe('任务工作区不能是 Obsidian Vault。');
+
+    state = reduceNewTaskState(state, {
+      type: 'workspace-changed',
+      workspace: { name: 'project', path: 'C:\\project' },
+    });
+    expect(state).toMatchObject({
+      draft: '更新外部项目',
+      workspace: { name: 'project', path: 'C:\\project' },
+      workspaceError: null,
+    });
   });
 });

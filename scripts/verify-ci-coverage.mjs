@@ -13,6 +13,7 @@ const managedBridgeTests = await readFile('tests/managed-bridge-process.test.ts'
 const realDshBridgeTests = await readFile('tests/real-dsh-bridge.test.ts', 'utf8');
 const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf8');
 const taskWorkspaceTests = await readFile('tests/task-workspace.test.ts', 'utf8');
+const taskWorkspaceHostTests = await readFile('tests/task-workspace-host.test.ts', 'utf8');
 const newTaskConversationTests = await readFile('tests/new-task-conversation.test.ts', 'utf8');
 const conversationUiTests = await readFile('tests/workbench-conversation-ui.test.ts', 'utf8');
 const runtimeFixture = JSON.parse(await readFile('tests/runtime-fixture/package.json', 'utf8'));
@@ -218,9 +219,24 @@ for (const taskWorkspaceContract of [
     `任务工作区测试缺少契约：${taskWorkspaceContract}`,
   );
 }
+for (const taskWorkspaceHostContract of [
+  'Obsidian 任务工作区选择宿主',
+  '只把用户在原生目录选择器中确认的路径交给统一边界校验',
+  '用户取消时不校验、不保存也不制造错误工作区',
+]) {
+  assert(
+    taskWorkspaceHostTests.includes(taskWorkspaceHostContract),
+    `任务工作区宿主测试缺少契约：${taskWorkspaceHostContract}`,
+  );
+}
 for (const conversationContract of [
   '新建任务真实对话控制器',
   '发送前重读上下文，复用同一 session，并投影流式回复、工具、权限和完成终态',
+  '任务模式在已校验 Vault 外工作区建立基线，以 task session 执行并在终态生成变更事实',
+  '任务模式缺少工作区时 fail closed，不启动进程或建立账本',
+  '任务控制器与真实 Vault 外账本共用同一 turn，终态只报告实际文件变化',
+  '任务终态的变更捕获失败时不伪装完成',
+  '任务运行时意外断开仍先捕获已发生的实际变化',
   '只有 bridge 的 cancelled 终态才显示已取消',
   '取消已接受但终态超时后强制清理',
   '意外 EOF 立即成为可见失败',
@@ -234,6 +250,7 @@ for (const conversationUiContract of [
   'Workbench 真实对话界面',
   '发送前展示只读审阅，取消保留草稿，确认后清空草稿并显示流式结果',
   '只提供本次权限决定并把错误作为可访问终态呈现',
+  '任务模式选择 Vault 外工作区后才允许发送，并在结束时显示真实变更摘要',
 ]) {
   assert(
     conversationUiTests.includes(conversationUiContract),
@@ -251,7 +268,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库、Vault 外运行数据与任务变更账本、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BridgePermissionDecision } from '../src/bridge-protocol';
 import type {
@@ -10,6 +10,7 @@ import type {
   NewTaskContextHost,
   NewTaskContextPickerRequest,
 } from '../src/obsidian-context-host';
+import type { TaskWorkspaceHost } from '../src/task-workspace-host';
 import { WorkbenchView } from '../src/workbench-view';
 import { App, type MockElement, mockObsidian, resetMockObsidian } from './mocks/obsidian';
 
@@ -26,6 +27,7 @@ describe('Workbench 真实对话界面', () => {
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
       runDshHealthCheck: async () => undefined,
+      taskWorkspaceHost: taskWorkspaceHost(),
     });
     await view.onOpen();
 
@@ -102,6 +104,7 @@ describe('Workbench 真实对话界面', () => {
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
       runDshHealthCheck: async () => undefined,
+      taskWorkspaceHost: taskWorkspaceHost(),
     });
     await view.onOpen();
     conversationHost.emit({
@@ -131,6 +134,93 @@ describe('Workbench 真实对话界面', () => {
       ?.findAllByTag('button')[1]?.click();
     expect(conversationHost.decisions).toEqual(['allow-once']);
   });
+
+  it('任务模式选择 Vault 外工作区后才允许发送，并在结束时显示真实变更摘要', async () => {
+    const app = new App();
+    const conversationHost = new FakeConversationHost();
+    const workspaceHost: TaskWorkspaceHost = {
+      selectWorkspace: async () => ({
+        name: 'external-project',
+        path: 'C:\\workspaces\\external-project',
+      }),
+    };
+    const view = new WorkbenchView(app.workspace.getLeaf('tab') as never, {
+      conversationHost,
+      contextHost: contextHost(),
+      getDshHealth: () => ({ status: 'unchecked' }),
+      onContextsChanged: () => undefined,
+      runDshHealthCheck: async () => undefined,
+      taskWorkspaceHost: workspaceHost,
+    });
+    await view.onOpen();
+
+    const content = view.contentEl as unknown as MockElement;
+    await content.findAllByClass('dsh-new-task-mode__button')[1]?.click();
+    const textarea = content.findAllByTag('textarea')[0];
+    if (!textarea) throw new Error('任务输入未渲染');
+    textarea.value = '更新项目说明';
+    await textarea.trigger('input');
+    expect(content.findAllByClass('dsh-new-task-composer__send')[0]?.disabled).toBe(true);
+
+    await content.findAllByClass('dsh-task-workspace__open')[0]?.click();
+    await vi.waitFor(() => {
+      expect(content.allText()).toEqual(expect.arrayContaining([
+        '任务工作区',
+        'external-project',
+        'Vault 外目录 · 仅本次任务会话可写 · 文件工具逐次确认',
+      ]));
+    });
+    expect(content.findAllByClass('dsh-new-task-composer__send')[0]?.disabled).toBe(false);
+
+    await content.findAllByClass('dsh-new-task-composer__send')[0]?.click();
+    const review = mockObsidian.openModals[mockObsidian.openModals.length - 1];
+    expect(review?.contentEl.allText()).toEqual(expect.arrayContaining([
+      '本次任务只允许访问所选 Vault 外工作区；文件工具逐次确认，不开放 Shell、网络、Skill 或子代理，也不写入知识库。',
+      'external-project（Vault 外目录）',
+    ]));
+    await review?.contentEl.findAllByClass('dsh-new-task-review__confirm')[0]?.click();
+    expect(conversationHost.submissions[0]).toMatchObject({
+      draft: '更新项目说明',
+      mode: 'task',
+      workspace: {
+        name: 'external-project',
+        path: 'C:\\workspaces\\external-project',
+      },
+    });
+
+    conversationHost.emit({
+      mode: 'task',
+      phase: 'completed',
+      taskTurns: [{
+        additions: 4,
+        canUndo: true,
+        changes: [{
+          additions: 4,
+          deletions: 1,
+          kind: 'modified',
+          relativePath: 'README.md',
+          review: { after: 'after', before: 'before' },
+          undoable: true,
+        }],
+        completedAt: '2026-08-28T00:00:00.000Z',
+        deletions: 1,
+        turnId: 'turn-task-1',
+        undone: false,
+        workspace: {
+          name: 'external-project',
+          path: 'C:\\workspaces\\external-project',
+        },
+      }],
+    });
+    expect(content.allText()).toEqual(expect.arrayContaining([
+      '已编辑 1 个文件',
+      'external-project · +4 -1 · 变更事实已记录',
+      '任务完成',
+    ]));
+
+    await content.findAllByClass('dsh-new-task-mode__button')[0]?.click();
+    expect(content.allText()).toEqual(expect.arrayContaining(['任务完成']));
+  });
 });
 
 class FakeConversationHost implements NewTaskConversationHost {
@@ -140,9 +230,11 @@ class FakeConversationHost implements NewTaskConversationHost {
   private snapshot: NewTaskConversationSnapshot = {
     error: null,
     messages: [],
+    mode: null,
     permission: null,
     phase: 'idle',
     runtimeStatus: 'disconnected',
+    taskTurns: [],
     tools: [],
   };
   readonly submissions: NewTaskConversationSubmitInput[] = [];
@@ -185,4 +277,8 @@ function contextHost(): NewTaskContextHost {
     openPicker: (_request: NewTaskContextPickerRequest) => undefined,
     readVaultText: async (path: string) => ({ content: '', path }),
   };
+}
+
+function taskWorkspaceHost(): TaskWorkspaceHost {
+  return { selectWorkspace: async () => null };
 }

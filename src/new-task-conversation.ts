@@ -20,6 +20,10 @@ import {
   type NewTaskContextSnapshot,
 } from './new-task-context';
 import type { NewTaskMode, NewTaskPhase, NewTaskRuntimeStatus } from './new-task-state';
+import type {
+  TaskWorkspaceSelection,
+  TaskWorkspaceTurnResult,
+} from './task-workspace';
 
 export const MAX_NEW_TASK_DRAFT_BYTES = 64 * 1024;
 export const DEFAULT_NEW_TASK_CANCEL_TIMEOUT_MS = 10_000;
@@ -56,9 +60,11 @@ export interface NewTaskConversationFailure {
 export interface NewTaskConversationSnapshot {
   readonly error: NewTaskConversationFailure | null;
   readonly messages: readonly NewTaskConversationMessage[];
+  readonly mode: NewTaskMode | null;
   readonly permission: NewTaskConversationPermission | null;
   readonly phase: NewTaskPhase;
   readonly runtimeStatus: NewTaskRuntimeStatus;
+  readonly taskTurns: readonly TaskWorkspaceTurnResult[];
   readonly tools: readonly NewTaskConversationTool[];
 }
 
@@ -67,6 +73,12 @@ export interface NewTaskConversationSubmitInput {
   readonly draft: string;
   readonly mode: NewTaskMode;
   readonly reader: NewTaskContextReader;
+  readonly workspace?: TaskWorkspaceSelection | null;
+}
+
+export interface NewTaskProcessInput {
+  readonly mode: BridgeSessionMode;
+  readonly workingDirectory?: string;
 }
 
 export interface NewTaskBridgeClient {
@@ -100,9 +112,16 @@ export interface NewTaskBridgeProcess {
   start(): Promise<NewTaskBridgeClient>;
 }
 
+export interface NewTaskTaskLedger {
+  beginTurn(turnId: string, workspacePath: string): Promise<TaskWorkspaceSelection>;
+  completeTurn(turnId: string): Promise<TaskWorkspaceTurnResult>;
+  validateWorkspace(workspacePath: string): Promise<TaskWorkspaceSelection>;
+}
+
 interface NewTaskConversationControllerOptions {
   readonly cancelTimeoutMs?: number;
-  readonly createProcess: () => Promise<NewTaskBridgeProcess>;
+  readonly createProcess: (input: NewTaskProcessInput) => Promise<NewTaskBridgeProcess>;
+  readonly taskLedger?: NewTaskTaskLedger;
 }
 
 export interface NewTaskConversationHost {
@@ -125,6 +144,7 @@ export class NewTaskConversationError extends Error {
 }
 
 export class NewTaskConversationController implements NewTaskConversationHost {
+  private activeTaskTurnId: string | undefined;
   private activeTurnId: string | undefined;
   private cancelTimer: number | undefined;
   private readonly cancelTimeoutMs: number;
@@ -135,12 +155,20 @@ export class NewTaskConversationController implements NewTaskConversationHost {
   private readonly listeners = new Set<() => void>();
   private process: NewTaskBridgeProcess | undefined;
   private sessionId: string | undefined;
+  private sessionMode: BridgeSessionMode | undefined;
+  private sessionWorkspacePath: string | undefined;
+  private taskLedgerCompletion: {
+    readonly promise: Promise<NewTaskConversationFailure | null>;
+    readonly turnId: string;
+  } | undefined;
   private snapshot: NewTaskConversationSnapshot = freezeSnapshot({
     error: null,
     messages: [],
+    mode: null,
     permission: null,
     phase: 'idle',
     runtimeStatus: 'disconnected',
+    taskTurns: [],
     tools: [],
   });
 
@@ -168,6 +196,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     }
     this.update({
       error: null,
+      mode: input.mode,
       permission: null,
       phase: 'validating',
       tools: [],
@@ -175,9 +204,16 @@ export class NewTaskConversationController implements NewTaskConversationHost {
 
     let turnText: string;
     let task: string;
+    let workspace: TaskWorkspaceSelection | null = null;
     try {
-      if (input.mode !== 'chat') {
-        throw new NewTaskConversationError('mode_unavailable', '当前只能发送“对话”模式。');
+      if (input.mode === 'task') {
+        if (!input.workspace) {
+          throw new NewTaskConversationError('workspace_required', '请先选择 Vault 外任务工作区。');
+        }
+        if (!this.options.taskLedger) {
+          throw new NewTaskConversationError('mode_unavailable', '任务执行运行时尚未建立。');
+        }
+        workspace = await this.options.taskLedger.validateWorkspace(input.workspace.path);
       }
       const contextSnapshot = await createNewTaskContextSnapshot(input.contexts, input.reader);
       task = validateNewTaskDraft(input.draft);
@@ -188,10 +224,27 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     }
 
     this.update({ phase: 'starting' });
+    let taskLedgerStarted = false;
+    let turnId: string | undefined;
     try {
-      const client = await this.ensureSession('chat');
+      const client = await this.ensureSession(input.mode, workspace);
       const sessionId = requireValue(this.sessionId, 'sessionId');
-      const turnId = `turn-${randomUUID()}`;
+      turnId = `turn-${randomUUID()}`;
+      if (input.mode === 'task') {
+        const taskLedger = requireTaskLedger(this.options.taskLedger);
+        const verifiedWorkspace = await taskLedger.beginTurn(
+          turnId,
+          requireWorkspace(workspace).path,
+        );
+        this.activeTaskTurnId = turnId;
+        taskLedgerStarted = true;
+        if (verifiedWorkspace.path !== requireWorkspace(workspace).path) {
+          throw new NewTaskConversationError(
+            'workspace_identity_changed',
+            '任务工作区真实路径在启动前发生变化。',
+          );
+        }
+      }
       this.activeTurnId = turnId;
       const pendingMessage = freezeMessage({
         delivery: 'pending',
@@ -206,8 +259,12 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       return true;
     } catch (error) {
       this.markPendingUserMessageFailed();
+      let captureFailure: NewTaskConversationFailure | null = null;
+      if (taskLedgerStarted && turnId) {
+        captureFailure = await this.completeTaskLedger(turnId);
+      }
       this.activeTurnId = undefined;
-      const failure = normalizeConversationError(error, 'runtime_start_failed');
+      const failure = captureFailure ?? normalizeConversationError(error, 'runtime_start_failed');
       await this.invalidateRuntime();
       return this.fail(failure.code, failure.message);
     }
@@ -275,14 +332,34 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     this.process = undefined;
     this.client = undefined;
     this.sessionId = undefined;
+    this.sessionMode = undefined;
+    this.sessionWorkspacePath = undefined;
     this.activeTurnId = undefined;
+    const activeTaskTurnId = this.activeTaskTurnId;
+    let captureError: NewTaskConversationFailure | null = null;
     if (process) await process.dispose();
+    if (activeTaskTurnId) {
+      captureError = await this.completeTaskLedger(activeTaskTurnId);
+    }
+    if (captureError) throw new NewTaskConversationError(captureError.code, captureError.message);
   }
 
-  private async ensureSession(mode: BridgeSessionMode): Promise<NewTaskBridgeClient> {
-    if (this.client?.connectionState === 'ready' && this.sessionId) return this.client;
+  private async ensureSession(
+    mode: BridgeSessionMode,
+    workspace: TaskWorkspaceSelection | null,
+  ): Promise<NewTaskBridgeClient> {
+    const workspacePath = mode === 'task' ? requireWorkspace(workspace).path : undefined;
+    if (this.client?.connectionState === 'ready'
+      && this.sessionId
+      && this.sessionMode === mode
+      && this.sessionWorkspacePath === workspacePath) {
+      return this.client;
+    }
     await this.invalidateRuntime();
-    const process = await this.options.createProcess();
+    const process = await this.options.createProcess({
+      mode,
+      ...(workspacePath === undefined ? {} : { workingDirectory: workspacePath }),
+    });
     this.process = process;
     let client: NewTaskBridgeClient;
     try {
@@ -294,6 +371,8 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       const sessionId = `session-${randomUUID()}`;
       await client.createSession({ sessionId, mode });
       this.sessionId = sessionId;
+      this.sessionMode = mode;
+      this.sessionWorkspacePath = workspacePath;
       return client;
     } catch (error) {
       await this.invalidateRuntime();
@@ -339,20 +418,39 @@ export class NewTaskConversationController implements NewTaskConversationHost {
         });
         return;
       case 'turn.ended':
-        this.finishTurn(event.payload);
+        if (this.activeTaskTurnId === event.turnId) {
+          void this.finishTaskTurn(event.turnId, event.payload);
+        } else {
+          this.finishTurn(event.payload);
+        }
+        return;
     }
   }
 
   private handleConnectionState(): void {
     const client = this.client;
     if (!client || client.connectionState !== 'failed') return;
+    const taskTerminalIsFinalizing = this.activeTaskTurnId !== undefined
+      && this.snapshot.phase === 'finalizing';
     this.clearCancelTimer();
     this.activeTurnId = undefined;
     this.sessionId = undefined;
+    this.sessionMode = undefined;
+    this.sessionWorkspacePath = undefined;
+    if (taskTerminalIsFinalizing) {
+      this.update({ runtimeStatus: 'disconnected' });
+      return;
+    }
     const failure = normalizeConversationError(
       client.failure ?? new NewTaskConversationError('connection_failed', 'bridge 连接意外关闭。'),
       'connection_failed',
     );
+    if (this.activeTaskTurnId) {
+      const turnId = this.activeTaskTurnId;
+      this.update({ phase: 'finalizing' });
+      void this.finishTaskAfterConnectionFailure(turnId, failure);
+      return;
+    }
     this.update({
       error: failure,
       permission: null,
@@ -425,6 +523,81 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     });
   }
 
+  private async finishTaskTurn(
+    turnId: string,
+    payload: Extract<KnownBridgeEvent, { event: 'turn.ended' }>['payload'],
+  ): Promise<void> {
+    this.clearCancelTimer();
+    this.update({ phase: 'finalizing' });
+    const captureFailure = await this.completeTaskLedger(turnId);
+    this.activeTurnId = undefined;
+    if (captureFailure) {
+      await this.invalidateRuntime();
+      this.update({
+        error: captureFailure,
+        permission: null,
+        phase: 'failed',
+      });
+      return;
+    }
+    if (payload.outcome === 'failed') {
+      this.update({
+        error: terminalFailure(payload.errorCode),
+        permission: null,
+        phase: 'failed',
+      });
+      return;
+    }
+    this.update({
+      error: null,
+      permission: null,
+      phase: payload.outcome,
+    });
+  }
+
+  private async finishTaskAfterConnectionFailure(
+    turnId: string,
+    connectionFailure: NewTaskConversationFailure,
+  ): Promise<void> {
+    const captureFailure = await this.completeTaskLedger(turnId);
+    this.clearCancelTimer();
+    this.activeTurnId = undefined;
+    this.sessionId = undefined;
+    this.sessionMode = undefined;
+    this.sessionWorkspacePath = undefined;
+    this.update({
+      error: captureFailure ?? connectionFailure,
+      permission: null,
+      phase: 'failed',
+      runtimeStatus: 'disconnected',
+    });
+  }
+
+  private async completeTaskLedger(turnId: string): Promise<NewTaskConversationFailure | null> {
+    if (this.taskLedgerCompletion?.turnId === turnId) {
+      return await this.taskLedgerCompletion.promise;
+    }
+    if (this.activeTaskTurnId !== turnId) return null;
+    const promise = this.captureTaskLedger(turnId);
+    this.taskLedgerCompletion = { promise, turnId };
+    try {
+      return await promise;
+    } finally {
+      if (this.taskLedgerCompletion?.turnId === turnId) this.taskLedgerCompletion = undefined;
+      if (this.activeTaskTurnId === turnId) this.activeTaskTurnId = undefined;
+    }
+  }
+
+  private async captureTaskLedger(turnId: string): Promise<NewTaskConversationFailure | null> {
+    try {
+      const result = await requireTaskLedger(this.options.taskLedger).completeTurn(turnId);
+      this.update({ taskTurns: [...this.snapshot.taskTurns, result] });
+      return null;
+    } catch (error) {
+      return normalizeConversationError(error, 'task_change_capture_failed');
+    }
+  }
+
   private armCancelTimeout(turnId: string): void {
     this.clearCancelTimer();
     this.cancelTimer = window.setTimeout(() => {
@@ -435,10 +608,15 @@ export class NewTaskConversationController implements NewTaskConversationHost {
 
   private async terminateAfterCancelTimeout(): Promise<void> {
     this.clearCancelTimer();
-    this.activeTurnId = undefined;
+    const activeTaskTurnId = this.activeTaskTurnId;
+    if (activeTaskTurnId) this.update({ phase: 'finalizing' });
     await this.invalidateRuntime();
+    const captureFailure = activeTaskTurnId
+      ? await this.completeTaskLedger(activeTaskTurnId)
+      : null;
+    this.activeTurnId = undefined;
     this.update({
-      error: terminalFailure('runtime_terminated'),
+      error: captureFailure ?? terminalFailure('runtime_terminated'),
       permission: null,
       phase: 'failed',
     });
@@ -466,6 +644,8 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     this.process = undefined;
     this.client = undefined;
     this.sessionId = undefined;
+    this.sessionMode = undefined;
+    this.sessionWorkspacePath = undefined;
     if (process) await process.dispose();
     this.update({ runtimeStatus: 'disconnected' });
   }
@@ -500,7 +680,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
   private update(
     patch: Partial<Pick<
       NewTaskConversationSnapshot,
-      'error' | 'messages' | 'permission' | 'phase' | 'runtimeStatus' | 'tools'
+      'error' | 'messages' | 'mode' | 'permission' | 'phase' | 'runtimeStatus' | 'taskTurns' | 'tools'
     >>,
   ): void {
     this.snapshot = freezeSnapshot({ ...this.snapshot, ...patch });
@@ -566,6 +746,7 @@ function freezeSnapshot(snapshot: NewTaskConversationSnapshot): NewTaskConversat
   return Object.freeze({
     ...snapshot,
     messages: Object.freeze([...snapshot.messages]),
+    taskTurns: Object.freeze([...snapshot.taskTurns]),
     tools: Object.freeze([...snapshot.tools]),
   });
 }
@@ -588,7 +769,7 @@ function terminalFailure(code: BridgeTurnErrorCode): NewTaskConversationFailure 
   const messages: Readonly<Record<BridgeTurnErrorCode, string>> = {
     context_invalid: 'DSH 拒绝了本次只读上下文。',
     network_error: '模型网络请求失败，请检查 DSH 配置后重试。',
-    permission_rejected: '本次对话因权限请求被拒绝而停止。',
+    permission_rejected: '本次运行因权限请求被拒绝而停止。',
     runtime_error: 'DSH 运行时执行失败，请检查运行状态后重试。',
     runtime_terminated: '取消未在时限内得到终态确认，运行时已终止。',
   };
@@ -597,5 +778,15 @@ function terminalFailure(code: BridgeTurnErrorCode): NewTaskConversationFailure 
 
 function requireValue(value: string | undefined, label: string): string {
   if (!value) throw new NewTaskConversationError('invalid_state', `${label} 尚未建立。`);
+  return value;
+}
+
+function requireTaskLedger(value: NewTaskTaskLedger | undefined): NewTaskTaskLedger {
+  if (!value) throw new NewTaskConversationError('mode_unavailable', '任务执行运行时尚未建立。');
+  return value;
+}
+
+function requireWorkspace(value: TaskWorkspaceSelection | null): TaskWorkspaceSelection {
+  if (!value) throw new NewTaskConversationError('workspace_required', '请先选择 Vault 外任务工作区。');
   return value;
 }

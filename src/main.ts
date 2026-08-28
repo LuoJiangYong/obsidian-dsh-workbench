@@ -4,7 +4,10 @@ import { addIcon, FileSystemAdapter, Notice, Plugin, type WorkspaceLeaf } from '
 
 import { DshHealthProbe, type DshHealthResult } from './dsh-health';
 import { ManagedBridgeProcess } from './managed-bridge-process';
-import { NewTaskConversationController } from './new-task-conversation';
+import {
+  NewTaskConversationController,
+  type NewTaskProcessInput,
+} from './new-task-conversation';
 import { ObsidianNewTaskContextHost } from './obsidian-context-host';
 import {
   DEFAULT_DSH_SETTINGS,
@@ -15,6 +18,8 @@ import {
 import { WorkbenchSettingTab } from './settings-tab';
 import { DEEPSEEK_WHALE_ICON, DEEPSEEK_WHALE_SVG } from './icons';
 import { resolveWorkbenchRuntimeStorage } from './runtime-storage';
+import { ElectronTaskWorkspaceHost } from './task-workspace-host';
+import { TaskWorkspaceLedger } from './task-workspace';
 import {
   QuickAssistantView,
   VIEW_TYPE_QUICK_ASSISTANT,
@@ -26,8 +31,25 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
 
   private readonly healthProbe = new DshHealthProbe();
   private readonly contextHost = new ObsidianNewTaskContextHost(this.app);
+  private taskWorkspaceLedger: TaskWorkspaceLedger | undefined;
+  private readonly taskWorkspaceHost = new ElectronTaskWorkspaceHost({
+    validateWorkspace: async (workspacePath) => (
+      await this.getTaskWorkspaceLedger().validateWorkspace(workspacePath)
+    ),
+  });
   private readonly conversationHost = new NewTaskConversationController({
-    createProcess: () => Promise.resolve(this.createConversationProcess()),
+    createProcess: (input) => Promise.resolve(this.createConversationProcess(input)),
+    taskLedger: {
+      beginTurn: async (turnId, workspacePath) => (
+        await this.getTaskWorkspaceLedger().beginTurn(turnId, workspacePath)
+      ),
+      completeTurn: async (turnId) => (
+        await this.getTaskWorkspaceLedger().completeTurn(turnId)
+      ),
+      validateWorkspace: async (workspacePath) => (
+        await this.getTaskWorkspaceLedger().validateWorkspace(workspacePath)
+      ),
+    },
   });
   private health: DshHealthResult = { status: 'unchecked' };
 
@@ -47,6 +69,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
         contextHost: this.contextHost,
         onContextsChanged: () => this.refreshQuickAssistantViews(),
         runDshHealthCheck: async () => await this.runDshHealthCheck(),
+        taskWorkspaceHost: this.taskWorkspaceHost,
       }),
     );
     this.registerView(
@@ -172,7 +195,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
       : '未选择笔记或工作范围';
   }
 
-  private createConversationProcess(): ManagedBridgeProcess {
+  private createConversationProcess(input: NewTaskProcessInput): ManagedBridgeProcess {
     const adapter = this.app.vault.adapter;
     if (!(adapter instanceof FileSystemAdapter)) {
       throw new Error('新建任务仅支持本地文件系统 Vault。');
@@ -181,12 +204,32 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     const pluginDirectory = this.manifest.dir;
     if (!pluginDirectory) throw new Error('无法定位插件安装目录。');
     const storage = resolveWorkbenchRuntimeStorage({ vaultPath });
+    const workingDirectory = input.mode === 'task'
+      ? input.workingDirectory
+      : storage.stateDirectory;
+    if (!workingDirectory) throw new Error('任务执行缺少已校验的 Vault 外工作区。');
     return new ManagedBridgeProcess({
       bridgePath: path.join(vaultPath, pluginDirectory, 'obsidian-bridge.mjs'),
       command: this.settings.dshCommand,
+      permissionMode: input.mode === 'task' ? 'workspace-write' : 'read-only',
       stateDirectory: storage.stateDirectory,
       vaultPath,
-      workingDirectory: storage.stateDirectory,
+      workingDirectory,
     });
+  }
+
+  private getTaskWorkspaceLedger(): TaskWorkspaceLedger {
+    if (this.taskWorkspaceLedger) return this.taskWorkspaceLedger;
+    const adapter = this.app.vault.adapter;
+    if (!(adapter instanceof FileSystemAdapter)) {
+      throw new Error('任务执行仅支持本地文件系统 Vault。');
+    }
+    const vaultPath = adapter.getBasePath();
+    const storage = resolveWorkbenchRuntimeStorage({ vaultPath });
+    this.taskWorkspaceLedger = new TaskWorkspaceLedger({
+      stateDirectory: storage.stateDirectory,
+      vaultPath,
+    });
+    return this.taskWorkspaceLedger;
   }
 }

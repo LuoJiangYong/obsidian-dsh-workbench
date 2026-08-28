@@ -38,14 +38,14 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8 任务文件安全边界与 Vault 外变更账本已进入 CI，任务控制器和运行 UI 尚未接通，最终用户 UI 验收待完整功能后统一执行 |');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C 已接通 Vault 外工作区选择、任务控制器与真实变更摘要');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
     expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
     expect(readme).toContain('| DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标统一为 `0.1.1-rc.2`，本地、双平台 CI 与专用隔离 Vault 读回均通过 |');
     expect(readme).toContain('用户在发送前确认后，插件才启动正式 bridge');
     expect(readme).toContain('当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`');
-    expect(readme).toContain('| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部工具，任务模式只允许六个工作区文件工具但尚未接入产品控制器 |');
+    expect(readme).toContain('| DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；任务模式在用户选择并通过校验的单一 Vault 外工作区使用六个文件工具和逐请求确认');
     expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
@@ -616,6 +616,43 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664`');
     expect(runtimeTest).toContain('真实加载 artifact');
     expect(runtimeTest).toContain('payload: { outcome: \'cancelled\' }');
+  });
+
+  it('Batch 8C 固定 Vault 外工作区选择、任务控制器与真实变更摘要边界', async () => {
+    const [adr, host, controller, main, view, design, roadmap] = await Promise.all([
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'ADR-008-task-execution-controller.md',
+        ),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'src', 'task-workspace-host.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'new-task-conversation.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'main.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'workbench-view.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
+    ]);
+
+    expect(adr).toContain('状态：已接受，Batch 8C 已实现');
+    expect(adr).toContain('普通界面与审阅界面只显示目录名称');
+    expect(adr).toContain('workspace-write + ask');
+    expect(adr).toContain('无法核对变更时不得显示“任务完成”');
+    expect(adr).toContain('Ardot 未修改、只读核对');
+    expect(host).toContain("properties: ['openDirectory']");
+    expect(host).toContain('validateWorkspace(selectedPath)');
+    expect(controller).toContain('taskLedger.beginTurn');
+    expect(controller).toContain('finishTaskAfterConnectionFailure');
+    expect(main).toContain("permissionMode: input.mode === 'task' ? 'workspace-write' : 'read-only'");
+    expect(main).toContain('workingDirectory');
+    expect(view).toContain('选择工作区');
+    expect(view).toContain('文件工具逐次确认');
+    expect(view).toContain('已编辑 ${String(latestTaskTurn.changes.length)} 个文件');
+    expect(design).toContain('任务执行已接通单一 Vault 外工作区');
+    expect(roadmap).toContain('Batch 8C 已接通');
   });
 
   it('CI 路线图保持 Release 自动化未获批准', async () => {
