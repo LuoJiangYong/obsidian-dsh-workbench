@@ -13,7 +13,7 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 
 [Batch 2 能力证据尖峰](./batch-2-bridge-capability-spike.md)针对 `dsh-v0.1.1-rc.2` 固定 tag 读取公开 Agent、session、approval seam；Batch 4 已在这些 seam 上实现正式 bridge，并通过本地及 Windows CI 的真实运行与进程清理。
 
-[bridge 协议 v1](./bridge-protocol-v1.md)已固定精确握手、session/turn/seq、一次性权限、取消确认、shutdown、EOF 与单终态；正式 artifact 已由 rc.2 真实加载，宿主 UI 与只读上下文已通过 Batch 6 专用 Vault 运行验收，Batch 7 已接入只读模型发送链。Batch 7 运行验收、外部工作区和最终用户验收仍未通过。
+[bridge 协议 v1](./bridge-protocol-v1.md)已固定精确握手、session/turn/seq、一次性权限、取消确认、shutdown、EOF 与单终态；正式 artifact 已由 rc.2 真实加载，宿主 UI 与只读上下文已通过 Batch 6 专用 Vault 运行验收，Batch 7 只读模型发送链已通过双平台 CI、专用 Vault 技术运行和真实模型冻结上下文复验。外部工作区和最终用户验收仍未通过。
 
 ## 决定
 

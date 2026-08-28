@@ -259,14 +259,28 @@ Batch 6 implementation and dedicated Vault result: passed; final Obsidian UI use
 - Ardot 未修改、只读核对。本批只根据用户对插件的直接反馈演进 `DESIGN.md`、ADR、插件 UI、测试、CI 契约和本文；没有新增、删除、移动或更新 Ardot 节点、画板、文案、样式、变量或截图。
 - 本批先对照 Claudian 当前提交 `15b78af785cda04fccc96f4effcfae6367f9be65` 的 provider 原生历史、共享存储、路径防护和标签生命周期。采用“provider 原生 session 为完整历史真相、插件级运行所有权、串行清理、路径包含关系防护”；拒绝把类似 `.claudian/sessions` 或 `.inputs.json` 的运行账本写入 Vault。详细决策见 ADR-006。
 - Workbench “对话”模式已接入发送前 modal，展示任务、已选笔记和“不开放 DSH 工具、不写入知识库”边界；取消保留草稿，确认后才重读笔记、建立确定性快照并启动 DSH。
-- 对话区以无方框阴影的平面分隔展示当前插件生命周期内的用户消息、流式助手文本、工具身份、一次性权限、停止与错误终态。流式事件只更新消息区，不重绘 textarea；活动 turn 的主操作变为“停止”。
-- DSH “对话” session 同时执行空 allow-list 与 guard 拒绝，标准 preset 中的 Shell、文件系统、Web 等工具既不可枚举也不可执行。当前对话因此不会写入 Vault 或外部工作区；协议保留工具/权限投影供后续任务模式使用。
+- 对话区使用介于左侧导航背景与主背景之间的无阴影浅底边框容器；重复的页头已移除，输入框缩短。流式事件只更新消息区，不重绘 textarea；活动 turn 的主操作变为“停止”。
+- DSH “对话” session 执行空 allow-list、guard 与 `obsidian:chat-boundary` 系统提示三层拒绝；标准 preset 中的 Shell、文件系统、Web 等工具不可枚举、不可执行，模型也不得按路径读取或把 DSML 工具调用标记作为回答输出。当前对话因此不会写入 Vault 或外部工作区；协议保留工具/权限投影供后续任务模式使用。
 - 完整历史、设置和凭据继续由用户原生 `$DSH_HOME` 管理；插件 bridge overlay 位于操作系统应用数据目录中的 Vault 哈希分区，当前草稿与消息投影只在内存。状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 时在任何 DSH 检查前失败。
 - 用户新增的“每个任务 turn 结束显示已编辑文件、默认三个/可展开、右键操作、审核与安全撤销”属于 Batch 8 外部工作区真实变更结果，不在本批显示假卡片；需求已写入 `docs/requirements/new-task-v1.md`。
 
 ### 当前证据状态
 
-- 定向 TypeScript、零警告 lint 与对话/存储/bridge/UI 测试已通过；完整本地质量门、远端双平台 CI、专用 `obsidian-dsh-workbench-evidence` Vault 的真实模型回复/停止/重载清理、最终截图和资产指纹仍待本批后续建立。
-- 未使用且不会使用 `D:\codex workspace\_test-vaults\obsidian-trend-radar-evidence`；它属于另一个插件。
+- 最终本地门通过：`typecheck`、零警告 `lint`、完整 `npm test` 为 `89 passed / 1 skipped`，生产构建与完整 `verify` 通过；Windows 进程专项为 `17 passed / 1 skipped`，rc.2 正式 artifact 运行验收为 `1 passed`。
+- 实现提交 `13794bfe1403ada6ed2911420d715ffd037bb66f` 的 CI `33071659160` 在 Windows 揭示临时目录短路径与真实路径断言不一致；没有把该失败冒充完成。最小修复 `24fcc55bec9342d062db8df7577bcf9df4de8c3e` 已通过 CI `33132044870` 的 Windows/Ubuntu job。
+- 用户在专用 Vault 使用已选笔记追问时发现标准 persona 曾把 DSML 工具调用标记作为普通文本返回。修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 在最终 prompt assembly 固定空 `tools` 和只读上下文指令；rc.2 正式 artifact 测试读回模型请求确认系统提示存在且无 `tools`，使用合成冻结笔记的本机真实模型复验直接返回笔记日期且无 DSML、`tool_calls` 或 `invoke` 标记。
+- 精确修复 SHA 的远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 已成功；Windows check `98726441325` 与 Ubuntu check `98726441475` 的原始 annotations 均为 `[]`。
+- 专用 Vault 固定为 `D:\codex workspace\_test-vaults\obsidian-dsh-workbench-evidence`，未使用 `D:\codex workspace\_test-vaults\obsidian-trend-radar-evidence`。截图时部署资产与本地构建逐项一致：`main.js` 为 `3A6923A048172155AEB2ADD5B0A2BAB8466A0C1A87C2F6B097BFD7CFA117A0BA`，`manifest.json` 为 `81BDF8F237FA070C3F0DECCC9C09A21F4915196633072D892428E705060F25A6`，`styles.css` 为 `BFB3B7F32DA6E9D573D01125C4B555AB1C2DB089DECCC7769BF601148ED578E2`，当时的 `obsidian-bridge.mjs` 为 `CEF62EE2F2DB91FA6B8691892E9AC99796BB482BE73B1FB15277B065200A1840`。协议泄漏修复后的 bridge 为 `BE5B2F1C9803498FF540989254FE60331ABD92EAD7E9E94ADFECF1BE9E75F4C5`；为避免覆盖用户正在进行的会话，没有自动重载该窗口，最终统一 UI 验收前再部署。
+- 专用 Vault 实际完成一个模型回复并显示完成终态；另一轮在已流式产生 `4,681` 字符后点击“停止”，收到真实 `cancelled` 终态并显示“已停止”。立即取消但未收到取消终态的路径显示 `runtime_terminated` 失败，没有冒充取消成功。插件重载后内存消息清空、受管进程为零；Light/Dark 与精确 `700px` 下无横向溢出，对话区 `box-shadow: none`。
+- 原始验收笔记在运行前后未变化；检测到用户开始手工测试后，自动 UI 操作立即停止，只关闭本次自动测试创建的 modal/草稿并读回用户原有 `4` 条消息与 `1` 个已选上下文仍保留。
 
-Batch 7 implementation: in progress; dedicated Vault result: pending; final Obsidian UI user acceptance: pending
+### 专用 Vault 截图与视觉复核
+
+- [浅色空闲态](./docs/assets/design-qa/new-task-conversation/01b-light-idle-compact.png)：重复页头已移除，输入框缩短，对话区为无阴影浅底边框。
+- [浅色真实完成态](./docs/assets/design-qa/new-task-conversation/03-light-completed-compact.png)：真实模型文本与完成终态进入同一对话容器。
+- [浅色真实停止态](./docs/assets/design-qa/new-task-conversation/05-light-cancelled.png)：流式过程中停止后显示来自 bridge 的取消终态。
+- [深色精确 700px](./docs/assets/design-qa/new-task-conversation/06c-dark-700px-compact.png)：紧凑导航、缩短输入区与对话容器均无横向溢出。
+- 两张无效、未跟踪截图已删除：一张未包含目标审阅框，另一张误拍了用户手工会话；它们不作为证据。
+- Ardot 文件、页面和画板保持用户审阅原状，AI 只读且未修改。
+
+Batch 7 implementation and technical runtime: passed; final Obsidian UI user acceptance: pending

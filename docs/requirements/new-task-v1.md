@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文与 Batch 7 对话发送链已实现，对话运行验收和外部工作区任务仍在实施
+- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文与 Batch 7 对话发送链的实现、CI 和技术运行门已通过，外部工作区任务仍在实施
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -45,7 +45,7 @@ Batch 6 已依据现有 `1 MiB` NDJSON frame 上限冻结上下文子集：最�
 - v1 不提供任意 Shell 输入，不启用 `danger-full-access`，不扩大到全磁盘访问。
 - DSH 工具需要权限时，bridge 必须发出与当前 session/turn/request 绑定的权限请求；未知、过期、失联或无法关联的请求默认拒绝。
 - 权限决定只作用于当前明确请求；持久授权与更大写入范围不属于 v1。
-- Batch 7 “对话”模式不需要工具：DSH scoped context 同时隐藏并拒绝全部工具，防止标准 preset 的 Shell、文件系统或网络工具绕过只读边界。协议中的工具与权限投影保留给 Batch 8 任务模式，不等于对话已经开放权限。
+- Batch 7 “对话”模式不需要工具：DSH scoped context 使用空工具清单、执行 guard 与 `obsidian:chat-boundary` 系统提示三层拒绝全部工具，模型只消费冻结信封的 `task` 与 `contexts[].content`，不得按 path 读取或输出 DSML 工具调用标记。协议中的工具与权限投影保留给 Batch 8 任务模式，不等于对话已经开放权限。
 
 ## 会话与运行数据
 
@@ -90,11 +90,11 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读知识库选择的隔离 Vault 门已通过；Batch 7 已把不可变快照接入产品发送链，正在等待远端 CI 和专用 Vault 运行验收。外部工作区、任务执行和最终用户验收仍未完成。
+- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读知识库选择的隔离 Vault 门已通过；Batch 7 已把不可变快照接入产品发送链，并通过双平台 CI、专用 Vault 技术运行及真实模型冻结上下文验收。外部工作区、任务执行和最终用户验收仍未完成。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.1-rc.2`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。
-- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；最终 bridge 基线 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过 CI `32717711862` 的 Ubuntu/Windows job 与原始零 annotations。Batch 7 已接入宿主真实对话，任务执行仍待后续批次。
+- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；Batch 7 最终修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过 CI `33132970545` 的 Ubuntu/Windows job 与原始零 annotations。Batch 7 已接入宿主真实对话，任务执行仍待后续批次。
 
 ## 任务结束后的已编辑文件
 

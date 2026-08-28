@@ -22,7 +22,7 @@ assert(manifest.description.length <= 250, 'manifest description 超过 250 字�
 assert(manifest.description.endsWith('.'), 'manifest description 必须以句点结尾');
 assert(readme.includes(expected.unofficialStatement), 'README 缺少非官方声明');
 assert(
-  readme.includes('DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标已统一为 `0.1.1-rc.2` 并通过本地测试，正在等待本批双平台 CI 与专用隔离 Vault 读回'),
+  readme.includes('DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标统一为 `0.1.1-rc.2`，本地、双平台 CI 与专用隔离 Vault 读回均通过'),
   'README 误报健康检查状态',
 );
 assert(
@@ -32,6 +32,10 @@ assert(
 assert(
   readme.includes('当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`'),
   'README 缺少目标 DSH 版本',
+);
+assert(
+  readme.includes('兼容矩阵仍要等 Batch 8–10 和最终用户验收后才能进入 `supported`'),
+  'README 提前把 rc.2 标为 supported',
 );
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');
 

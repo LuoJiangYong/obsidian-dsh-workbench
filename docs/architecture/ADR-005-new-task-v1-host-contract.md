@@ -34,7 +34,7 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 ## 后果与边界
 
 - [新建任务 v1 需求基线](../requirements/new-task-v1.md) 是本 ADR 的详细验收契约。
-- 当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.1-rc.2`。Batch 7 已实现发送前确认、只读快照、插件级 session、流式回复、真实取消和错误终态；在本批远端 CI/专用 Vault、外部工作区、任务执行和最终用户验收完成前，兼容矩阵仍不得标为 `supported`。
+- 当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.1-rc.2`。Batch 7 的发送前确认、只读快照、插件级 session、流式回复、真实取消、错误终态和工具协议防泄漏已通过双平台 CI 与技术运行门；在外部工作区、任务执行和最终用户验收完成前，兼容矩阵仍不得标为 `supported`。
 - [Batch 2 能力尖峰](./batch-2-bridge-capability-spike.md)与[运行时兼容矩阵](./runtime-compatibility-matrix.md)记录了上游 seam、证据指纹和自动演进门。
 - [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭和 fail-closed 行为；当前已通过假 bridge、正式 artifact 与 Windows rc.2 运行验收。
 - Batch 6 以现有 `1 MiB` NDJSON frame 和最坏 JSON 双重转义实测冻结上下文上限：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。文件夹展开同样受这些限制并采用原子加入；任务字符上限由真实发送批次冻结。

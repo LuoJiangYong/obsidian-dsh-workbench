@@ -11,12 +11,12 @@
 | 能力 | 状态 |
 | --- | --- |
 | Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
-| 新建任务 | 宿主 UI、只读知识库与不可变快照已完成 Batch 6 验收；Batch 7 已实现只读真实发送、发送前审阅、流式回复、停止和错误终态，正在等待远端 CI 与专用隔离 Vault 运行验收；任务执行尚未接通 |
+| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；最终用户 UI 验收待完整功能后统一执行，任务执行尚未接通 |
 | 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge、宿主 UI、只读上下文与对话发送链已实现，外部工作区任务执行仍在实施 |
 | 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
 | ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
 | 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |
-| DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标已统一为 `0.1.1-rc.2` 并通过本地测试，正在等待本批双平台 CI 与专用隔离 Vault 读回 |
+| DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标统一为 `0.1.1-rc.2`，本地、双平台 CI 与专用隔离 Vault 读回均通过 |
 | 正式 bridge、协议 v1 与 NDJSON | 已实现；DSH `0.1.1-rc.2` 已真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；Batch 7 已由“新建任务”的对话发送链启动 |
 | DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；对话模式禁止全部 DSH 工具，任务执行尚未接通 |
 | Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |
@@ -29,7 +29,7 @@
 
 “新建任务”承担未来的 DeepSeek Harness 主对话、任务执行、上下文和权限审阅。它是首个 Obsidian 社区插件发布功能：只有完整实现、双平台 CI 与隔离 Vault 运行验收通过，并获得用户对最终 Obsidian 运行 UI 的明确验收后，才允许进入社区发布审批。Ardot、CI 或 GitHub Release 单独通过都不能越过此门。
 
-“新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生“选择知识库”流程显式加入当前笔记、当前选区、单个 Vault Markdown 文件或文件夹当下已有的 Markdown 笔记集合。文件夹选择递归包含子文件夹，但在选择时即冻结为逐篇笔记 ID，不会静默追踪后来新增的文件；超限时整体失败，不部分加入。已选笔记可预览来源并逐项移除，文件内容在确认发送后由 Obsidian 宿主重新读取并建立不可变快照。当前“对话”会启动受管 DSH `0.1.1-rc.2` session、显示流式回复并支持真实停止；该模式双重禁止全部 DSH 工具，因此只读且不会写入 Vault。“任务执行”仍保持发送禁用，等待 Batch 8 外部工作区和逐请求权限边界。“代码协作”与附件继续禁用；可选右侧快速助手仍不承担主对话。
+“新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生“选择知识库”流程显式加入当前笔记、当前选区、单个 Vault Markdown 文件或文件夹当下已有的 Markdown 笔记集合。文件夹选择递归包含子文件夹，但在选择时即冻结为逐篇笔记 ID，不会静默追踪后来新增的文件；超限时整体失败，不部分加入。已选笔记可预览来源并逐项移除，文件内容在确认发送后由 Obsidian 宿主重新读取并建立不可变快照。当前“对话”会启动受管 DSH `0.1.1-rc.2` session、显示流式回复并支持真实停止；该模式通过空工具清单、执行 guard 和只消费冻结上下文的系统提示三重禁止 DSH 工具，并禁止把 DSML 工具标记作为回答输出，因此只读且不会写入 Vault。“任务执行”仍保持发送禁用，等待 Batch 8 外部工作区和逐请求权限边界。“代码协作”与附件继续禁用；可选右侧快速助手仍不承担主对话。
 
 ## 开发运行
 
@@ -78,7 +78,7 @@ npm run test:bridge:runtime
 
 当前健康检查与正式 bridge 统一精确支持 DSH `0.1.1-rc.2`；其他版本会明确显示不受支持，不做兼容 fallback。插件不会安装或更新 DSH；只有用户确认发送只读对话后，`main.ts` 才启动正式 bridge 与模型请求。
 
-正式 `obsidian-bridge` 是独立 ESM artifact，只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容。插件用固定 `--profile headless --patch <Vault 外 overlay>` 参数启动用户配置的 DSH；DSH 原生 `$DSH_HOME` 继续保存其设置、凭据和 session，插件生成的 overlay 位于操作系统应用数据目录下按 Vault 哈希分区的状态目录。任何状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 都会在启动 DSH 前失败。对话模式在 DSH 层隐藏并拒绝全部工具；关闭时先请求协议退出，超时后终止整棵进程树。Batch 4 的 bridge 基线 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)；Batch 7 宿主发送链正在等待本批远端 CI 与专用 Vault 运行验收，因此兼容矩阵尚未进入 `supported`。
+正式 `obsidian-bridge` 是独立 ESM artifact，只投影公开文本、工具身份和一次性权限关联，不复制工具参数或推理内容。插件用固定 `--profile headless --patch <Vault 外 overlay>` 参数启动用户配置的 DSH；DSH 原生 `$DSH_HOME` 继续保存其设置、凭据和 session，插件生成的 overlay 位于操作系统应用数据目录下按 Vault 哈希分区的状态目录。任何状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 都会在启动 DSH 前失败。对话模式在 DSH 层以空工具清单、执行 guard 和只读系统提示拒绝全部工具；关闭时先请求协议退出，超时后终止整棵进程树。Batch 7 最终 bridge 修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的双平台 job 与原始零 annotations；兼容矩阵仍要等 Batch 8–10 和最终用户验收后才能进入 `supported`。
 
 后续兼容批次继续以当时 GitHub 与 npm 一致的最新 DSH 预发布为候选。计划中的自动同步只发现上游版本并生成 issue、提案或 draft PR，不会自动安装/更新用户 DSH、自动合并、自动发布或自动提交社区目录。
 
@@ -156,6 +156,14 @@ npm run test:bridge:runtime
 - Ardot 文件 `718186366720195`、用户审阅页 `UI 真相 v2`（`12:1`）保持只读且未修改。本批只演进插件实现、文字镜像、测试与 CI 契约。
 - 最终实现状态 `7ee4b07d4afc0a67b8034e57c513599c7d562b19` 已通过 `typecheck`、零警告 `lint`、`77` 项完整测试、生产构建、仓库/CI/bridge 自检、`13` 项 Windows 进程专项测试和 `1` 项真实 rc.2 bridge 测试；远端 [CI run 33031107880](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33031107880) 的 Ubuntu check `98383584575` 与 Windows check `98383584694` 均成功，两个原始 annotations 数组均为 `[]`。
 - 专用 `obsidian-dsh-workbench-evidence` Vault 已在 Obsidian `1.13.7`（installer `1.12.7`）完成当前笔记、真实当前选区冻结、递归文件夹原子加入、后来新增文件不静默跟踪、快速助手摘要、Light/Dark、精确 `700px`、运行页真值、禁用/重载复位和零残留验收；原始验收笔记 SHA-256 前后均为 `97ADAA09E558EF57745C4304E12D67DD0B2789F31AAA56D16E10943FAE67C319`。验收后临时夹具与四个部署资产已通过 Obsidian API 删除，插件已禁用，错误缓冲、error 级控制台和 bridge 进程均为 `0`。真实模型发送、权限请求、外部工作目录、Vault 写入、Release 和社区提交均不在本批。
+
+## Batch 7：真实只读对话（实现与技术运行门已通过）
+
+- 插件级控制器复用同一 DSH session，并在发送确认后重读已选笔记、冻结确定性信封；完成、失败、真实停止和取消超时强制终止使用互不冒充的终态。
+- 专用 `obsidian-dsh-workbench-evidence` Vault 已完成真实模型回复、4,681 字符流式过程中真实停止、重载清空内存投影与零残留进程、Light/Dark 和精确 `700px` 无横向溢出；原始验收笔记未变化。
+- 用户在上下文追问时发现标准 persona 曾把 DSML 工具调用标记作为普通文本返回。修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 在最终 prompt assembly 固定空 tools 和 `obsidian:chat-boundary`；rc.2 正式 artifact 测试读回模型请求确认无 `tools`，随后使用合成冻结笔记的本机真实模型验收直接返回笔记日期且无 DSML/tool 标记。
+- 最终本地门为 `89` 项通过、`1` 项既有跳过；Windows 进程专项 `17` 项通过、`1` 项既有跳过；rc.2 正式 artifact 运行验收 `1` 项通过。远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的 Windows check `98726441325` 与 Ubuntu check `98726441475` 均成功，原始 annotations 均为 `[]`。
+- 为避免覆盖用户正在进行的专用 Vault 会话，修复后的资产没有自动重载到该窗口；该项与 Batch 8–10 完整界面一起进入最终 Obsidian UI 用户验收，不影响已完成的 bridge/真实模型技术门。Ardot 未修改、只读核对。
 
 ## 开发治理
 
