@@ -309,4 +309,7 @@ Batch 8C implementation and CI: passed; final Obsidian UI user acceptance: pendi
 - 本地质量门：`typecheck`、零警告 `lint`、完整 `npm test` 为 `119 passed / 2 skipped`；runtime 为 `27 passed / 1 skipped`；默认锁文件夹具重新执行 `npm ci` 后真实 rc.2 bridge 为 `1 passed`；生产构建、仓库边界、CI 覆盖和 artifact 自检均通过。初次安装发现一个已不再使用的本仓库 DSH 遗留进程；经用户确认后只终止该精确进程树，读回零残留并恢复默认夹具。
 - 专用 `obsidian-dsh-workbench-evidence` Vault 的真实任务、菜单、审核、撤销、明暗主题、精确 `700px` 与零残留验收进入 Batch 10；不得使用 `obsidian-trend-radar-evidence`。最终 Obsidian UI 用户验收仍未通过。
 
-Batch 8D implementation local gate: passed; remote CI and final Obsidian UI user acceptance: pending
+- 实现提交：`759ec97d4c21748016eb8e6a462ed3c78f153edb`。
+- 远端 CI：[run `33239392369`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33239392369) 已完成且结论为 `success`；Ubuntu job `99065994296`、Windows job `99065994274` 均成功，两个 check-run 的原始 annotations 数组均为 `[]`。
+
+Batch 8D implementation and remote CI gate: passed; final Obsidian UI user acceptance: pending

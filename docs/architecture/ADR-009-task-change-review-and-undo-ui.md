@@ -1,6 +1,6 @@
 # ADR-009：逐轮文件审核与安全撤销界面
 
-- 状态：已接受，Batch 8D 已实现并通过完整本地质量门；双平台 CI 与专用 Vault 运行验收分别以本批远端结果和 Batch 10 为准
+- 状态：已接受，Batch 8D 已实现并通过完整本地质量门、双平台 CI 与原始零 annotations；专用 Vault 运行验收以 Batch 10 为准
 - 日期：2026-08-29
 - 关联：[ADR-007](./ADR-007-task-workspace-ledger.md)、[ADR-008](./ADR-008-task-execution-controller.md)
 - UI 审阅真相：Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`），产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360` 与 QA `12:530`；Ardot 未修改、只读核对
@@ -55,3 +55,4 @@
 - UI 测试覆盖默认三项/展开、真实前后快照、原生菜单项目、二次确认、成功终态和冲突零写入错误。
 - `npm test` 在 Ubuntu/Windows CI 执行全部上述测试；无需增加 workflow job。Windows runtime、真实 rc.2 bridge、构建、仓库边界、CI 覆盖与 artifact 自检继续使用现有门。
 - 本地结果为完整测试 `119 passed / 2 skipped`、runtime `27 passed / 1 skipped`、默认锁文件夹具的真实 rc.2 bridge `1 passed`；生产构建与完整 `verify` 通过。初次准备夹具发现一个已不再使用的本仓库 DSH 遗留进程，经用户确认后只终止该精确进程树并读回零残留。
+- 实现 `759ec97d4c21748016eb8e6a462ed3c78f153edb` 已通过 CI `33239392369`；Ubuntu `99065994296` 与 Windows `99065994274` 均成功，两个原始 annotations 数组均为 `[]`。

@@ -38,7 +38,7 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C 已通过双平台 CI，Batch 8D 已实现逐轮文件卡、原生菜单、真实审核与安全撤销');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C/8D 已通过完整本地门、双平台 CI 与原始零 annotations');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
     expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
@@ -700,7 +700,7 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('用户明确请求后复制完整路径');
     expect(requirements).toContain('不加入“另存为”');
     expect(design).toContain('Batch 8D 已加入默认三项/展开的真实文件卡');
-    expect(designQa).toContain('Batch 8D implementation local gate: passed');
+    expect(designQa).toContain('Batch 8D implementation and remote CI gate: passed');
   });
 
   it('CI 路线图保持 Release 自动化未获批准', async () => {
