@@ -38,7 +38,7 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C 已接通 Vault 外工作区选择、任务控制器与真实变更摘要');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C 已通过双平台 CI，Batch 8D 已实现逐轮文件卡、原生菜单、真实审核与安全撤销');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
     expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
@@ -654,10 +654,53 @@ describe('发布与治理契约', () => {
     expect(main).toContain('workingDirectory');
     expect(view).toContain('选择工作区');
     expect(view).toContain('文件工具逐次确认');
-    expect(view).toContain('已编辑 ${String(latestTaskTurn.changes.length)} 个文件');
+    expect(view).toContain("${result.undone ? '已撤销' : '已编辑'} ${String(result.changes.length)} 个文件");
     expect(design).toContain('任务执行已接通单一 Vault 外工作区');
     expect(roadmap).toContain('Batch 8C 已接通');
     expect(roadmap).toContain('CI run 33188573187');
+  });
+
+  it('Batch 8D 固定真实文件卡、原生菜单、审核与全量安全撤销边界', async () => {
+    const [adr, fileActions, controller, view, styles, requirements, design, designQa] = await Promise.all([
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'ADR-009-task-change-review-and-undo-ui.md',
+        ),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'src', 'task-workspace-file-actions.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'new-task-conversation.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src', 'workbench-view.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'styles.css'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs', 'requirements', 'new-task-v1.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'design-qa.md'), 'utf8'),
+    ]);
+
+    expect(adr).toContain('状态：已接受，Batch 8D 已实现');
+    expect(adr).toContain('Ardot 未修改、只读核对');
+    expect(adr).toContain('默认展示三个文件');
+    expect(adr).toContain('任一不匹配时零写入');
+    expect(adr).toContain('本批不加入“在 VS Code 中打开”');
+    expect(adr).toContain('本批也不加入“另存为”');
+    expect(fileActions).toContain('validateWorkspace(workspace.path)');
+    expect(fileActions).toContain('file_action_not_text');
+    expect(fileActions).toContain('file_action_path_escape');
+    expect(controller).toContain('undoTaskTurn(turnId: string)');
+    expect(controller).toContain('taskTurns: this.snapshot.taskTurns.map');
+    expect(view).toContain('DEFAULT_VISIBLE_TASK_FILES = 3');
+    expect(view).toContain("const menu = new Menu()");
+    expect(view).toContain("this.options.conversationHost.undoTaskTurn(result.turnId)");
+    expect(view).toContain('任何文件在任务结束后又有变化时，整个撤销都不会写入');
+    expect(styles).toContain('.dsh-task-result__files');
+    expect(styles).toContain('box-shadow: none');
+    expect(requirements).toContain('用户明确请求后复制完整路径');
+    expect(requirements).toContain('不加入“另存为”');
+    expect(design).toContain('Batch 8D 已加入默认三项/展开的真实文件卡');
+    expect(designQa).toContain('Batch 8D implementation local gate: passed');
   });
 
   it('CI 路线图保持 Release 自动化未获批准', async () => {

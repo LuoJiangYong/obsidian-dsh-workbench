@@ -19,6 +19,7 @@ import { WorkbenchSettingTab } from './settings-tab';
 import { DEEPSEEK_WHALE_ICON, DEEPSEEK_WHALE_SVG } from './icons';
 import { resolveWorkbenchRuntimeStorage } from './runtime-storage';
 import { ElectronTaskWorkspaceHost } from './task-workspace-host';
+import { ElectronTaskWorkspaceFileActions } from './task-workspace-file-actions';
 import { TaskWorkspaceLedger } from './task-workspace';
 import {
   QuickAssistantView,
@@ -37,6 +38,11 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
       await this.getTaskWorkspaceLedger().validateWorkspace(workspacePath)
     ),
   });
+  private readonly taskWorkspaceFileActions = new ElectronTaskWorkspaceFileActions({
+    validateWorkspace: async (workspacePath) => (
+      await this.getTaskWorkspaceLedger().validateWorkspace(workspacePath)
+    ),
+  });
   private readonly conversationHost = new NewTaskConversationController({
     createProcess: (input) => Promise.resolve(this.createConversationProcess(input)),
     taskLedger: {
@@ -45,6 +51,9 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
       ),
       completeTurn: async (turnId) => (
         await this.getTaskWorkspaceLedger().completeTurn(turnId)
+      ),
+      undoTurn: async (turnId) => (
+        await this.getTaskWorkspaceLedger().undoTurn(turnId)
       ),
       validateWorkspace: async (workspacePath) => (
         await this.getTaskWorkspaceLedger().validateWorkspace(workspacePath)
@@ -69,6 +78,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
         contextHost: this.contextHost,
         onContextsChanged: () => this.refreshQuickAssistantViews(),
         runDshHealthCheck: async () => await this.runDshHealthCheck(),
+        taskWorkspaceFileActions: this.taskWorkspaceFileActions,
         taskWorkspaceHost: this.taskWorkspaceHost,
       }),
     );

@@ -1,4 +1,12 @@
-import { ItemView, Modal, setIcon, type IconName, type WorkspaceLeaf } from 'obsidian';
+import {
+  ItemView,
+  Menu,
+  Modal,
+  Notice,
+  setIcon,
+  type IconName,
+  type WorkspaceLeaf,
+} from 'obsidian';
 
 import type { BridgePermissionDecision } from './bridge-protocol';
 import type { DshHealthResult } from './dsh-health';
@@ -22,7 +30,12 @@ import {
 } from './new-task-state';
 import type { NewTaskContextHost } from './obsidian-context-host';
 import type { TaskWorkspaceHost } from './task-workspace-host';
-import type { TaskWorkspaceSelection } from './task-workspace';
+import type { TaskWorkspaceFileActionsHost } from './task-workspace-file-actions';
+import type {
+  TaskWorkspaceChange,
+  TaskWorkspaceSelection,
+  TaskWorkspaceTurnResult,
+} from './task-workspace';
 import { createWorkbenchState } from './workbench-state';
 
 export const VIEW_TYPE_WORKBENCH = 'deepseek-harness-workbench-view';
@@ -30,6 +43,10 @@ export const VIEW_TYPE_WORKBENCH = 'deepseek-harness-workbench-view';
 const BRAND_DEEPSEEK = 'DeepSeek';
 const NEW_TASK_HEADING = '今天想让 DeepSeek Harness 做什么？';
 const NEW_TASK_PLACEHOLDER = '描述目标，@ 引用上下文，/ 调用 Skill 或命令';
+const DEFAULT_VISIBLE_TASK_FILES = 3;
+const MAX_REVIEW_PREVIEW_CHARACTERS = 200_000;
+const MAX_REVIEW_PREVIEW_FILES = 50;
+const MAX_REVIEW_PREVIEW_LINES = 2_000;
 
 type WorkbenchSectionId = 'new-task' | 'run';
 type WorkbenchNavigationItem = {
@@ -49,6 +66,7 @@ interface WorkbenchViewOptions {
   readonly getDshHealth: () => DshHealthResult;
   readonly onContextsChanged: () => void;
   readonly runDshHealthCheck: () => Promise<void>;
+  readonly taskWorkspaceFileActions: TaskWorkspaceFileActionsHost;
   readonly taskWorkspaceHost: TaskWorkspaceHost;
 }
 
@@ -56,8 +74,11 @@ export class WorkbenchView extends ItemView {
   private activeSection: WorkbenchSectionId = 'new-task';
   private conversationEl: HTMLElement | undefined;
   private detachConversation: (() => void) | undefined;
+  private readonly expandedTaskTurnIds = new Set<string>();
   private newTaskState: NewTaskState = createNewTaskState();
   private sendButtonEl: HTMLButtonElement | undefined;
+  private readonly taskActionBusy = new Set<string>();
+  private readonly taskActionErrors = new Map<string, string>();
   private textareaEl: HTMLTextAreaElement | undefined;
 
   constructor(
@@ -572,19 +593,7 @@ export class WorkbenchView extends ItemView {
       });
     }
 
-    const latestTaskTurn = snapshot.taskTurns[snapshot.taskTurns.length - 1];
-    if (latestTaskTurn) {
-      const resultEl = conversationEl.createEl('section', {
-        cls: 'dsh-task-result-summary',
-        attr: { 'aria-label': '任务变更摘要' },
-      });
-      resultEl.createEl('strong', {
-        text: `已编辑 ${String(latestTaskTurn.changes.length)} 个文件`,
-      });
-      resultEl.createEl('p', {
-        text: taskTurnSummary(latestTaskTurn),
-      });
-    }
+    for (const taskTurn of snapshot.taskTurns) this.renderTaskTurn(conversationEl, taskTurn);
 
     if (snapshot.permission) this.renderPermission(conversationEl, snapshot);
     if (snapshot.error) {
@@ -603,6 +612,195 @@ export class WorkbenchView extends ItemView {
       });
     }
     this.syncSendButton();
+  }
+
+  private renderTaskTurn(parentEl: HTMLElement, result: TaskWorkspaceTurnResult): void {
+    const expanded = this.expandedTaskTurnIds.has(result.turnId);
+    const visibleChanges = expanded
+      ? result.changes
+      : result.changes.slice(0, DEFAULT_VISIBLE_TASK_FILES);
+    const resultEl = parentEl.createEl('section', {
+      cls: `dsh-task-result${result.undone ? ' is-undone' : ''}`,
+      attr: { 'aria-label': result.undone ? '已撤销的任务变更' : '任务变更' },
+    });
+    const headerEl = resultEl.createDiv({ cls: 'dsh-task-result__header' });
+    const titleEl = headerEl.createDiv({ cls: 'dsh-task-result__title' });
+    const iconEl = titleEl.createSpan({ cls: 'dsh-task-result__icon' });
+    setIcon(iconEl, result.undone ? 'rotate-ccw' : 'files');
+    const titleCopyEl = titleEl.createDiv();
+    titleCopyEl.createEl('strong', {
+      text: `${result.undone ? '已撤销' : '已编辑'} ${String(result.changes.length)} 个文件`,
+    });
+    titleCopyEl.createEl('p', { text: taskTurnSummary(result) });
+
+    const actionsEl = headerEl.createDiv({ cls: 'dsh-task-result__actions' });
+    const undoEl = actionsEl.createEl('button', {
+      text: result.undone ? '已撤销' : '撤销',
+      attr: { type: 'button' },
+    });
+    undoEl.disabled = result.undone
+      || !result.canUndo
+      || this.taskActionBusy.has(result.turnId);
+    undoEl.addEventListener('click', () => {
+      new TaskUndoModal(
+        this.app,
+        result,
+        async () => await this.undoTaskTurn(result),
+      ).open();
+    });
+    const reviewEl = actionsEl.createEl('button', {
+      text: '审核',
+      attr: { type: 'button' },
+    });
+    reviewEl.addEventListener('click', () => {
+      new TaskChangeReviewModal(this.app, result).open();
+    });
+
+    const listEl = resultEl.createEl('ul', { cls: 'dsh-task-result__files' });
+    for (const change of visibleChanges) {
+      const itemEl = listEl.createEl('li');
+      const fileEl = itemEl.createEl('button', {
+        cls: 'dsh-task-result__file',
+        attr: {
+          type: 'button',
+          'aria-label': `${taskChangeLabel(change)} ${change.relativePath}，点击审核，右键打开文件操作`,
+        },
+      });
+      fileEl.createSpan({
+        cls: `dsh-task-result__kind is-${change.kind}`,
+        text: taskChangeLabel(change),
+      });
+      fileEl.createSpan({ cls: 'dsh-task-result__path', text: change.relativePath });
+      fileEl.createSpan({
+        cls: 'dsh-task-result__stats',
+        text: taskChangeStats(change),
+      });
+      fileEl.addEventListener('click', () => {
+        new TaskChangeReviewModal(this.app, result, change.relativePath).open();
+      });
+      fileEl.addEventListener('contextmenu', (rawEvent) => {
+        rawEvent.preventDefault();
+        this.openTaskFileMenu(rawEvent, result, change);
+      });
+    }
+    if (result.changes.length > DEFAULT_VISIBLE_TASK_FILES) {
+      const remaining = result.changes.length - DEFAULT_VISIBLE_TASK_FILES;
+      const expandEl = resultEl.createEl('button', {
+        cls: 'dsh-task-result__expand',
+        text: expanded ? '收起文件' : `再显示 ${String(remaining)} 个文件`,
+        attr: {
+          type: 'button',
+          'aria-expanded': expanded ? 'true' : 'false',
+        },
+      });
+      expandEl.addEventListener('click', () => {
+        if (expanded) this.expandedTaskTurnIds.delete(result.turnId);
+        else this.expandedTaskTurnIds.add(result.turnId);
+        this.syncConversationSurface();
+      });
+    }
+    const actionError = this.taskActionErrors.get(result.turnId);
+    if (actionError) {
+      resultEl.createEl('p', {
+        cls: 'dsh-task-result__error',
+        text: actionError,
+        attr: { role: 'alert' },
+      });
+    }
+  }
+
+  private openTaskFileMenu(
+    event: MouseEvent,
+    result: TaskWorkspaceTurnResult,
+    change: TaskWorkspaceChange,
+  ): void {
+    const menu = new Menu();
+    menu.addItem(item => item
+      .setTitle('审核本次变更')
+      .setIcon('scan-search')
+      .onClick(() => new TaskChangeReviewModal(
+        this.app,
+        result,
+        change.relativePath,
+      ).open()));
+    menu.addSeparator();
+    menu.addItem(item => item
+      .setTitle('使用默认应用打开')
+      .setIcon('external-link')
+      .setDisabled(change.kind === 'deleted')
+      .onClick(() => this.runTaskFileAction(
+        async () => await this.options.taskWorkspaceFileActions.openCurrentFile(
+          result.workspace,
+          change.relativePath,
+        ),
+      )));
+    menu.addItem(item => item
+      .setTitle('在资源管理器中显示')
+      .setIcon('folder-open')
+      .onClick(() => this.runTaskFileAction(
+        async () => await this.options.taskWorkspaceFileActions.revealFile(
+          result.workspace,
+          change.relativePath,
+        ),
+      )));
+    menu.addSeparator();
+    menu.addItem(item => item
+      .setTitle('复制相对路径')
+      .setIcon('copy')
+      .onClick(() => this.runTaskFileAction(
+        async () => await this.options.taskWorkspaceFileActions.copyRelativePath(
+          result.workspace,
+          change.relativePath,
+        ),
+        '已复制相对路径',
+      )));
+    menu.addItem(item => item
+      .setTitle('复制完整路径')
+      .setIcon('copy')
+      .onClick(() => this.runTaskFileAction(
+        async () => await this.options.taskWorkspaceFileActions.copyAbsolutePath(
+          result.workspace,
+          change.relativePath,
+        ),
+        '已复制完整路径',
+      )));
+    menu.addItem(item => item
+      .setTitle('复制当前文件内容')
+      .setIcon('copy')
+      .setDisabled(change.kind === 'deleted')
+      .onClick(() => this.runTaskFileAction(
+        async () => await this.options.taskWorkspaceFileActions.copyCurrentContent(
+          result.workspace,
+          change.relativePath,
+        ),
+        '已复制当前文件内容',
+      )));
+    menu.showAtMouseEvent(event);
+  }
+
+  private runTaskFileAction(action: () => Promise<void>, success?: string): void {
+    void action()
+      .then(() => {
+        if (success) new Notice(success);
+      })
+      .catch((error: unknown) => new Notice(taskActionFailureMessage(error)));
+  }
+
+  private async undoTaskTurn(result: TaskWorkspaceTurnResult): Promise<void> {
+    this.taskActionBusy.add(result.turnId);
+    this.taskActionErrors.delete(result.turnId);
+    this.syncConversationSurface();
+    try {
+      await this.options.conversationHost.undoTaskTurn(result.turnId);
+      new Notice(`已安全撤销 ${String(result.changes.length)} 个文件的本轮变更`);
+    } catch (error) {
+      const message = taskActionFailureMessage(error);
+      this.taskActionErrors.set(result.turnId, message);
+      throw new Error(message);
+    } finally {
+      this.taskActionBusy.delete(result.turnId);
+      this.syncConversationSurface();
+    }
   }
 
   private renderPermission(
@@ -840,6 +1038,142 @@ class NewTaskReviewModal extends Modal {
   }
 }
 
+class TaskChangeReviewModal extends Modal {
+  constructor(
+    app: WorkbenchView['app'],
+    private readonly result: TaskWorkspaceTurnResult,
+    private readonly relativePath?: string,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    const selectedChanges = this.relativePath
+      ? this.result.changes.filter(change => change.relativePath === this.relativePath)
+      : this.result.changes;
+    const changes = selectedChanges.slice(0, MAX_REVIEW_PREVIEW_FILES);
+    this.setTitle(this.relativePath ? '审核文件变更' : '审核本轮文件变更');
+    this.contentEl.createEl('p', {
+      cls: 'dsh-task-review__summary',
+      text: `${String(selectedChanges.length)} 个文件 · ${taskTurnSummary(this.result)}`,
+    });
+    if (selectedChanges.length === 0) {
+      this.contentEl.createEl('p', { text: '没有可审核的文件变更。' });
+      return;
+    }
+    if (selectedChanges.length > changes.length) {
+      this.contentEl.createEl('p', {
+        cls: 'dsh-task-review__truncated',
+        text: `为保持界面流畅，本窗口先显示前 ${String(MAX_REVIEW_PREVIEW_FILES)} 个文件；其余文件可从展开后的文件行逐项审核。`,
+      });
+    }
+    for (const change of changes) this.renderChange(change);
+  }
+
+  private renderChange(change: TaskWorkspaceChange): void {
+    const changeEl = this.contentEl.createEl('section', { cls: 'dsh-task-review__change' });
+    const headerEl = changeEl.createDiv({ cls: 'dsh-task-review__header' });
+    headerEl.createEl('strong', { text: change.relativePath });
+    headerEl.createSpan({ text: `${taskChangeLabel(change)} · ${taskChangeStats(change)}` });
+    if (!change.review) {
+      changeEl.createEl('p', {
+        cls: 'dsh-task-review__unavailable',
+        text: change.kind === 'deleted'
+          ? '二进制或过大文本不提供内嵌前后快照；当前文件已删除，可通过右键菜单复制路径或定位原位置。'
+          : '二进制或过大文本不提供内嵌前后快照；可通过文件右键菜单打开或复制当前内容。',
+      });
+      return;
+    }
+    const diffEl = changeEl.createDiv({ cls: 'dsh-task-review__diff' });
+    this.renderSnapshot(diffEl, '修改前', change.review.before, '文件不存在');
+    this.renderSnapshot(diffEl, '修改后', change.review.after, '文件已删除');
+  }
+
+  private renderSnapshot(
+    parentEl: HTMLElement,
+    label: string,
+    value: string | null,
+    emptyLabel: string,
+  ): void {
+    const panelEl = parentEl.createDiv({ cls: 'dsh-task-review__panel' });
+    panelEl.createEl('strong', { text: label });
+    const preview = createReviewPreview(value, emptyLabel);
+    panelEl.createEl('pre', { text: preview.text });
+    if (preview.truncated) {
+      panelEl.createEl('p', {
+        cls: 'dsh-task-review__truncated',
+        text: '内容较长，为保持界面流畅仅显示前 2,000 行或 200,000 个字符。',
+      });
+    }
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+class TaskUndoModal extends Modal {
+  constructor(
+    app: WorkbenchView['app'],
+    private readonly result: TaskWorkspaceTurnResult,
+    private readonly onConfirm: () => Promise<void>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.setTitle('确认撤销本轮文件变更');
+    this.contentEl.createEl('p', {
+      cls: 'dsh-task-undo__warning',
+      text: `将恢复 ${String(this.result.changes.length)} 个文件到本轮任务开始前。任何文件在任务结束后又有变化时，整个撤销都不会写入。`,
+    });
+    const listEl = this.contentEl.createEl('ul', { cls: 'dsh-task-undo__files' });
+    for (const change of this.result.changes) {
+      listEl.createEl('li', { text: `${taskChangeLabel(change)} ${change.relativePath}` });
+    }
+    const errorEl = this.contentEl.createEl('p', {
+      cls: 'dsh-task-undo__error',
+      attr: { role: 'alert' },
+    });
+    const actionsEl = this.contentEl.createDiv({ cls: 'dsh-task-undo__actions' });
+    const cancelEl = actionsEl.createEl('button', {
+      text: '取消',
+      attr: { type: 'button' },
+    });
+    cancelEl.addEventListener('click', () => this.close());
+    const confirmEl = actionsEl.createEl('button', {
+      cls: 'mod-warning',
+      text: '确认撤销',
+      attr: { type: 'button' },
+    });
+    confirmEl.addEventListener('click', () => {
+      void this.confirm(confirmEl, cancelEl, errorEl);
+    });
+  }
+
+  private async confirm(
+    confirmEl: HTMLButtonElement,
+    cancelEl: HTMLButtonElement,
+    errorEl: HTMLElement,
+  ): Promise<void> {
+    confirmEl.disabled = true;
+    cancelEl.disabled = true;
+    errorEl.setText('');
+    try {
+      await this.onConfirm();
+      this.close();
+    } catch (error) {
+      errorEl.setText(taskActionFailureMessage(error));
+      confirmEl.disabled = false;
+      cancelEl.disabled = false;
+    }
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
 function conversationMessageStatus(message: NewTaskConversationMessage): string | undefined {
   if (message.delivery === 'pending') return '正在发送';
   if (message.delivery === 'failed') return '发送失败';
@@ -873,8 +1207,38 @@ function canChangeMode(phase: NewTaskConversationSnapshot['phase']): boolean {
 }
 
 function taskTurnSummary(result: NewTaskConversationSnapshot['taskTurns'][number]): string {
+  if (result.undone) return `${result.workspace.name} · 已安全撤销`;
   if (result.additions === null || result.deletions === null) {
     return `${result.workspace.name} · 包含二进制或过大文本`;
   }
   return `${result.workspace.name} · +${String(result.additions)} -${String(result.deletions)} · 变更事实已记录`;
+}
+
+function taskChangeLabel(change: TaskWorkspaceChange): string {
+  return { created: '新建', deleted: '删除', modified: '修改' }[change.kind];
+}
+
+function taskChangeStats(change: TaskWorkspaceChange): string {
+  if (change.additions === null || change.deletions === null) return '文本统计不可用';
+  return `+${String(change.additions)} -${String(change.deletions)}`;
+}
+
+function taskActionFailureMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  return '文件操作失败，请检查工作区状态后重试。';
+}
+
+function createReviewPreview(value: string | null, emptyLabel: string): {
+  readonly text: string;
+  readonly truncated: boolean;
+} {
+  if (value === null) return { text: emptyLabel, truncated: false };
+  const lines = value.replace(/\r\n/gu, '\n').split('\n');
+  const lineLimited = lines.length > MAX_REVIEW_PREVIEW_LINES;
+  const joined = lines.slice(0, MAX_REVIEW_PREVIEW_LINES).join('\n');
+  const characterLimited = joined.length > MAX_REVIEW_PREVIEW_CHARACTERS;
+  return {
+    text: characterLimited ? joined.slice(0, MAX_REVIEW_PREVIEW_CHARACTERS) : joined,
+    truncated: lineLimited || characterLimited,
+  };
 }

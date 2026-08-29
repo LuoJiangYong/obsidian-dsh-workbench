@@ -14,7 +14,10 @@ export class MockElement {
   readonly classes = new Set<string>();
   readonly attributes = new Map<string, string>();
   disabled = false;
-  private readonly eventListeners = new Map<string, Array<() => void | Promise<void>>>();
+  private readonly eventListeners = new Map<
+    string,
+    Array<(event?: unknown) => void | Promise<void>>
+  >();
   icon = '';
   readonly tagName: string;
   text = '';
@@ -46,7 +49,10 @@ export class MockElement {
     this.text = '';
   }
 
-  addEventListener(type: string, callback: () => void | Promise<void>): void {
+  addEventListener(
+    type: string,
+    callback: (event?: unknown) => void | Promise<void>,
+  ): void {
     const listeners = this.eventListeners.get(type) ?? [];
     listeners.push(callback);
     this.eventListeners.set(type, listeners);
@@ -57,8 +63,8 @@ export class MockElement {
     for (const listener of this.eventListeners.get('click') ?? []) await listener();
   }
 
-  async trigger(type: string): Promise<void> {
-    for (const listener of this.eventListeners.get(type) ?? []) await listener();
+  async trigger(type: string, event?: unknown): Promise<void> {
+    for (const listener of this.eventListeners.get(type) ?? []) await listener(event);
   }
 
   findAllByClass(className: string): MockElement[] {
@@ -317,11 +323,64 @@ export class FuzzySuggestModal<T> extends Modal {
   }
 }
 
+export class MenuItem {
+  disabled = false;
+  icon = '';
+  title = '';
+  private clickCallback: (() => void | Promise<void>) | undefined;
+
+  async click(): Promise<void> {
+    if (!this.disabled) await this.clickCallback?.();
+  }
+
+  onClick(callback: () => void | Promise<void>): this {
+    this.clickCallback = callback;
+    return this;
+  }
+
+  setDisabled(disabled: boolean): this {
+    this.disabled = disabled;
+    return this;
+  }
+
+  setIcon(icon: string): this {
+    this.icon = icon;
+    return this;
+  }
+
+  setTitle(title: string): this {
+    this.title = title;
+    return this;
+  }
+}
+
+export class Menu {
+  readonly items: Array<MenuItem | 'separator'> = [];
+
+  addItem(callback: (item: MenuItem) => void): this {
+    const item = new MenuItem();
+    callback(item);
+    this.items.push(item);
+    return this;
+  }
+
+  addSeparator(): this {
+    this.items.push('separator');
+    return this;
+  }
+
+  showAtMouseEvent(_event: MouseEvent): this {
+    mockObsidian.openMenus.push(this);
+    return this;
+  }
+}
+
 export const mockObsidian = {
   commands: [] as CommandRegistration[],
   lastApp: undefined as App | undefined,
   loadedData: null as unknown,
   notices: [] as string[],
+  openMenus: [] as Menu[],
   openModals: [] as Modal[],
   icons: new Map<string, string>(),
   ribbonIcons: [] as string[],
@@ -336,6 +395,7 @@ export function resetMockObsidian(): void {
   mockObsidian.lastApp = undefined;
   mockObsidian.loadedData = null;
   mockObsidian.notices.length = 0;
+  mockObsidian.openMenus.length = 0;
   mockObsidian.openModals.length = 0;
   mockObsidian.icons.clear();
   mockObsidian.ribbonIcons.length = 0;

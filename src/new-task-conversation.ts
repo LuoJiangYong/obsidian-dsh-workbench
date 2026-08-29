@@ -115,6 +115,7 @@ export interface NewTaskBridgeProcess {
 export interface NewTaskTaskLedger {
   beginTurn(turnId: string, workspacePath: string): Promise<TaskWorkspaceSelection>;
   completeTurn(turnId: string): Promise<TaskWorkspaceTurnResult>;
+  undoTurn(turnId: string): Promise<TaskWorkspaceTurnResult>;
   validateWorkspace(workspacePath: string): Promise<TaskWorkspaceSelection>;
 }
 
@@ -131,6 +132,7 @@ export interface NewTaskConversationHost {
   resolvePermission(decision: BridgePermissionDecision): Promise<boolean>;
   submit(input: NewTaskConversationSubmitInput): Promise<boolean>;
   subscribe(listener: () => void): () => void;
+  undoTaskTurn(turnId: string): Promise<TaskWorkspaceTurnResult>;
 }
 
 export class NewTaskConversationError extends Error {
@@ -153,6 +155,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
   private detachEvents: (() => void) | undefined;
   private disposed = false;
   private readonly listeners = new Set<() => void>();
+  private readonly undoingTaskTurnIds = new Set<string>();
   private process: NewTaskBridgeProcess | undefined;
   private sessionId: string | undefined;
   private sessionMode: BridgeSessionMode | undefined;
@@ -320,6 +323,38 @@ export class NewTaskConversationController implements NewTaskConversationHost {
         permission: Object.freeze({ ...permission, resolving: false }),
       });
       return false;
+    }
+  }
+
+  async undoTaskTurn(turnId: string): Promise<TaskWorkspaceTurnResult> {
+    if (this.disposed) {
+      throw new NewTaskConversationError('controller_disposed', '对话控制器已关闭。');
+    }
+    if (!canBeginTurn(this.snapshot.phase)) {
+      throw new NewTaskConversationError('task_action_busy', '当前运行尚未结束，不能撤销文件。');
+    }
+    const current = this.snapshot.taskTurns.find(result => result.turnId === turnId);
+    if (!current) throw new NewTaskConversationError('turn_ledger_not_found', '没有找到任务变更结果。');
+    if (!current.canUndo || current.undone) {
+      throw new NewTaskConversationError('turn_not_undoable', '该任务变更当前不可撤销。');
+    }
+    if (this.undoingTaskTurnIds.has(turnId)) {
+      throw new NewTaskConversationError('task_action_busy', '该任务变更正在撤销，请等待完成。');
+    }
+    this.undoingTaskTurnIds.add(turnId);
+    try {
+      const result = await requireTaskLedger(this.options.taskLedger).undoTurn(turnId);
+      this.update({
+        taskTurns: this.snapshot.taskTurns.map(
+          item => item.turnId === turnId ? result : item,
+        ),
+      });
+      return result;
+    } catch (error) {
+      const failure = normalizeConversationError(error, 'task_undo_failed');
+      throw new NewTaskConversationError(failure.code, failure.message);
+    } finally {
+      this.undoingTaskTurnIds.delete(turnId);
     }
   }
 

@@ -14,6 +14,10 @@ const realDshBridgeTests = await readFile('tests/real-dsh-bridge.test.ts', 'utf8
 const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf8');
 const taskWorkspaceTests = await readFile('tests/task-workspace.test.ts', 'utf8');
 const taskWorkspaceHostTests = await readFile('tests/task-workspace-host.test.ts', 'utf8');
+const taskWorkspaceFileActionTests = await readFile(
+  'tests/task-workspace-file-actions.test.ts',
+  'utf8',
+);
 const newTaskConversationTests = await readFile('tests/new-task-conversation.test.ts', 'utf8');
 const conversationUiTests = await readFile('tests/workbench-conversation-ui.test.ts', 'utf8');
 const runtimeFixture = JSON.parse(await readFile('tests/runtime-fixture/package.json', 'utf8'));
@@ -229,10 +233,24 @@ for (const taskWorkspaceHostContract of [
     `任务工作区宿主测试缺少契约：${taskWorkspaceHostContract}`,
   );
 }
+for (const taskWorkspaceFileActionContract of [
+  '任务文件原生操作宿主',
+  '每次操作都复验工作区与普通文件，并只复制用户明确请求的路径或文本',
+  '拒绝越界、排除目录和非 UTF-8 当前内容',
+  '原生或文件系统失败只返回脱敏诊断，不暴露工作区绝对路径',
+  '拒绝符号链接文件',
+  'file_action_too_large',
+]) {
+  assert(
+    taskWorkspaceFileActionTests.includes(taskWorkspaceFileActionContract),
+    `任务文件原生操作测试缺少契约：${taskWorkspaceFileActionContract}`,
+  );
+}
 for (const conversationContract of [
   '新建任务真实对话控制器',
   '发送前重读上下文，复用同一 session，并投影流式回复、工具、权限和完成终态',
   '任务模式在已校验 Vault 外工作区建立基线，以 task session 执行并在终态生成变更事实',
+  '仅在任务终态允许按同一 turn 账本安全撤销，并用撤销结果替换当前快照',
   '任务模式缺少工作区时 fail closed，不启动进程或建立账本',
   '任务控制器与真实 Vault 外账本共用同一 turn，终态只报告实际文件变化',
   '任务终态的变更捕获失败时不伪装完成',
@@ -251,6 +269,8 @@ for (const conversationUiContract of [
   '发送前展示只读审阅，取消保留草稿，确认后清空草稿并显示流式结果',
   '只提供本次权限决定并把错误作为可访问终态呈现',
   '任务模式选择 Vault 外工作区后才允许发送，并在结束时显示真实变更摘要',
+  '每轮默认展示三个真实文件，支持展开、审核、原生右键操作和二次确认撤销',
+  '撤销冲突时保持确认窗口并把零写入失败展示为可访问错误',
 ]) {
   assert(
     conversationUiTests.includes(conversationUiContract),
@@ -268,7 +288,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

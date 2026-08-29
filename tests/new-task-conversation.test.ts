@@ -230,6 +230,57 @@ describe('新建任务真实对话控制器', () => {
     expect(ledger.completed).toEqual([turnId]);
   });
 
+  it('仅在任务终态允许按同一 turn 账本安全撤销，并用撤销结果替换当前快照', async () => {
+    const client = new FakeBridgeClient();
+    const ledger = new FakeTaskLedger();
+    const controller = new NewTaskConversationController({
+      createProcess: async () => new FakeBridgeProcess(client),
+      taskLedger: ledger,
+    });
+    await controller.submit({
+      contexts: [],
+      draft: '更新 README',
+      mode: 'task',
+      reader: readerReturning(''),
+      workspace: { name: 'external-project', path: 'C:\\workspaces\\external-project' },
+    });
+    const turnId = client.startedTurnIds[0];
+    if (!turnId) throw new Error('任务 turn 未启动');
+    client.emit(event('turn.started', 0, {}, turnId));
+    await expect(controller.undoTaskTurn(turnId)).rejects.toMatchObject({
+      code: 'task_action_busy',
+    });
+    client.emit(event('turn.ended', 1, { outcome: 'completed' }, turnId));
+    await vi.waitFor(() => expect(controller.getSnapshot().phase).toBe('completed'));
+
+    let releaseUndo: (() => void) | undefined;
+    ledger.undoGate = new Promise<void>((resolve) => {
+      releaseUndo = resolve;
+    });
+    const undo = controller.undoTaskTurn(turnId);
+    await vi.waitFor(() => expect(ledger.undone).toEqual([turnId]));
+    await expect(controller.undoTaskTurn(turnId)).rejects.toMatchObject({
+      code: 'task_action_busy',
+    });
+    releaseUndo?.();
+    await expect(undo).resolves.toMatchObject({
+      canUndo: false,
+      turnId,
+      undone: true,
+    });
+    expect(ledger.undone).toEqual([turnId]);
+    expect(controller.getSnapshot().taskTurns).toEqual([
+      expect.objectContaining({ canUndo: false, turnId, undone: true }),
+    ]);
+    await expect(controller.undoTaskTurn(turnId)).rejects.toMatchObject({
+      code: 'turn_not_undoable',
+    });
+    await controller.dispose();
+    await expect(controller.undoTaskTurn(turnId)).rejects.toMatchObject({
+      code: 'controller_disposed',
+    });
+  });
+
   it('任务模式缺少工作区时 fail closed，不启动进程或建立账本', async () => {
     const createProcess = vi.fn(async () => new FakeBridgeProcess(new FakeBridgeClient()));
     const ledger = new FakeTaskLedger();
@@ -568,8 +619,10 @@ class FakeBridgeClient implements NewTaskBridgeClient {
 class FakeTaskLedger implements NewTaskTaskLedger {
   completeGate: Promise<void> | undefined;
   completeFailure: Error | undefined;
+  undoGate: Promise<void> | undefined;
   readonly completed: string[] = [];
   readonly started: Array<{ readonly turnId: string; readonly workspacePath: string }> = [];
+  readonly undone: string[] = [];
   readonly validatedPaths: string[] = [];
 
   async beginTurn(turnId: string, workspacePath: string): Promise<TaskWorkspaceSelection> {
@@ -600,6 +653,13 @@ class FakeTaskLedger implements NewTaskTaskLedger {
       undone: false,
       workspace: { name: 'external-project', path: workspacePath },
     };
+  }
+
+  async undoTurn(turnId: string): Promise<TaskWorkspaceTurnResult> {
+    this.undone.push(turnId);
+    if (this.undoGate) await this.undoGate;
+    const result = await this.completeTurn(turnId);
+    return { ...result, canUndo: false, undone: true };
   }
 
   async validateWorkspace(workspacePath: string): Promise<TaskWorkspaceSelection> {

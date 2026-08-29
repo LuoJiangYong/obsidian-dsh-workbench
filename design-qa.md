@@ -297,3 +297,16 @@ Batch 7 implementation and technical runtime: passed; final Obsidian UI user acc
 - Batch 8D 的默认三项/展开、原生右键菜单、真实 diff 与二次确认撤销未在本批伪造。
 
 Batch 8C implementation and CI: passed; final Obsidian UI user acceptance: pending
+
+## Batch 8D：逐轮文件审核与安全撤销实施门
+
+- 日期：`2026-08-29`；Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）与产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360`、QA `12:530` 保持只读。Ardot 未修改，只读核对。
+- 用户结果：每个任务 turn 的真实文件卡默认展示三个相对路径并可展开/收起；文件行显示变更类型和文本增删，主点击打开账本修改前/后快照，右键使用 Obsidian 原生 `Menu`。
+- 文件菜单：提供审核、系统默认应用、资源管理器、复制相对路径、用户明确请求后复制完整路径，以及复制当前 UTF-8 内容；每次操作重新校验规范工作区、路径包含关系、排除目录、普通文件和真实路径。已删除文件的当前内容操作保持禁用。
+- 产品取舍：不加入 VS Code 专属入口、桌面“打开方式”克隆或“另存为”；前两者不是已验证的 Obsidian 原生依赖，后者会新增逐轮账本无法覆盖的写入面。
+- 撤销边界：二次确认列出本 turn 全部文件；活动 turn 禁止撤销，账本完整性、工作区身份或任一当前 SHA 冲突时零写入并保持错误可见，成功后卡片显示“已撤销”且不能重复撤销。
+- 视觉与可访问性：文件卡与触发行无方框阴影；展开同步 `aria-expanded`；撤销错误使用 `role="alert"`；“审核本轮”先渲染前 `50` 个文件，其余可逐项打开；单份预览超过 `2,000` 行或 `200,000` 字符只截断 UI，窄窗口前后快照改为单列。
+- 本地质量门：`typecheck`、零警告 `lint`、完整 `npm test` 为 `119 passed / 2 skipped`；runtime 为 `27 passed / 1 skipped`；默认锁文件夹具重新执行 `npm ci` 后真实 rc.2 bridge 为 `1 passed`；生产构建、仓库边界、CI 覆盖和 artifact 自检均通过。初次安装发现一个已不再使用的本仓库 DSH 遗留进程；经用户确认后只终止该精确进程树，读回零残留并恢复默认夹具。
+- 专用 `obsidian-dsh-workbench-evidence` Vault 的真实任务、菜单、审核、撤销、明暗主题、精确 `700px` 与零残留验收进入 Batch 10；不得使用 `obsidian-trend-radar-evidence`。最终 Obsidian UI 用户验收仍未通过。
+
+Batch 8D implementation local gate: passed; remote CI and final Obsidian UI user acceptance: pending

@@ -11,8 +11,16 @@ import type {
   NewTaskContextPickerRequest,
 } from '../src/obsidian-context-host';
 import type { TaskWorkspaceHost } from '../src/task-workspace-host';
+import type { TaskWorkspaceFileActionsHost } from '../src/task-workspace-file-actions';
+import type { TaskWorkspaceTurnResult } from '../src/task-workspace';
 import { WorkbenchView } from '../src/workbench-view';
-import { App, type MockElement, mockObsidian, resetMockObsidian } from './mocks/obsidian';
+import {
+  App,
+  MenuItem,
+  type MockElement,
+  mockObsidian,
+  resetMockObsidian,
+} from './mocks/obsidian';
 
 describe('Workbench 真实对话界面', () => {
   beforeEach(() => resetMockObsidian());
@@ -27,6 +35,7 @@ describe('Workbench 真实对话界面', () => {
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
       runDshHealthCheck: async () => undefined,
+      taskWorkspaceFileActions: taskWorkspaceFileActions(),
       taskWorkspaceHost: taskWorkspaceHost(),
     });
     await view.onOpen();
@@ -104,6 +113,7 @@ describe('Workbench 真实对话界面', () => {
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
       runDshHealthCheck: async () => undefined,
+      taskWorkspaceFileActions: taskWorkspaceFileActions(),
       taskWorkspaceHost: taskWorkspaceHost(),
     });
     await view.onOpen();
@@ -150,6 +160,7 @@ describe('Workbench 真实对话界面', () => {
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
       runDshHealthCheck: async () => undefined,
+      taskWorkspaceFileActions: taskWorkspaceFileActions(),
       taskWorkspaceHost: workspaceHost,
     });
     await view.onOpen();
@@ -221,11 +232,123 @@ describe('Workbench 真实对话界面', () => {
     await content.findAllByClass('dsh-new-task-mode__button')[0]?.click();
     expect(content.allText()).toEqual(expect.arrayContaining(['任务完成']));
   });
+
+  it('每轮默认展示三个真实文件，支持展开、审核、原生右键操作和二次确认撤销', async () => {
+    const app = new App();
+    const conversationHost = new FakeConversationHost();
+    const copiedRelativePaths: string[] = [];
+    const fileActions = taskWorkspaceFileActions();
+    fileActions.copyRelativePath = async (_workspace, relativePath) => {
+      copiedRelativePaths.push(relativePath);
+    };
+    const view = new WorkbenchView(app.workspace.getLeaf('tab') as never, {
+      conversationHost,
+      contextHost: contextHost(),
+      getDshHealth: () => ({ status: 'unchecked' }),
+      onContextsChanged: () => undefined,
+      runDshHealthCheck: async () => undefined,
+      taskWorkspaceFileActions: fileActions,
+      taskWorkspaceHost: taskWorkspaceHost(),
+    });
+    await view.onOpen();
+    const result = taskTurnResult(5);
+    conversationHost.emit({ mode: 'task', phase: 'completed', taskTurns: [result] });
+
+    const content = view.contentEl as unknown as MockElement;
+    expect(content.findAllByClass('dsh-task-result__file')).toHaveLength(3);
+    expect(content.allText()).toEqual(expect.arrayContaining([
+      '已编辑 5 个文件',
+      '再显示 2 个文件',
+    ]));
+    await content.findAllByClass('dsh-task-result__expand')[0]?.click();
+    expect(content.findAllByClass('dsh-task-result__file')).toHaveLength(5);
+
+    const firstFile = content.findAllByClass('dsh-task-result__file')[0];
+    const preventDefault = vi.fn();
+    await firstFile?.trigger('contextmenu', { preventDefault });
+    expect(preventDefault).toHaveBeenCalledOnce();
+    const menu = mockObsidian.openMenus[0];
+    const items = menu?.items.filter((item): item is MenuItem => item instanceof MenuItem) ?? [];
+    expect(items.map(item => item.title)).toEqual([
+      '审核本次变更',
+      '使用默认应用打开',
+      '在资源管理器中显示',
+      '复制相对路径',
+      '复制完整路径',
+      '复制当前文件内容',
+    ]);
+    await items.find(item => item.title === '复制相对路径')?.click();
+    await vi.waitFor(() => expect(copiedRelativePaths).toEqual(['file-1.md']));
+    expect(mockObsidian.notices).toContain('已复制相对路径');
+
+    await firstFile?.click();
+    const review = mockObsidian.openModals[mockObsidian.openModals.length - 1];
+    expect(review?.title).toBe('审核文件变更');
+    expect(review?.contentEl.allText()).toEqual(expect.arrayContaining([
+      'file-1.md',
+      '修改前 1',
+      '修改后 1',
+    ]));
+
+    await content.findAllByClass('dsh-task-result__actions')[0]
+      ?.findAllByTag('button')[0]?.click();
+    const undo = mockObsidian.openModals[mockObsidian.openModals.length - 1];
+    expect(undo?.title).toBe('确认撤销本轮文件变更');
+    expect(undo?.contentEl.allText()).toEqual(expect.arrayContaining([
+      expect.stringContaining('任何文件在任务结束后又有变化时，整个撤销都不会写入。'),
+      '修改 file-1.md',
+      '修改 file-5.md',
+    ]));
+    await undo?.contentEl.findAllByClass('dsh-task-undo__actions')[0]
+      ?.findAllByTag('button')[1]?.click();
+    await vi.waitFor(() => {
+      expect(content.allText()).toEqual(expect.arrayContaining(['已撤销 5 个文件']));
+    });
+    expect(mockObsidian.notices).toContain('已安全撤销 5 个文件的本轮变更');
+  });
+
+  it('撤销冲突时保持确认窗口并把零写入失败展示为可访问错误', async () => {
+    const app = new App();
+    const conversationHost = new FakeConversationHost();
+    conversationHost.undoFailure = new Error('README.md 已在任务后变化；未写入任何文件。');
+    const view = new WorkbenchView(app.workspace.getLeaf('tab') as never, {
+      conversationHost,
+      contextHost: contextHost(),
+      getDshHealth: () => ({ status: 'unchecked' }),
+      onContextsChanged: () => undefined,
+      runDshHealthCheck: async () => undefined,
+      taskWorkspaceFileActions: taskWorkspaceFileActions(),
+      taskWorkspaceHost: taskWorkspaceHost(),
+    });
+    await view.onOpen();
+    conversationHost.emit({
+      mode: 'task',
+      phase: 'completed',
+      taskTurns: [taskTurnResult(1)],
+    });
+
+    const content = view.contentEl as unknown as MockElement;
+    await content.findAllByClass('dsh-task-result__actions')[0]
+      ?.findAllByTag('button')[0]?.click();
+    const undo = mockObsidian.openModals[mockObsidian.openModals.length - 1];
+    await undo?.contentEl.findAllByClass('dsh-task-undo__actions')[0]
+      ?.findAllByTag('button')[1]?.click();
+    await vi.waitFor(() => {
+      expect(undo?.contentEl.findAllByClass('dsh-task-undo__error')[0]?.text)
+        .toBe('README.md 已在任务后变化；未写入任何文件。');
+    });
+    expect(undo?.contentEl.findAllByClass('dsh-task-undo__error')[0]
+      ?.attributes.get('role')).toBe('alert');
+    expect(content.allText()).toEqual(expect.arrayContaining([
+      'README.md 已在任务后变化；未写入任何文件。',
+    ]));
+  });
 });
 
 class FakeConversationHost implements NewTaskConversationHost {
   cancelCount = 0;
   readonly decisions: BridgePermissionDecision[] = [];
+  undoFailure: Error | undefined;
   private readonly listeners = new Set<() => void>();
   private snapshot: NewTaskConversationSnapshot = {
     error: null,
@@ -265,6 +388,19 @@ class FakeConversationHost implements NewTaskConversationHost {
     return true;
   }
 
+  async undoTaskTurn(turnId: string): Promise<TaskWorkspaceTurnResult> {
+    if (this.undoFailure) throw this.undoFailure;
+    const current = this.snapshot.taskTurns.find(result => result.turnId === turnId);
+    if (!current) throw new Error('没有找到任务变更结果。');
+    const undone = { ...current, canUndo: false, undone: true };
+    this.emit({
+      taskTurns: this.snapshot.taskTurns.map(
+        result => result.turnId === turnId ? undone : result,
+      ),
+    });
+    return undone;
+  }
+
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
@@ -281,4 +417,40 @@ function contextHost(): NewTaskContextHost {
 
 function taskWorkspaceHost(): TaskWorkspaceHost {
   return { selectWorkspace: async () => null };
+}
+
+function taskWorkspaceFileActions(): TaskWorkspaceFileActionsHost {
+  return {
+    copyAbsolutePath: async () => undefined,
+    copyCurrentContent: async () => undefined,
+    copyRelativePath: async () => undefined,
+    openCurrentFile: async () => undefined,
+    revealFile: async () => undefined,
+  };
+}
+
+function taskTurnResult(changeCount: number): TaskWorkspaceTurnResult {
+  return {
+    additions: changeCount,
+    canUndo: true,
+    changes: Array.from({ length: changeCount }, (_, index) => ({
+      additions: 1,
+      deletions: 1,
+      kind: 'modified' as const,
+      relativePath: `file-${String(index + 1)}.md`,
+      review: {
+        after: `修改后 ${String(index + 1)}`,
+        before: `修改前 ${String(index + 1)}`,
+      },
+      undoable: true,
+    })),
+    completedAt: '2026-08-29T00:00:00.000Z',
+    deletions: changeCount,
+    turnId: 'turn-task-files',
+    undone: false,
+    workspace: {
+      name: 'external-project',
+      path: 'C:\\workspaces\\external-project',
+    },
+  };
 }
