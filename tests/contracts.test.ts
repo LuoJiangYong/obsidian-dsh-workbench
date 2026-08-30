@@ -38,7 +38,7 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库、真实对话与 Vault 外任务链均已实现；Batch 10 专用 Vault 技术运行门已通过，当前等待远端 CI 闭环与用户最终 Obsidian UI 明确验收 |');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库、真实对话与 Vault 外任务链均已实现；Batch 10 专用 Vault 技术运行门与双平台 CI 已通过，当前等待用户最终 Obsidian UI 明确验收 |');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
     expect(readme).toContain('| 可选右侧任务环境 | 原“快速助手”已原位演进为默认关闭的原生 `ItemView`；专用 Vault 已验证打开/复用、公开事实投影、完整路径排除和关闭不影响中央会话 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
@@ -50,7 +50,7 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
     expect(readme).toContain('最终用户 UI 明确验收仍待用户完成');
-    expect(readme).toContain('在当前实现远端 CI 与用户最终验收完成前仍不得进入 `supported`');
+    expect(readme).toContain('在用户最终验收完成前仍不得进入 `supported`');
     expect(readme).toContain('- 不采集客户端遥测。');
   });
 
@@ -114,7 +114,7 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('Ardot 未修改');
     expect(readme).toContain('Codex 参考界面评估与正式会话路线');
     expect(readme).toContain('正式会话与任务环境 ADR');
-    expect(adr).toContain('状态：已接受并完成实现、Batch 9 远端 CI 与 Batch 10 专用 Vault 技术运行门');
+    expect(adr).toContain('状态：已接受并完成实现、Batch 9–10 远端 CI 与 Batch 10 专用 Vault 技术运行门');
     expect(adr).toContain('插件重载后投影清空，不显示“最近任务”');
     expect(adr).toContain('当前协议未公开具体标识');
   });

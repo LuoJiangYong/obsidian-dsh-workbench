@@ -1,6 +1,6 @@
 # ADR-010：正式会话页与原生任务环境
 
-- 状态：已接受并完成实现、Batch 9 远端 CI 与 Batch 10 专用 Vault 技术运行门；Batch 10 最终远端 CI 和用户 UI 明确验收待完成
+- 状态：已接受并完成实现、Batch 9–10 远端 CI 与 Batch 10 专用 Vault 技术运行门；用户最终 UI 明确验收待完成
 - 日期：2026-08-29
 - 关联：[ADR-006](./ADR-006-conversation-runtime-storage.md)、[ADR-008](./ADR-008-task-execution-controller.md)、[ADR-009](./ADR-009-task-change-review-and-undo-ui.md)
 - UI 审阅真相：Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`），产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360` 与 QA `12:530`；Ardot 未修改、只读核对

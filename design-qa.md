@@ -359,6 +359,7 @@ Batch 9 implementation and remote CI gate: passed; final Obsidian UI user accept
 ### 自动门与视觉工件
 
 - 最终本地门：`typecheck` 通过，零警告 `lint` 通过；完整 `npm test` 为 `126 passed / 2 skipped`，Windows/runtime 专项为 `28 passed / 1 skipped`，真实 rc.2 bridge 为 `1 passed`；生产构建、版本/边界/敏感文件、CI coverage 与正式 bridge artifact 自检全部通过。
+- 实现 `ae37a7bf1c719ab871930a2b04d53ff5d7e6378f` 已通过远端 [CI run `33314880417`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33314880417)：Ubuntu job `99266341200` 与 Windows job `99266341269` 均为 `success`；两个 check-run 的原始 annotations API 数组均为 `[]`。
 - 截图均来自专用 Vault：
   - `docs/assets/design-qa/batch-10-final/01-start-wide-light.png` — `41AA2E5F6D1E823C8A91AE1361BF1F825C92FA55A26C6D2D9A631CF84656DA93`
   - `docs/assets/design-qa/batch-10-final/02-context-selection-wide-light.png` — `1A570E4FB0CA5A2363E76D480680317A58F1F666023713DB4D9566A859448A2D`
@@ -373,4 +374,4 @@ Batch 9 implementation and remote CI gate: passed; final Obsidian UI user accept
   - `docs/assets/design-qa/batch-10-final/11-error-recovered-narrow-dark.png` — `B1B8FC875AEEB78F8BB826B84E22537F61FADBC156E0A2CBB6CB8D42DA3D79A7`
   - `docs/assets/design-qa/batch-10-final/12-final-start-wide-light.png` — `1298075A563B48658AA3F69C5875E8A34292B04ACD72AD415683501688F696CF`
 
-Batch 10 dedicated Vault technical runtime gate: passed; remote CI and final Obsidian UI user acceptance: pending. Release and community submission: not authorized.
+Batch 10 dedicated Vault technical runtime and remote CI gate: passed; final Obsidian UI user acceptance: pending. Release and community submission: not authorized.

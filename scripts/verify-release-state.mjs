@@ -34,7 +34,7 @@ assert(
   'README 缺少目标 DSH 版本',
 );
 assert(
-  readme.includes('在当前实现远端 CI 与用户最终验收完成前仍不得进入 `supported`'),
+  readme.includes('在用户最终验收完成前仍不得进入 `supported`'),
   'README 提前把 rc.2 标为 supported',
 );
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');

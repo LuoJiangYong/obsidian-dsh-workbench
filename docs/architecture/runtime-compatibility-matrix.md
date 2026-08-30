@@ -9,10 +9,10 @@
 | DSH | 消费路径 | 状态 | bridge/协议 | 证据边界 |
 | --- | --- | --- | --- | --- |
 | `0.1.1-rc.2` | 健康检查 | 已实现并通过本地、双平台 CI 与专用 Vault 读回 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
-| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `isolated_vault_passed`；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` | Batch 4–9 已完成真实加载、Agent session、取消、只读上下文、任务文件边界、逐轮账本、文件 UI 与正式会话；Batch 10 专用 Vault 已验证真实对话、Vault 外创建/修改、审核、原生菜单、原子撤销、错误恢复、深色 `700px` 和同步卸载零残留。当前 DSH 工具集不含删除，删除请求明确失败；跨重启恢复、Batch 10 远端 CI 和用户最终 UI 明确批准仍未完成 |
+| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `isolated_vault_passed`；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` | Batch 4–9 已完成真实加载、Agent session、取消、只读上下文、任务文件边界、逐轮账本、文件 UI 与正式会话；Batch 10 专用 Vault 已验证真实对话、Vault 外创建/修改、审核、原生菜单、原子撤销、错误恢复、深色 `700px` 和同步卸载零残留，实现 `ae37a7bf1c719ab871930a2b04d53ff5d7e6378f` 已通过 CI `33314880417` 双平台与原始零 annotations。当前 DSH 工具集不含删除，删除请求明确失败；跨重启恢复和用户最终 UI 明确批准仍未完成 |
 | 其他版本 | 无 | 不支持 | 无 fallback | 不尝试、不中和、不静默降级 |
 
-健康检查与正式 bridge 仍是两个独立消费路径，但当前都精确锁定 `rc.2`。Batch 10 已把当前候选推进到 `isolated_vault_passed`；只有远端 CI 闭环和用户最终 UI 明确批准后才可进入 `supported`。跨重启恢复继续明确延期，不能由当前插件生命周期内恢复冒充。
+健康检查与正式 bridge 仍是两个独立消费路径，但当前都精确锁定 `rc.2`。Batch 10 已把当前候选推进到 `isolated_vault_passed` 并完成实现 SHA 的双平台 CI；只有用户最终 UI 明确批准后才可进入 `supported`。跨重启恢复继续明确延期，不能由当前插件生命周期内恢复冒充。
 
 ## 兼容晋级状态机
 

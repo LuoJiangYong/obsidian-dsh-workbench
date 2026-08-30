@@ -44,7 +44,7 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 成本与约束：
 
 - 项目必须维护 bridge/DSH 精确版本矩阵、协议契约测试和上游漂移审计。
-- 协议、假 bridge、正式 bridge 与真实 rc.2 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭和 Windows 进程树清理；Batch 6 已补宿主只读上下文专用隔离 Vault 证据，Batch 7 已补产品对话发送链与 Vault 外运行数据实现，Batch 10 已补真实外部工作区任务和同步插件卸载零残留证据。仍必须完成当前实现的远端 CI 与用户最终 Obsidian UI 明确验收；跨重启最近会话恢复继续明确延期。
+- 协议、假 bridge、正式 bridge 与真实 rc.2 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭和 Windows 进程树清理；Batch 6 已补宿主只读上下文专用隔离 Vault 证据，Batch 7 已补产品对话发送链与 Vault 外运行数据实现，Batch 10 已补真实外部工作区任务、同步插件卸载零残留和实现 SHA 双平台 CI 原始零 annotations。仍必须完成用户最终 Obsidian UI 明确验收；跨重启最近会话恢复继续明确延期。
 - 需要单独的批准批次选择 bridge 的部署与打包方式；本 ADR 不授权自动安装或修改用户 DSH profile。
 - 当前连续目标已授权 Batch 3/4 在保持“不自动安装、不修改用户 DSH profile”的前提下完成协议、部署与 Windows 验证；Release 和社区提交仍未授权。
 

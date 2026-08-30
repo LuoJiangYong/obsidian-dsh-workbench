@@ -115,7 +115,7 @@ Batch 8D 已把逐轮账本投影为真实文件卡：默认显示三个、可�
 
 这些证据证明正式 bridge、Obsidian 宿主 UI、只读上下文和产品对话发送链已形成代码与技术运行闭环，任务文件工具、逐轮变更账本、产品任务控制器和详细文件 UI 也已接通并通过双平台 CI。Batch 9 已接通同 leaf 正式会话、显式新建任务、插件生命周期内恢复边界与原生任务环境；完整测试为 `123 passed / 2 skipped`、runtime 为 `27 passed / 1 skipped`、真实 rc.2 bridge 为 `1 passed`，构建与完整自检通过。实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过 CI `33294157748`；Windows `99210845045` 与 Ubuntu `99210845119` 均成功且原始 annotations 为 `[]`。跨重启恢复明确延期，最终用户 UI 验收尚未通过，因此 Phase C 整体仍是“部分建立”。
 
-Batch 10 已在专用 `obsidian-dsh-workbench-evidence` Vault 完成技术运行门：真实只读选区冻结且原笔记哈希不变；真实模型对话与无工具边界成立；Vault 外任务真实创建和修改文件，文件卡、审核、Obsidian 原生菜单、复制相对路径与精确撤销均读回一致；`700px` 深色、宽屏浅色、键盘、启动失败和恢复均通过。运行中发现并修复“正式 turn 完成后新建任务仍禁用”和“Obsidian 同步卸载未立即终止进程树”两个真实缺陷；新实现的专用 Vault 复验在禁用插件后 `800ms` 内从两个目标进程降为零。当前 DSH `0.1.1-rc.2` 的任务工具 allow-list 不含删除，删除请求因此明确失败而未伪造成功。最终本地门为 `126 passed / 2 skipped`、runtime `28 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建与完整自检通过；当前实现的远端 CI 和用户最终 Obsidian UI 明确验收仍待闭环。
+Batch 10 已在专用 `obsidian-dsh-workbench-evidence` Vault 完成技术运行门：真实只读选区冻结且原笔记哈希不变；真实模型对话与无工具边界成立；Vault 外任务真实创建和修改文件，文件卡、审核、Obsidian 原生菜单、复制相对路径与精确撤销均读回一致；`700px` 深色、宽屏浅色、键盘、启动失败和恢复均通过。运行中发现并修复“正式 turn 完成后新建任务仍禁用”和“Obsidian 同步卸载未立即终止进程树”两个真实缺陷；新实现的专用 Vault 复验在禁用插件后 `800ms` 内从两个目标进程降为零。当前 DSH `0.1.1-rc.2` 的任务工具 allow-list 不含删除，删除请求因此明确失败而未伪造成功。最终本地门为 `126 passed / 2 skipped`、runtime `28 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建与完整自检通过。实现 `ae37a7bf1c719ab871930a2b04d53ff5d7e6378f` 已通过 CI `33314880417`：Ubuntu `99266341200`、Windows `99266341269` 均成功且原始 annotations 为 `[]`。用户最终 Obsidian UI 明确验收仍待闭环。
 
 ## Phase D：隔离 Vault 与发布门
 
@@ -168,4 +168,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A、Batch 6、Batch 7 与 Batch 8A–9 的精确范围已经通过本地门、双平台 CI 和原始零 annotations；Batch 10 专用 `obsidian-dsh-workbench-evidence` Vault 技术运行门和本地完整质量门已经通过。当前下一步仅为精确提交/push、确认远端双平台 CI 与原始零 annotations，再由用户在保持打开的专用 Vault 中完成最终 Obsidian UI 明确验收。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A–10 的精确范围已经通过本地门、专用 Vault 技术运行门、双平台 CI 和原始零 annotations。当前下一步仅为用户在保持打开的专用 Vault 中完成最终 Obsidian UI 明确验收。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
