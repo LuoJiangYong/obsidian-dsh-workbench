@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import DeepSeekHarnessWorkbenchPlugin from '../src/main';
 import {
@@ -251,9 +251,15 @@ describe('原生 Workbench 插件基线', () => {
     const modal = mockObsidian.openModals[0];
     expect(modal?.contentEl.allText().length).toBeGreaterThan(0);
 
+    const conversationHost = (
+      plugin as unknown as { conversationHost: { disposeImmediately(): void } }
+    ).conversationHost;
+    const disposeImmediately = vi.spyOn(conversationHost, 'disposeImmediately');
+
     plugin.onunload();
 
     expect(modal?.contentEl.allText()).toEqual([]);
+    expect(disposeImmediately).toHaveBeenCalledOnce();
   });
 
 });

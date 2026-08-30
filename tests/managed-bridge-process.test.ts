@@ -85,6 +85,23 @@ describe('正式 bridge 受管进程', () => {
     await expectProcessGone(childPid);
   });
 
+  it('插件同步卸载入口立即终止整个子进程树，不等待异步 shutdown', async () => {
+    const stateDirectory = path.join(temporaryRoot, 'immediate-state');
+    const dshHome = path.join(temporaryRoot, 'immediate-dsh-home');
+    const pidFile = path.join(temporaryRoot, 'immediate-child.pid');
+    const manager = createManager('managed-hang-with-child', stateDirectory, dshHome, {
+      FAKE_DSH_PID_FILE: pidFile,
+    });
+    await manager.start();
+    await waitForFile(pidFile);
+    const childPid = Number.parseInt(await readFile(pidFile, 'utf8'), 10);
+
+    manager.terminateImmediately();
+
+    await expectProcessGone(childPid);
+    await expect(manager.dispose()).resolves.toEqual({ outcome: 'graceful' });
+  });
+
   it('任务进程可显式使用 rc2 workspace-write + ask 组合', async () => {
     const stateDirectory = path.join(temporaryRoot, 'workspace-write-state');
     const dshHome = path.join(temporaryRoot, 'workspace-write-dsh-home');

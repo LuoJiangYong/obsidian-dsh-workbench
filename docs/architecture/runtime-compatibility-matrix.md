@@ -1,6 +1,6 @@
 # DSH 运行时与正式 bridge 兼容矩阵
 
-- 更新时间：2026-08-27
+- 更新时间：2026-08-30
 - 权威范围：本仓库已实现健康检查、正式 bridge 候选和晋级证据
 - 相关证据：[Batch 2 bridge 能力证据尖峰](./batch-2-bridge-capability-spike.md)
 
@@ -8,11 +8,11 @@
 
 | DSH | 消费路径 | 状态 | bridge/协议 | 证据边界 |
 | --- | --- | --- | --- | --- |
-| `0.1.1-rc.2` | 健康检查 | 已实现并本地验证；本批远端/专用 Vault 待验收 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
-| `0.1.1-rc.2` | 正式 bridge + 产品对话 | `conversation_runtime_passed`；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` | Batch 4 已通过真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读上下文已通过专用 Vault；Batch 7 已通过发送前审阅、Vault 外 session cwd、原生 DSH session、真实模型回复、流式停止、对话工具枚举/执行/系统提示三重拒绝、双平台 CI 与真实模型冻结上下文复验；Batch 8A 已固定 `workspace-write + ask` 与六个工作区文件工具的任务 bridge 边界，Batch 8B 已实现 Vault 外变更账本，但外部工作区 UI、任务控制器、变更 UI、跨重启恢复与最终用户验收仍未通过 |
+| `0.1.1-rc.2` | 健康检查 | 已实现并通过本地、双平台 CI 与专用 Vault 读回 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
+| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `isolated_vault_passed`；尚未 `supported` | bridge `0.1.0` / protocol `1` / artifact SHA-256 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` | Batch 4–9 已完成真实加载、Agent session、取消、只读上下文、任务文件边界、逐轮账本、文件 UI 与正式会话；Batch 10 专用 Vault 已验证真实对话、Vault 外创建/修改、审核、原生菜单、原子撤销、错误恢复、深色 `700px` 和同步卸载零残留。当前 DSH 工具集不含删除，删除请求明确失败；跨重启恢复、Batch 10 远端 CI 和用户最终 UI 明确批准仍未完成 |
 | 其他版本 | 无 | 不支持 | 无 fallback | 不尝试、不中和、不静默降级 |
 
-健康检查与正式 bridge 仍是两个独立消费路径，但当前都精确锁定 `rc.2`。健康检查通过不能推出 bridge/session 可用；Batch 4 bridge 运行门、Batch 6 只读知识库门和 Batch 7 产品发送链实现也不能冒充外部工作区、任务执行、跨重启恢复或最终用户验收已通过。
+健康检查与正式 bridge 仍是两个独立消费路径，但当前都精确锁定 `rc.2`。Batch 10 已把当前候选推进到 `isolated_vault_passed`；只有远端 CI 闭环和用户最终 UI 明确批准后才可进入 `supported`。跨重启恢复继续明确延期，不能由当前插件生命周期内恢复冒充。
 
 ## 兼容晋级状态机
 

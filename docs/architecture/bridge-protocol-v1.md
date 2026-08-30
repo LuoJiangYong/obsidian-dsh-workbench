@@ -3,14 +3,14 @@
 - 协议版本：`1`
 - 目标 bridge 版本：`0.1.0`
 - 目标 DSH：`0.1.1-rc.2`
-- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.1-rc.2` 真实运行已实现；Batch 7 已接入“新建任务”只读对话发送链；Batch 8 已固定任务模式文件工具安全边界与 Vault 外逐轮变更账本
-- 未通过：任务控制器与工作区选择 UI、文件审核/操作 UI、跨重启恢复、隔离 Vault 任务运行与最终用户 UI 验收
+- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.1-rc.2` 真实运行已实现；“新建任务”的只读对话、Vault 外任务控制器、工作区选择、逐轮账本、文件审核/操作/撤销和正式会话均已接通，并通过 Batch 10 专用 Vault 技术运行门
+- 未通过：跨重启恢复、远端 CI 最终闭环与用户最终 Obsidian UI 明确验收
 
 ## 目标与边界
 
 协议 v1 只服务首发“新建任务”的对话与任务执行共同运行时需求。它不是通用 DSH API，不复制 DSH session 日志，不提供 SDK/ACP/CLI fallback，也不读取 Vault、接受任意 Shell 或保存凭据。
 
-Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文；Batch 7 由插件级控制器把发送时快照交给真实 bridge，投影流式文本、一次性权限、取消和明确终态。对话模式在 DSH scoped context 中隐藏并拒绝全部工具，并在最终系统提示中要求只消费信封内的 `contexts[].content`、不输出 DSML 或其他工具调用标记；这不表示外部工作区任务或最终用户验收已经通过。
+Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文；Batch 7 由插件级控制器把发送时快照交给真实 bridge，投影流式文本、一次性权限、取消和明确终态；Batch 8/9 已接通 Vault 外任务、文件结果和正式会话。对话模式在 DSH scoped context 中隐藏并拒绝全部工具，并在最终系统提示中要求只消费信封内的 `contexts[].content`、不输出 DSML 或其他工具调用标记。Batch 10 专用 Vault 已验证真实对话与任务链；它仍不等于用户最终验收或发布批准。
 
 ## 精确握手
 
@@ -125,14 +125,14 @@ client 第一个请求固定为：
 - 受管 DSH 进程只有在任务模式下显式使用 rc.2 的 `workspace-write + ask` 组合；它不是全局设置，也没有 `allow-always`。
 - 所有工具路径必须位于已校验的 Vault 外工作区。绝对越界、`..`、不存在祖先越界、符号链接越界和权限升级参数 fail closed。
 - `.git`、`node_modules`、`dist` 等依赖、缓存、构建产物与版本控制目录使用 [ADR-007](./ADR-007-task-workspace-ledger.md) 的共享排除表，不能由文件工具访问或进入变更基线。
-- bridge 只负责执行边界与窄事件投影；逐轮变更事实、审核材料和安全撤销由 Vault 外 `TaskWorkspaceLedger` 提供。Batch 8C 已接通控制器与真实摘要，但详细文件、审核和撤销 UI 仍未实现，不得把该协议契约表述为完整任务功能或最终 UI 已可验收。
+- bridge 只负责执行边界与窄事件投影；逐轮变更事实、审核材料和安全撤销由 Vault 外 `TaskWorkspaceLedger` 提供。详细文件、审核、原生菜单和撤销 UI 已接通并在专用 Vault 真实读回；当前 DSH rc.2 工具集中没有删除工具，因此删除请求明确失败，不得伪装为已执行。
 
 ## 关闭、EOF 与超时
 
 - `shutdown` 成功响应后连接进入 `closing`；随后 transport EOF 才进入 `closed`。
 - initialize 前、ready/running 或 shutdown 响应前的 EOF 是 `failed(unexpected_eof)`。
 - 每个 client 必须由调用方提供正安全整数 `requestTimeoutMs`；任一未决请求超时使连接失败并拒绝全部未决请求。
-- Batch 3 不实现进程终止。Batch 4 必须在协议 shutdown 失败/超时后区分正常退出、受控强制终止与 `failed(runtime_terminated)`。
+- 常规会话处置先走协议 shutdown，失败/超时后区分受控强制终止与 `failed(runtime_terminated)`；Obsidian 的 `onunload(): void` 无法等待异步 shutdown，因此插件禁用/重载使用同步进程树终止入口，确保渲染器销毁前零残留。
 
 ## 实现与 CI 证据边界
 

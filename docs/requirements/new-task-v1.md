@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文与 Batch 7 对话发送链已通过既定门，Batch 8A–9 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 10 最终运行验收待闭环
+- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文、对话/任务链、逐轮文件 UI 与正式会话均已实现；Batch 10 专用 Vault 技术运行门已通过，远端 CI 和用户最终 UI 明确验收待闭环
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -92,11 +92,11 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6/7 已把只读知识库与不可变快照接入产品发送链；Batch 8C/8D 已接通 Vault 外工作区任务、逐轮审核与撤销；Batch 9 正式会话与任务环境实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过 CI `33294157748` 的双平台 job 与原始零 annotations。专用 Vault 的完整任务链、最终运行 UI 与用户验收仍待 Batch 10。
+- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6/7 已把只读知识库与不可变快照接入产品发送链；Batch 8C/8D 已接通 Vault 外工作区任务、逐轮审核与撤销；Batch 9 正式会话与任务环境实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过 CI `33294157748` 的双平台 job 与原始零 annotations。Batch 10 专用 Vault 已完成真实对话、任务文件、审核/撤销、错误恢复与同步卸载零残留技术门；最终远端 CI 与用户验收仍待闭环。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.1-rc.2`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。
-- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；Batch 7 最终修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过 CI `33132970545` 的 Ubuntu/Windows job 与原始零 annotations。Batch 7 已接入宿主真实对话，任务执行仍待后续批次。
+- 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；Batch 7 最终修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过 CI `33132970545` 的 Ubuntu/Windows job 与原始零 annotations。任务执行已接通；当前正式工具集固定为 `edit/glob/grep/read/read_image/write`，不含删除工具。
 
 ## 任务结束后的已编辑文件
 
@@ -108,7 +108,7 @@ cancelled | completed | failed
 - “审核”打开该 turn 的真实 diff；“撤销”只允许撤销能够归属到该 turn 且基线仍匹配的变更，必须二次确认。不得调用 `git reset --hard`、覆盖无关用户修改或把运行时终止冒充撤销成功。
 - 外部工作区文件是当前内容真相；逐轮基线、diff 索引和撤销材料只允许进入 Vault 外状态目录，并必须限制大小、保留期与清理时机。数据契约和失败回滚由 ADR-007 冻结，产品交互由 [ADR-009](../architecture/ADR-009-task-change-review-and-undo-ui.md) 固定；UI 只消费真实账本结果，不得用占位结果冒充接通。
 
-Batch 8 变更账本契约已由 [ADR-007](../architecture/ADR-007-task-workspace-ledger.md) 实现：默认跟踪最多 `10,000` 个普通文件、单文件 `2 MiB`、原始基线合计 `64 MiB`，每工作区最多 `20` 个账本、有效期 `7` 天；标准依赖、缓存、构建和版本控制目录与符号链接不进入基线。活动账本保存全部可跟踪基线，完成后只保存真实变化文件的前后快照，均位于 Vault 外。撤销前校验全部当前哈希与账本完整性，任一冲突则零写入。Batch 8C 已接通工作区选择和正式任务控制器；Batch 8D 已实现默认三项/展开、原生右键菜单、真实前后快照和二次确认撤销，并进入双平台 `npm test` 覆盖。专用 Vault 任务运行与最终用户 UI 验收仍待 Batch 10。
+Batch 8 变更账本契约已由 [ADR-007](../architecture/ADR-007-task-workspace-ledger.md) 实现：默认跟踪最多 `10,000` 个普通文件、单文件 `2 MiB`、原始基线合计 `64 MiB`，每工作区最多 `20` 个账本、有效期 `7` 天；标准依赖、缓存、构建和版本控制目录与符号链接不进入基线。活动账本保存全部可跟踪基线，完成后只保存真实变化文件的前后快照，均位于 Vault 外。撤销前校验全部当前哈希与账本完整性，任一冲突则零写入。Batch 8C 已接通工作区选择和正式任务控制器；Batch 8D 已实现默认三项/展开、原生右键菜单、真实前后快照和二次确认撤销，并进入双平台 `npm test` 覆盖；Batch 10 已在专用 Vault 完成真实创建/修改、审核、菜单与原子撤销读回。
 
 ## 正式会话与任务环境
 

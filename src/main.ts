@@ -127,9 +127,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
   onunload(): void {
     this.contextHost.dispose();
     this.healthProbe.dispose();
-    void this.conversationHost.dispose().catch(() => {
-      new Notice('DSH 进程清理未正常完成，请在运行状态中重新检查。');
-    });
+    this.conversationHost.disposeImmediately();
   }
 
   async updateDshCommand(rawCommand: string): Promise<void> {

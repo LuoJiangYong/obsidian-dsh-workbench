@@ -208,6 +208,7 @@ for (const processContract of [
   '正式 bridge 受管进程',
   '把 overlay 与 DSH 原生会话根分离',
   'shutdown 超时后终止整个子进程树',
+  '插件同步卸载入口立即终止整个子进程树',
   'Windows .cmd shim',
   '运行目录落入 Vault 时在执行任何 DSH 检查前 fail closed',
 ]) {

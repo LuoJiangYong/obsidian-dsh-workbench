@@ -76,6 +76,7 @@ export class WorkbenchView extends ItemView {
   private activeSection: WorkbenchSectionId = 'new-task';
   private conversationEl: HTMLElement | undefined;
   private conversationStatusEl: HTMLElement | undefined;
+  private newTaskButtonEl: HTMLButtonElement | undefined;
   private detachConversation: (() => void) | undefined;
   private readonly expandedTaskTurnIds = new Set<string>();
   private newTaskState: NewTaskState = createNewTaskState();
@@ -116,6 +117,7 @@ export class WorkbenchView extends ItemView {
     const { contentEl } = this;
     this.conversationEl = undefined;
     this.conversationStatusEl = undefined;
+    this.newTaskButtonEl = undefined;
     this.sendButtonEl = undefined;
     this.textareaEl = undefined;
     contentEl.empty();
@@ -139,6 +141,7 @@ export class WorkbenchView extends ItemView {
     this.newTaskState = createNewTaskState();
     this.conversationEl = undefined;
     this.conversationStatusEl = undefined;
+    this.newTaskButtonEl = undefined;
     this.renderedSessionActive = false;
     this.sendButtonEl = undefined;
     this.textareaEl = undefined;
@@ -275,6 +278,7 @@ export class WorkbenchView extends ItemView {
       text: '新建任务',
       attr: { type: 'button', 'aria-haspopup': 'dialog' },
     });
+    this.newTaskButtonEl = newTaskEl;
     newTaskEl.disabled = !canChangeMode(snapshot.phase);
     newTaskEl.addEventListener('click', () => this.openNewTaskReset());
 
@@ -676,6 +680,9 @@ export class WorkbenchView extends ItemView {
     );
     if (this.conversationStatusEl) {
       this.conversationStatusEl.setText(formalConversationStatus(snapshot));
+    }
+    if (this.newTaskButtonEl) {
+      this.newTaskButtonEl.disabled = !canChangeMode(snapshot.phase);
     }
 
     for (const message of snapshot.messages) {

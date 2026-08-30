@@ -1,6 +1,6 @@
 # Workbench 壳层与 Ardot UI 真相设计验收
 
-状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回；专用 Vault 修正验收已通过，最终 Obsidian UI 用户验收待完整功能后执行
+状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回；Batch 10 专用 Vault 技术运行门已通过，最终 Obsidian UI 用户明确验收待完成
 
 > `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据；`docs/assets/design-qa/workbench-shell/` 只保留为历史工件，不再支撑“已通过”结论。Ardot 设计审阅证据不受影响；`docs/assets/design-qa/new-task-host-ui/` 五张截图已全部由专用 `obsidian-dsh-workbench-evidence` Vault 覆盖，当前有效运行结论只以后文修正批次为准。
 
@@ -328,3 +328,49 @@ Batch 8D implementation and remote CI gate: passed; final Obsidian UI user accep
 - 实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过远端 [CI run `33294157748`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33294157748)：Windows job `99210845045` 与 Ubuntu job `99210845119` 均为 `success`，两个 check-run 的原始 annotations 数组均为 `[]`。专用 Vault 运行与最终 Obsidian UI 用户验收仍属于 Batch 10。
 
 Batch 9 implementation and remote CI gate: passed; final Obsidian UI user acceptance: pending
+
+## Batch 10：最终 Obsidian 技术运行门
+
+- 日期：`2026-08-30`；Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）与产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360`、QA `12:530` 保持用户审阅原状。Ardot 未修改、只读核对。
+- 本批只使用专用 Vault `D:\codex workspace\_test-vaults\obsidian-dsh-workbench-evidence`（Vault 名 `obsidian-dsh-workbench-evidence`）。属于另一个插件的 `D:\codex workspace\_test-vaults\obsidian-trend-radar-evidence` 未打开、未部署、未修改，也不作为任何结论的证据。
+- Obsidian 为 `1.13.7`，安装器为 `1.12.7`；目标 DSH 固定为用户已配置的 `0.1.1-rc.2` 正式预发布，不安装、不更新、不修改 DSH 原生模型、插件、预设、凭据或完整 session 数据。
+
+### 部署与知识库只读证据
+
+- 专用 Vault 通过 Obsidian API 部署并读回：`main.js` SHA-256 `92FE738B5F3818AB8DC8AB23CE4CAAFE356557BEBAD84C2E8832CB83A263BEC7`，`manifest.json` 为 `81BDF8F237FA070C3F0DECCC9C09A21F4915196633072D892428E705060F25A6`，`styles.css` 为 `EF979FA7AEFCDF10EF99EEC10DB915446CC5C1E52B433FC1AFBCA31273AFD0FE`，正式 bridge artifact 为 `3342EF13D3F68B65F3336E97257F63FC585CA2A8708BD85759100D28AC9C945C`。
+- “选择知识库”实际打开“选择知识库内容”，提供“加入当前笔记 / 加入当前选区 / 选择 Vault Markdown 文件 / 选择文件夹”。真实编辑器选区冻结为 `71` 个字符，主界面显示“已选笔记”和真实只读预览。
+- 验收笔记前后均为 `189` bytes，SHA-256 始终为 `97ADAA09E558EF57745C4304E12D67DD0B2789F31AAA56D16E10943FAE67C319`；没有写入、删除、移动或隐式索引 Vault 内容。
+
+### 真实会话、任务与文件结果
+
+- 对话模式经发送前审阅后获得真实模型精确回复 `Batch 10 真实对话已连接。`；本轮无工具、无写入。正式页在同一 Workbench leaf 接续，开启标题不再显示。
+- 可选“任务环境”在一个原生 right leaf 中投影连接、已选笔记、工作区名称、权限、已观察工具和最近变更；普通 UI 未出现本机绝对路径、私有推理或未经协议证明的模型/性能事实。
+- 真实外部工作区为 `D:\codex workspace\_test-workspaces\obsidian-dsh-workbench-batch10-20260830-01`。任务创建 `created.md` 并修改 `modify.txt`；`modify.txt` 初始 SHA-256 为 `246B45C2124FFED8657B57BC7FD8942A741C7DA8046980C3A31193056F6C0E87`。删除请求没有伪造成功：正式 rc.2 实测 allow-list 只有 `edit/glob/grep/read/read_image/write`，不包含删除工具，`delete.txt` 保持初始 SHA-256 `1589A74E3D8C00509BE77AC3C4616DF90746E30839B41661B0D14FCB17013213`。
+- turn 结束后文件卡真实显示两个变更，默认三项规则、展开/收起和文本增删摘要正常；审核 modal 读回同一账本的前后内容。右键使用 Obsidian 原生菜单，包含“审核本次变更 / 使用默认应用打开 / 在资源管理器中显示 / 复制相对路径 / 复制完整路径 / 复制当前文件内容”；点击“复制相对路径”后剪贴板读回 `created.md`。
+- “撤销”通过同一 turn 的全量冲突预检后恢复 `modify.txt` 精确原哈希并移除 `created.md`；`delete.txt` 仍保持原哈希。卡片明确显示“已撤销 2 个文件 / 已安全撤销”，没有把未发生的删除算入结果。
+
+### 响应式、可访问性、错误与进程生命周期
+
+- 宽屏浅色和精确 `700 × 912` Workbench 深色均通过；窄屏 `clientWidth = scrollWidth = 632`，横向溢出为 `0`。正式对话区有独立浅底边框，输入高度缩短；开启页与正式页互斥。
+- 原生键盘复验：Enter 切换任务模式，Space 打开“选择知识库”，Esc 关闭并把焦点返回触发按钮。错误复验把 DSH 命令改为不存在路径后，界面明确显示 `runtime_start_failed` 与 `DSH 0.1.1-rc.2 启动前检查失败：not-found`；恢复正确 fixture 后同一 UI 获得真实成功回复。
+- 运行验收发现并修复两个真实缺陷：正式 turn 从运行态进入完成态后，“新建任务”现在立即重新开放；Obsidian 同步 `onunload()` 现在立即终止受管进程树，而不等待异步 shutdown。前者有独立 Workbench 回归测试；后者新增同步进程树、控制器和插件基线测试，并由 CI coverage verifier 强制覆盖。
+- 新同步卸载实现的专用 Vault 复验在禁用插件前精确识别两个目标进程（`.cmd` shim 与 Node），禁用后 `800ms` 内为 `0`。另有一对来自旧插件生命周期的历史孤儿进程，在核对 PID、命令行和专用 Vault 状态路径后精确清理；该历史清理不冒充新实现的验收证据。
+
+### 自动门与视觉工件
+
+- 最终本地门：`typecheck` 通过，零警告 `lint` 通过；完整 `npm test` 为 `126 passed / 2 skipped`，Windows/runtime 专项为 `28 passed / 1 skipped`，真实 rc.2 bridge 为 `1 passed`；生产构建、版本/边界/敏感文件、CI coverage 与正式 bridge artifact 自检全部通过。
+- 截图均来自专用 Vault：
+  - `docs/assets/design-qa/batch-10-final/01-start-wide-light.png` — `41AA2E5F6D1E823C8A91AE1361BF1F825C92FA55A26C6D2D9A631CF84656DA93`
+  - `docs/assets/design-qa/batch-10-final/02-context-selection-wide-light.png` — `1A570E4FB0CA5A2363E76D480680317A58F1F666023713DB4D9566A859448A2D`
+  - `docs/assets/design-qa/batch-10-final/03-chat-review-wide-light.png` — `B88B16A1F24A369D06A384653D073165AFFCC73C267B8E60F74E8006774C7ABC`
+  - `docs/assets/design-qa/batch-10-final/04-chat-completed-wide-light.png` — `3736330EAD4256D95B4184F3510FB8ED39AE7EDA72D7BCE741C56E5125459986`
+  - `docs/assets/design-qa/batch-10-final/05-chat-with-environment-wide-light.png` — `1A702925CE1937EE734079F075AACE3A085BBDBAC69F3040644C80E79A40D1BB`
+  - `docs/assets/design-qa/batch-10-final/06-task-completed-wide-light.png` — `05EB34A89C5CB273E69A369B5E25F1135FA8AE1A3242AD0E528F54701EB37BEA`
+  - `docs/assets/design-qa/batch-10-final/07-task-review-wide-light.png` — `5CF3BD2340F1CA26505C45E94D3E352579B38E156192BAADBF6014E39DF72714`
+  - `docs/assets/design-qa/batch-10-final/08-task-undone-wide-light.png` — `9B78110AD07D31DD62D4342F4B14109D686202CF07C638D9B491B1D79B2DAA10`
+  - `docs/assets/design-qa/batch-10-final/09-start-narrow-dark.png` — `F288F470F4760BCCBA9621C87C5CC66EC778004E64D2F1E0BD5580A8B1700E9D`
+  - `docs/assets/design-qa/batch-10-final/10-error-recovery-narrow-dark.png` — `09B0925735A28E198C4ADB06186DB7871C2F5B48757900D4D068A1DBC8E5EF23`
+  - `docs/assets/design-qa/batch-10-final/11-error-recovered-narrow-dark.png` — `B1B8FC875AEEB78F8BB826B84E22537F61FADBC156E0A2CBB6CB8D42DA3D79A7`
+  - `docs/assets/design-qa/batch-10-final/12-final-start-wide-light.png` — `1298075A563B48658AA3F69C5875E8A34292B04ACD72AD415683501688F696CF`
+
+Batch 10 dedicated Vault technical runtime gate: passed; remote CI and final Obsidian UI user acceptance: pending. Release and community submission: not authorized.

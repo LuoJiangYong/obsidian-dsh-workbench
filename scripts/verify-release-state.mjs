@@ -26,7 +26,7 @@ assert(
   'README 误报健康检查状态',
 );
 assert(
-  readme.includes('DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；任务模式在用户选择并通过校验的单一 Vault 外工作区使用六个文件工具和逐请求确认'),
+  readme.includes('DSH 会话、流式事件与取消 | 对话与任务链均已接入 Obsidian 宿主；专用 Vault 已验证成功、明确失败与恢复、真实文件变更/审核/撤销，以及禁用后受管进程从 `2` 归零'),
   'README 会话能力边界漂移',
 );
 assert(
@@ -34,7 +34,7 @@ assert(
   'README 缺少目标 DSH 版本',
 );
 assert(
-  readme.includes('兼容矩阵仍要等 Batch 8–10 和最终用户验收后才能进入 `supported`'),
+  readme.includes('在当前实现远端 CI 与用户最终验收完成前仍不得进入 `supported`'),
   'README 提前把 rc.2 标为 supported',
 );
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');

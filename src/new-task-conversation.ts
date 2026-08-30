@@ -119,6 +119,7 @@ export interface NewTaskBridgeClient {
 export interface NewTaskBridgeProcess {
   dispose(): Promise<unknown>;
   start(): Promise<NewTaskBridgeClient>;
+  terminateImmediately(): void;
 }
 
 export interface NewTaskTaskLedger {
@@ -434,6 +435,22 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       captureError = await this.completeTaskLedger(activeTaskTurnId);
     }
     if (captureError) throw new NewTaskConversationError(captureError.code, captureError.message);
+  }
+
+  disposeImmediately(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.clearCancelTimer();
+    this.detachClient();
+    const process = this.process;
+    this.process = undefined;
+    this.client = undefined;
+    this.sessionId = undefined;
+    this.sessionMode = undefined;
+    this.sessionWorkspacePath = undefined;
+    this.activeTurnId = undefined;
+    this.activeTaskTurnId = undefined;
+    process?.terminateImmediately();
   }
 
   private async ensureSession(

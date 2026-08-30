@@ -212,6 +212,35 @@ describe('新建任务真实对话控制器', () => {
     });
   });
 
+  it('同步插件卸载立即终止当前受管进程', async () => {
+    const client = new FakeBridgeClient();
+    const process = new FakeBridgeProcess(client);
+    const controller = new NewTaskConversationController({
+      createProcess: async () => process,
+    });
+    await controller.submit({
+      contexts: [],
+      draft: '等待同步卸载',
+      mode: 'chat',
+      reader: readerReturning(''),
+    });
+
+    controller.disposeImmediately();
+
+    expect(process.terminateImmediatelyCount).toBe(1);
+    expect(process.disposeCount).toBe(0);
+    await expect(controller.submit({
+      contexts: [],
+      draft: '卸载后不得继续',
+      mode: 'chat',
+      reader: readerReturning(''),
+    })).resolves.toBe(false);
+    expect(controller.getSnapshot()).toMatchObject({
+      error: { code: 'controller_disposed' },
+      phase: 'failed',
+    });
+  });
+
   it('正式会话锁定模式与规范工作区，禁止静默开启第二个 DSH session', async () => {
     const client = new FakeBridgeClient();
     const process = new FakeBridgeProcess(client);
@@ -643,6 +672,7 @@ describe('新建任务真实对话控制器', () => {
 class FakeBridgeProcess implements NewTaskBridgeProcess {
   disposeCount = 0;
   startCount = 0;
+  terminateImmediatelyCount = 0;
 
   constructor(private readonly client: FakeBridgeClient) {}
 
@@ -653,6 +683,10 @@ class FakeBridgeProcess implements NewTaskBridgeProcess {
   async start(): Promise<NewTaskBridgeClient> {
     this.startCount += 1;
     return this.client;
+  }
+
+  terminateImmediately(): void {
+    this.terminateImmediatelyCount += 1;
   }
 }
 

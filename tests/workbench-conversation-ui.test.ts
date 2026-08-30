@@ -160,6 +160,36 @@ describe('Workbench 真实对话界面', () => {
     expect(conversationHost.decisions).toEqual(['allow-once']);
   });
 
+  it('正式会话结束后立即重新开放新建任务，不要求关闭并重开视图', async () => {
+    const app = new App();
+    const conversationHost = new FakeConversationHost();
+    const view = new WorkbenchView(app.workspace.getLeaf('tab') as never, {
+      conversationHost,
+      contextHost: contextHost(),
+      getDshHealth: () => ({ status: 'unchecked' }),
+      onContextsChanged: () => undefined,
+      openEnvironmentPanel: async () => undefined,
+      runDshHealthCheck: async () => undefined,
+      taskWorkspaceFileActions: taskWorkspaceFileActions(),
+      taskWorkspaceHost: taskWorkspaceHost(),
+    });
+    await view.onOpen();
+    conversationHost.emit({
+      phase: 'running',
+      session: conversationSession('chat', '验证正式会话结束状态'),
+    });
+
+    const content = view.contentEl as unknown as MockElement;
+    const newTask = content.findAllByClass('dsh-formal-conversation__actions')[0]
+      ?.findAllByTag('button')[1];
+    expect(newTask?.disabled).toBe(true);
+
+    conversationHost.emit({ phase: 'completed' });
+    expect(newTask?.disabled).toBe(false);
+    await newTask?.click();
+    expect(mockObsidian.openModals[mockObsidian.openModals.length - 1]?.title).toBe('新建任务');
+  });
+
   it('重开同一视图恢复插件生命周期内正式页，并只由显式新建任务返回开启页', async () => {
     const app = new App();
     const conversationHost = new FakeConversationHost();

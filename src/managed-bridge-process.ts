@@ -175,6 +175,14 @@ export class ManagedBridgeProcess {
     return await this.shutdown();
   }
 
+  terminateImmediately(): void {
+    if (this.disposed && !this.child) return;
+    this.disposed = true;
+    const child = this.child;
+    if (child) terminateProcessTree(child, this.platform, this.environment);
+    this.clearProcess();
+  }
+
   private async forceTerminate(): Promise<void> {
     const child = this.child;
     if (!child) return;

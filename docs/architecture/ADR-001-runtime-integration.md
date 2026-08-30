@@ -13,7 +13,7 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 
 [Batch 2 能力证据尖峰](./batch-2-bridge-capability-spike.md)针对 `dsh-v0.1.1-rc.2` 固定 tag 读取公开 Agent、session、approval seam；Batch 4 已在这些 seam 上实现正式 bridge，并通过本地及 Windows CI 的真实运行与进程清理。
 
-[bridge 协议 v1](./bridge-protocol-v1.md)已固定精确握手、session/turn/seq、一次性权限、取消确认、shutdown、EOF 与单终态；正式 artifact 已由 rc.2 真实加载，宿主 UI 与只读上下文已通过 Batch 6 专用 Vault 运行验收，Batch 7 只读模型发送链已通过双平台 CI、专用 Vault 技术运行和真实模型冻结上下文复验。外部工作区和最终用户验收仍未通过。
+[bridge 协议 v1](./bridge-protocol-v1.md)已固定精确握手、session/turn/seq、一次性权限、取消确认、shutdown、EOF 与单终态；正式 artifact 已由 rc.2 真实加载，宿主 UI 与只读上下文已通过 Batch 6 专用 Vault 运行验收，Batch 7 只读模型发送链已通过双平台 CI、专用 Vault 技术运行和真实模型冻结上下文复验。Batch 10 已在专用 Vault 完成真实外部工作区创建/修改、审核、原生菜单、精确撤销和同步卸载零残留技术门；最终用户 UI 验收仍未通过。
 
 ## 决定
 
@@ -44,7 +44,7 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 成本与约束：
 
 - 项目必须维护 bridge/DSH 精确版本矩阵、协议契约测试和上游漂移审计。
-- 协议、假 bridge、正式 bridge 与真实 rc.2 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭和 Windows 进程树清理；Batch 6 已补宿主只读上下文专用隔离 Vault 证据，Batch 7 已补产品对话发送链与 Vault 外运行数据实现。仍必须补本批运行证据、外部工作区任务与最终 UI 验收。
+- 协议、假 bridge、正式 bridge 与真实 rc.2 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭和 Windows 进程树清理；Batch 6 已补宿主只读上下文专用隔离 Vault 证据，Batch 7 已补产品对话发送链与 Vault 外运行数据实现，Batch 10 已补真实外部工作区任务和同步插件卸载零残留证据。仍必须完成当前实现的远端 CI 与用户最终 Obsidian UI 明确验收；跨重启最近会话恢复继续明确延期。
 - 需要单独的批准批次选择 bridge 的部署与打包方式；本 ADR 不授权自动安装或修改用户 DSH profile。
 - 当前连续目标已授权 Batch 3/4 在保持“不自动安装、不修改用户 DSH profile”的前提下完成协议、部署与 Windows 验证；Release 和社区提交仍未授权。
 
