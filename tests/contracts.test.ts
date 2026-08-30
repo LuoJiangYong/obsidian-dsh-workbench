@@ -38,7 +38,7 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话已通过既定门；Batch 8C/8D 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 9 正式会话与任务环境已完成本地实现');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话已通过既定门；Batch 8C–9 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 10 最终运行与用户验收待完成 |');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
     expect(readme).toContain('| 可选右侧任务环境 | 原“快速助手”已在 Batch 9 原位演进为默认关闭的原生 `ItemView`；显示公开健康/连接、已选笔记、工作区名称、权限、DSH 配置边界、已观察工具和最近变更，不承担主对话或唯一确认');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
@@ -109,8 +109,8 @@ describe('发布与治理契约', () => {
     expect(design).toContain('开启页主标题与正式页会话标题互斥');
     expect(design).toContain('## 6.1 DSH 原生能力投影');
     expect(design).toContain('不提供完全权限、跨会话永久授权、任意 Shell');
-    expect(roadmap).toContain('`startup → conversation` 同 leaf 正式会话切换');
-    expect(roadmap).toContain('默认关闭并复用同一 right leaf 的原生任务环境');
+    expect(roadmap).toContain('Batch 9 已接通同 leaf 正式会话');
+    expect(roadmap).toContain('按需右侧任务环境由插件基线测试覆盖');
     expect(readme).toContain('Ardot 未修改');
     expect(readme).toContain('Codex 参考界面评估与正式会话路线');
     expect(readme).toContain('正式会话与任务环境 ADR');

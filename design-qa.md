@@ -325,6 +325,6 @@ Batch 8D implementation and remote CI gate: passed; final Obsidian UI user accep
 - 可访问性与布局：正式消息流使用 `aria-live="polite"`，活动阶段同步 `aria-busy="true"`；composer 初始三行并允许垂直增长；`760px` 容器门继续折叠内部导航，正式页头在窄容器改为纵向。精确 `700px` 几何、明暗主题与真实运行截图进入 Batch 10。
 - 自动验证：控制器覆盖投影冻结、同 session 续轮、模式/工作区锁定、活动 turn 拒绝重置和终态处置；Workbench 覆盖开启/正式互斥、关闭/重开恢复、显式返回开启页、环境按钮和绝对路径排除；任务环境覆盖公开事实更新、权限/工具/变更、关闭解除订阅；插件基线覆盖默认关闭和同一 right leaf 复用。
 - 本地质量门通过：`typecheck`、零警告 `lint`、完整 `npm test` 为 `123 passed / 2 skipped`；runtime 为 `27 passed / 1 skipped`；默认锁文件夹具重新执行 `npm ci` 后真实 rc.2 bridge 为 `1 passed`；生产构建、仓库边界、CI 覆盖与 bridge artifact 自检均通过。
-- 远端 CI 尚未在本段记录为通过；实现提交、双平台 job 与原始 annotations 必须在 push 后读回，再更新本段。专用 Vault 运行与最终 Obsidian UI 用户验收仍属于 Batch 10。
+- 实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过远端 [CI run `33294157748`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33294157748)：Windows job `99210845045` 与 Ubuntu job `99210845119` 均为 `success`，两个 check-run 的原始 annotations 数组均为 `[]`。专用 Vault 运行与最终 Obsidian UI 用户验收仍属于 Batch 10。
 
-Batch 9 local implementation: complete; remote CI and final Obsidian UI user acceptance: pending
+Batch 9 implementation and remote CI gate: passed; final Obsidian UI user acceptance: pending

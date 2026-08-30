@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文与 Batch 7 对话发送链已通过既定门，Batch 8A–8D 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 9 正式会话与任务环境已完成本地实现，远端 CI 和 Batch 10 最终运行验收待闭环
+- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文与 Batch 7 对话发送链已通过既定门，Batch 8A–9 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 10 最终运行验收待闭环
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -92,7 +92,7 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6/7 已把只读知识库与不可变快照接入产品发送链；Batch 8C/8D 已接通 Vault 外工作区任务、逐轮审核与撤销；Batch 9 已完成正式会话与任务环境的本地实现。专用 Vault 的完整任务链、最终运行 UI 与用户验收仍待 Batch 10。
+- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6/7 已把只读知识库与不可变快照接入产品发送链；Batch 8C/8D 已接通 Vault 外工作区任务、逐轮审核与撤销；Batch 9 正式会话与任务环境实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过 CI `33294157748` 的双平台 job 与原始零 annotations。专用 Vault 的完整任务链、最终运行 UI 与用户验收仍待 Batch 10。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.1-rc.2`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。

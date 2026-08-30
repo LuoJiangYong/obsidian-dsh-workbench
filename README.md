@@ -11,7 +11,7 @@
 | 能力 | 状态 |
 | --- | --- |
 | Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
-| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话已通过既定门；Batch 8C/8D 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 9 正式会话与任务环境已完成本地实现，远端 CI 和最终用户验收待完成 |
+| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话已通过既定门；Batch 8C–9 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 10 最终运行与用户验收待完成 |
 | 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge、宿主 UI、只读上下文、对话发送链、任务文件工具边界、逐轮账本、任务控制器、详细文件操作、正式会话与原生任务环境已实现；Batch 10 最终运行验收仍待完成 |
 | 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
 | ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
@@ -178,7 +178,7 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 - Batch 8C 已实现 Obsidian 桌面原生目录选择、Vault/状态目录隔离复验、工作区与 session 绑定、`workspace-write + ask` 进程路由、逐次权限、所有终止路径的变更核对，以及“已编辑 N 个文件”真实摘要；完整本地门为 `112 passed / 1 skipped`、runtime `27 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建和完整自检通过。
 - 实现提交 `91b21345a52657520633475dfc9e86db7b720e65` 已通过 [CI run 33188573187](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33188573187)：Ubuntu check `98907874384` 与 Windows check `98907874519` 均成功，两个原始 annotations 数组均为 `[]`。
 - Batch 8D 已实现默认三项/展开、原生右键菜单、账本前后快照审核、二次确认和全量冲突预检撤销；文件操作每次重新校验工作区与真实路径，普通 UI 不显示完整绝对路径。实现 `759ec97d4c21748016eb8e6a462ed3c78f153edb` 已通过远端 [CI run 33239392369](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33239392369)：Ubuntu `99065994296`、Windows `99065994274` 均成功且原始 annotations 为 `[]`；专用 Vault 运行与最终用户 UI 验收仍属于 Batch 10。Ardot 未修改、只读核对。
-- Batch 9 已在本地实现同 leaf 正式会话、确定性标题、模式/工作区锁定、显式新建任务、关闭/重开 leaf 恢复和插件重载清空边界；原快速助手已原位演进为默认关闭且复用 right leaf 的“任务环境”。具体模型/预设在当前协议未公开，UI 只显示由 DSH 管理；不展示私有推理、假历史或完整路径。本地完整测试为 `123 passed / 2 skipped`、runtime 为 `27 passed / 1 skipped`、真实 rc.2 bridge 为 `1 passed`，构建与完整自检通过。远端 CI 与专用 Vault 运行读回待闭环，Ardot 未修改、只读核对。
+- Batch 9 已实现同 leaf 正式会话、确定性标题、模式/工作区锁定、显式新建任务、关闭/重开 leaf 恢复和插件重载清空边界；原快速助手已原位演进为默认关闭且复用 right leaf 的“任务环境”。具体模型/预设在当前协议未公开，UI 只显示由 DSH 管理；不展示私有推理、假历史或完整路径。本地完整测试为 `123 passed / 2 skipped`、runtime 为 `27 passed / 1 skipped`、真实 rc.2 bridge 为 `1 passed`，构建与完整自检通过。实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过远端 [CI run 33294157748](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33294157748)：Windows `99210845045`、Ubuntu `99210845119` 均成功且原始 annotations 为 `[]`。专用 Vault 运行读回进入 Batch 10，Ardot 未修改、只读核对。
 
 ## 开发治理
 

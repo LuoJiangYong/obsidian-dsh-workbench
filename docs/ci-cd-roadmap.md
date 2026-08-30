@@ -113,7 +113,7 @@ Batch 8C 已接通 Obsidian 桌面原生目录选择、共享边界校验、工�
 
 Batch 8D 已把逐轮账本投影为真实文件卡：默认显示三个、可展开/收起，审核只读取账本前后快照，撤销经二次确认后调用同一 turn 的全量冲突预检。右键使用 Obsidian 原生 `Menu`，当前文件操作每次重新校验工作区、路径和普通文件；“另存为”和 VS Code 专属入口因账本外写入面与未验证外部依赖而不进入 v1。文件操作、控制器和 UI 测试由双平台 `npm test` 执行，无需新增 workflow job。本地完整测试为 `119 passed / 2 skipped`、runtime `27 passed / 1 skipped`、默认锁文件夹具的真实 rc.2 bridge `1 passed`，构建和完整自检通过。实现 `759ec97d4c21748016eb8e6a462ed3c78f153edb` 已通过 CI `33239392369`；Ubuntu `99065994296` 与 Windows `99065994274` 均成功且原始 annotations 为 `[]`。专用 Vault 运行验收进入 Batch 10。
 
-这些证据证明正式 bridge、Obsidian 宿主 UI、只读上下文和产品对话发送链已形成代码与技术运行闭环，任务文件工具、逐轮变更账本、产品任务控制器和详细文件 UI 也已接通并通过双平台 CI。Batch 9 已在本地接通同 leaf 正式会话、显式新建任务、插件生命周期内恢复边界与原生任务环境；完整测试为 `123 passed / 2 skipped`、runtime 为 `27 passed / 1 skipped`、真实 rc.2 bridge 为 `1 passed`，构建与完整自检通过。远端 CI 待闭环；跨重启恢复明确延期，最终用户 UI 验收尚未通过，因此 Phase C 整体仍是“部分建立”。
+这些证据证明正式 bridge、Obsidian 宿主 UI、只读上下文和产品对话发送链已形成代码与技术运行闭环，任务文件工具、逐轮变更账本、产品任务控制器和详细文件 UI 也已接通并通过双平台 CI。Batch 9 已接通同 leaf 正式会话、显式新建任务、插件生命周期内恢复边界与原生任务环境；完整测试为 `123 passed / 2 skipped`、runtime 为 `27 passed / 1 skipped`、真实 rc.2 bridge 为 `1 passed`，构建与完整自检通过。实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过 CI `33294157748`；Windows `99210845045` 与 Ubuntu `99210845119` 均成功且原始 annotations 为 `[]`。跨重启恢复明确延期，最终用户 UI 验收尚未通过，因此 Phase C 整体仍是“部分建立”。
 
 ## Phase D：隔离 Vault 与发布门
 
@@ -166,4 +166,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A、Batch 6、Batch 7 与 Batch 8A–8D 的精确范围已经通过本地门、双平台 CI 和原始零 annotations。Batch 9 已完成 `startup → conversation` 同 leaf 正式会话切换、明确“新建任务”、插件生命周期内的真实恢复边界，以及默认关闭并复用同一 right leaf 的原生任务环境本地实现；DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。待本批远端 CI 闭环后进入 Batch 10，完成专用隔离 Vault、完整 UI 与最终用户验收。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户当前已批准在同一 Goal 内按 Batch 2–10 顺序推进，并允许批次内自动拆分、精确提交和 push，不需要在既定范围内逐批重复确认。Batch 5A、Batch 6、Batch 7 与 Batch 8A–9 的精确范围已经通过本地门、双平台 CI 和原始零 annotations。Batch 10 进入专用 `obsidian-dsh-workbench-evidence` Vault 的完整 UI 与最终用户验收；DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 默认只读，除非用户明确要求不得修改。该连续授权不包括 Release、社区提交、真实 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。

@@ -1,6 +1,6 @@
 # ADR-010：正式会话页与原生任务环境
 
-- 状态：已接受并完成本地实现；远端 CI 与 Batch 10 专用 Vault 最终验收待完成
+- 状态：已接受并完成本地实现与远端 CI；Batch 10 专用 Vault 最终验收待完成
 - 日期：2026-08-29
 - 关联：[ADR-006](./ADR-006-conversation-runtime-storage.md)、[ADR-008](./ADR-008-task-execution-controller.md)、[ADR-009](./ADR-009-task-change-review-and-undo-ui.md)
 - UI 审阅真相：Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`），产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360` 与 QA `12:530`；Ardot 未修改、只读核对
@@ -60,4 +60,5 @@ Vault 保持只读；任务写入仍只允许用户显式选择的单一 Vault �
 - 任务环境测试覆盖公开事实、连接/权限/工具/变更更新、完整路径与私有指标排除，以及关闭后解除订阅。
 - 插件基线继续覆盖右侧栏默认关闭、显式开启和同一 leaf 复用；完整 `npm test` 由 Ubuntu/Windows CI 执行，无需新增 workflow job。
 - 本地结果为完整测试 `123 passed / 2 skipped`、runtime `27 passed / 1 skipped`、真实 rc.2 bridge `1 passed`；`typecheck`、零警告 `lint`、生产构建和完整自检均通过。
+- 实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过远端 CI `33294157748`；Windows job `99210845045` 与 Ubuntu job `99210845119` 均成功，两个 check-run 的原始 annotations 数组均为 `[]`。
 - 精确 `700px` 容器继续由 `@container dsh-workbench-view (max-width: 760px)` 折叠内部导航；正式页头改为纵向、操作靠右，composer 不产生横向固定宽度。运行截图与真实几何读回进入 Batch 10。
