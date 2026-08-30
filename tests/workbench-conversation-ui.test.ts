@@ -34,6 +34,7 @@ describe('Workbench 真实对话界面', () => {
       contextHost: contextHost(),
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
+      openEnvironmentPanel: async () => undefined,
       runDshHealthCheck: async () => undefined,
       taskWorkspaceFileActions: taskWorkspaceFileActions(),
       taskWorkspaceHost: taskWorkspaceHost(),
@@ -91,7 +92,19 @@ describe('Workbench 真实对话界面', () => {
       ],
       phase: 'running',
       runtimeStatus: 'connected',
+      session: conversationSession('chat', '总结本轮材料'),
     });
+    expect(content.allText()).not.toContain('今天想让 DeepSeek Harness 做什么？');
+    expect(content.allText()).not.toContain('执行前确认');
+    expect(content.allText()).toEqual(expect.arrayContaining([
+      '总结本轮材料',
+      '任务环境',
+      '新建任务',
+    ]));
+    expect(content.findAllByClass('dsh-new-task-conversation')[0]
+      ?.attributes.get('aria-busy')).toBe('true');
+    expect(content.findAllByClass('dsh-new-task-composer__input')[0]
+      ?.attributes.get('rows')).toBe('3');
     expect(content.allText()).toEqual(expect.arrayContaining([
       '你',
       '总结本轮材料',
@@ -112,6 +125,7 @@ describe('Workbench 真实对话界面', () => {
       contextHost: contextHost(),
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
+      openEnvironmentPanel: async () => undefined,
       runDshHealthCheck: async () => undefined,
       taskWorkspaceFileActions: taskWorkspaceFileActions(),
       taskWorkspaceHost: taskWorkspaceHost(),
@@ -127,6 +141,7 @@ describe('Workbench 真实对话界面', () => {
         turnId: 'turn-1',
       },
       phase: 'awaiting_permission',
+      session: conversationSession('chat', '检查内容'),
     });
 
     const content = view.contentEl as unknown as MockElement;
@@ -145,6 +160,69 @@ describe('Workbench 真实对话界面', () => {
     expect(conversationHost.decisions).toEqual(['allow-once']);
   });
 
+  it('重开同一视图恢复插件生命周期内正式页，并只由显式新建任务返回开启页', async () => {
+    const app = new App();
+    const conversationHost = new FakeConversationHost();
+    const workspace = {
+      name: 'external-project',
+      path: 'C:\\private\\external-project',
+    } as const;
+    conversationHost.emit({
+      mode: 'task',
+      phase: 'completed',
+      session: {
+        contextLabels: ['Vault 文件 · 项目/说明.md'],
+        mode: 'task',
+        title: '整理项目说明',
+        workspace,
+      },
+    });
+    let environmentOpenCount = 0;
+    const view = new WorkbenchView(app.workspace.getLeaf('tab') as never, {
+      conversationHost,
+      contextHost: contextHost(),
+      getDshHealth: () => ({ status: 'unchecked' }),
+      onContextsChanged: () => undefined,
+      openEnvironmentPanel: async () => {
+        environmentOpenCount += 1;
+      },
+      runDshHealthCheck: async () => undefined,
+      taskWorkspaceFileActions: taskWorkspaceFileActions(),
+      taskWorkspaceHost: taskWorkspaceHost(),
+    });
+    await view.onOpen();
+
+    const content = view.contentEl as unknown as MockElement;
+    expect(content.allText()).toEqual(expect.arrayContaining([
+      '整理项目说明',
+      'external-project · 仅本次工作区可写 · 文件工具逐次确认',
+      '任务环境',
+      '新建任务',
+    ]));
+    expect(content.allText()).not.toContain('今天想让 DeepSeek Harness 做什么？');
+    expect(content.allText().join('\n')).not.toContain('C:\\private');
+    await content.findAllByClass('dsh-formal-conversation__actions')[0]
+      ?.findAllByTag('button')[0]?.click();
+    expect(environmentOpenCount).toBe(1);
+
+    await view.onClose();
+    await view.onOpen();
+    expect(content.allText()).toContain('整理项目说明');
+    expect(content.allText()).not.toContain('今天想让 DeepSeek Harness 做什么？');
+
+    await content.findAllByClass('dsh-formal-conversation__actions')[0]
+      ?.findAllByTag('button')[1]?.click();
+    const resetModal = mockObsidian.openModals[mockObsidian.openModals.length - 1];
+    expect(resetModal?.title).toBe('新建任务');
+    expect(resetModal?.contentEl.allText()).toEqual(expect.arrayContaining([
+      expect.stringContaining('当前版本不提供跨重启的最近会话恢复'),
+    ]));
+    await resetModal?.contentEl.findAllByClass('dsh-new-task-reset__actions')[0]
+      ?.findAllByTag('button')[1]?.click();
+    expect(content.allText()).toContain('今天想让 DeepSeek Harness 做什么？');
+    expect(content.allText()).not.toContain('整理项目说明');
+  });
+
   it('任务模式选择 Vault 外工作区后才允许发送，并在结束时显示真实变更摘要', async () => {
     const app = new App();
     const conversationHost = new FakeConversationHost();
@@ -159,6 +237,7 @@ describe('Workbench 真实对话界面', () => {
       contextHost: contextHost(),
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
+      openEnvironmentPanel: async () => undefined,
       runDshHealthCheck: async () => undefined,
       taskWorkspaceFileActions: taskWorkspaceFileActions(),
       taskWorkspaceHost: workspaceHost,
@@ -202,6 +281,10 @@ describe('Workbench 真实对话界面', () => {
     conversationHost.emit({
       mode: 'task',
       phase: 'completed',
+      session: conversationSession('task', '更新项目说明', {
+        name: 'external-project',
+        path: 'C:\\workspaces\\external-project',
+      }),
       taskTurns: [{
         additions: 4,
         canUndo: true,
@@ -229,8 +312,8 @@ describe('Workbench 真实对话界面', () => {
       '任务完成',
     ]));
 
-    await content.findAllByClass('dsh-new-task-mode__button')[0]?.click();
-    expect(content.allText()).toEqual(expect.arrayContaining(['任务完成']));
+    expect(content.findAllByClass('dsh-new-task-mode__button')).toHaveLength(0);
+    expect(content.allText()).toEqual(expect.arrayContaining(['任务完成', '更新项目说明']));
   });
 
   it('每轮默认展示三个真实文件，支持展开、审核、原生右键操作和二次确认撤销', async () => {
@@ -246,13 +329,19 @@ describe('Workbench 真实对话界面', () => {
       contextHost: contextHost(),
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
+      openEnvironmentPanel: async () => undefined,
       runDshHealthCheck: async () => undefined,
       taskWorkspaceFileActions: fileActions,
       taskWorkspaceHost: taskWorkspaceHost(),
     });
     await view.onOpen();
     const result = taskTurnResult(5);
-    conversationHost.emit({ mode: 'task', phase: 'completed', taskTurns: [result] });
+    conversationHost.emit({
+      mode: 'task',
+      phase: 'completed',
+      session: conversationSession('task', '批量更新文件', result.workspace),
+      taskTurns: [result],
+    });
 
     const content = view.contentEl as unknown as MockElement;
     expect(content.findAllByClass('dsh-task-result__file')).toHaveLength(3);
@@ -316,6 +405,7 @@ describe('Workbench 真实对话界面', () => {
       contextHost: contextHost(),
       getDshHealth: () => ({ status: 'unchecked' }),
       onContextsChanged: () => undefined,
+      openEnvironmentPanel: async () => undefined,
       runDshHealthCheck: async () => undefined,
       taskWorkspaceFileActions: taskWorkspaceFileActions(),
       taskWorkspaceHost: taskWorkspaceHost(),
@@ -324,6 +414,7 @@ describe('Workbench 真实对话界面', () => {
     conversationHost.emit({
       mode: 'task',
       phase: 'completed',
+      session: conversationSession('task', '更新 README', taskTurnResult(1).workspace),
       taskTurns: [taskTurnResult(1)],
     });
 
@@ -357,6 +448,7 @@ class FakeConversationHost implements NewTaskConversationHost {
     permission: null,
     phase: 'idle',
     runtimeStatus: 'disconnected',
+    session: null,
     taskTurns: [],
     tools: [],
   };
@@ -380,6 +472,21 @@ class FakeConversationHost implements NewTaskConversationHost {
 
   async resolvePermission(decision: BridgePermissionDecision): Promise<boolean> {
     this.decisions.push(decision);
+    return true;
+  }
+
+  async startNewTask(): Promise<boolean> {
+    this.emit({
+      error: null,
+      messages: [],
+      mode: null,
+      permission: null,
+      phase: 'idle',
+      runtimeStatus: 'disconnected',
+      session: null,
+      taskTurns: [],
+      tools: [],
+    });
     return true;
   }
 
@@ -452,5 +559,18 @@ function taskTurnResult(changeCount: number): TaskWorkspaceTurnResult {
       name: 'external-project',
       path: 'C:\\workspaces\\external-project',
     },
+  };
+}
+
+function conversationSession(
+  mode: 'chat' | 'task',
+  title: string,
+  workspace: TaskWorkspaceTurnResult['workspace'] | null = null,
+): NonNullable<NewTaskConversationSnapshot['session']> {
+  return {
+    contextLabels: [],
+    mode,
+    title,
+    workspace,
   };
 }

@@ -11,11 +11,11 @@
 | 能力 | 状态 |
 | --- | --- |
 | Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
-| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C/8D 已通过完整本地门、双平台 CI 与原始零 annotations，正式会话页和最终用户验收仍未完成 |
-| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge、宿主 UI、只读上下文、对话发送链、任务文件工具边界、逐轮账本、任务控制器及详细文件操作 UI 已实现；正式会话页、右侧环境栏和最终运行验收仍在后续批次 |
+| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话已通过既定门；Batch 8C/8D 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 9 正式会话与任务环境已完成本地实现，远端 CI 和最终用户验收待完成 |
+| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；正式 bridge、宿主 UI、只读上下文、对话发送链、任务文件工具边界、逐轮账本、任务控制器、详细文件操作、正式会话与原生任务环境已实现；Batch 10 最终运行验收仍待完成 |
 | 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
 | ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
-| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |
+| 可选右侧任务环境 | 原“快速助手”已在 Batch 9 原位演进为默认关闭的原生 `ItemView`；显示公开健康/连接、已选笔记、工作区名称、权限、DSH 配置边界、已观察工具和最近变更，不承担主对话或唯一确认；Batch 10 运行验收待完成 |
 | DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标统一为 `0.1.1-rc.2`，本地、双平台 CI 与专用隔离 Vault 读回均通过 |
 | 正式 bridge、协议 v1 与 NDJSON | 已实现；DSH `0.1.1-rc.2` 已真实加载并完成握手、Agent session、mid-turn cancel 与正常关闭；Batch 7 已由对话发送链启动，Batch 8 已验证文件工具限定的任务 session |
 | DSH 会话、流式事件与取消 | 对话发送链已接入 Obsidian 宿主：插件级 session、流式文本、停止、失败与清理已实现；任务模式在用户选择并通过校验的单一 Vault 外工作区使用六个文件工具和逐请求确认，完整本地门与双平台 CI 已通过，后续完整 UI 运行验收待完成 |
@@ -25,13 +25,13 @@
 
 当前 ribbon 和“打开工作台”命令打开或复用一个中央 Workbench 标签页，默认进入“新建任务”。插件自有左导航按用户 `2026-08-26` 的直接反馈只显示“新建任务”和“运行”；项目、专家/Skill/连接器、自动化、资料库和领域工作台尚未实现，因此不在插件中渲染。“运行”仍合并原概览与运行状态。
 
-最新获用户批准的 [Ardot UI 真相 v2](https://ardot.tencent.com/file/718186366720195)仍是用户审阅基线，Ardot 由用户审阅和完善，AI 默认只读。`2026-08-26` 与 `2026-08-27` 的直接反馈只授权修改插件：未实现模块从插件导航移除，任务模式控件使用左右半圆胶囊边界；知识库选择入口使用“选择知识库 / 已选笔记”，选择项去除方框阴影并增加文件夹入口；Batch 7 新增真实对话记录、发送前确认与停止/错误状态，并移除重复页头、缩短输入框、增加无阴影浅底对话区。Ardot 未修改。Obsidian ribbon、活动标签页、Workbench 左上角和快速助手继续使用同一 DeepSeek 鲸鱼几何；最终用户 UI 验收尚未完成。
+最新获用户批准的 [Ardot UI 真相 v2](https://ardot.tencent.com/file/718186366720195)仍是用户审阅基线，Ardot 由用户审阅和完善，AI 默认只读。`2026-08-26` 至 `2026-08-29` 的直接反馈只授权修改插件：未实现模块从插件导航移除，任务模式控件使用左右半圆胶囊边界；知识库选择入口使用“选择知识库 / 已选笔记”，选择项去除方框阴影并增加文件夹入口；Batch 7 新增真实对话记录、发送前确认与停止/错误状态，并移除重复页头、缩短输入框、增加无阴影浅底对话区；Batch 9 新增同 leaf 正式会话、显式新建任务与默认关闭的原生任务环境。Ardot 未修改。Obsidian ribbon、活动标签页、Workbench 左上角和任务环境继续使用同一 DeepSeek 鲸鱼几何；最终用户 UI 验收尚未完成。
 
 `2026-08-28` 的插件路线进一步吸收 Codex 的会话导航、中央工作流和可选环境栏关系，但不复制桌面窗口或 Git 专属操作：确认首条消息后，开启页计划在同一个 Workbench leaf 内切换为正式会话；右侧信息使用默认关闭的 Obsidian 原生 leaf。DSH 原生配置继续管理模型、插件、Agent 预设、凭据和完整 session，插件只投影当前公开且实际启用的能力。该方向已写入 [Codex 参考界面评估与正式会话路线](./docs/design/codex-reference-ui-assessment.md)，Ardot 未修改。
 
 “新建任务”承担未来的 DeepSeek Harness 主对话、任务执行、上下文和权限审阅。它是首个 Obsidian 社区插件发布功能：只有完整实现、双平台 CI 与隔离 Vault 运行验收通过，并获得用户对最终 Obsidian 运行 UI 的明确验收后，才允许进入社区发布审批。Ardot、CI 或 GitHub Release 单独通过都不能越过此门。
 
-“新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生“选择知识库”流程显式加入当前笔记、当前选区、单个 Vault Markdown 文件或文件夹当下已有的 Markdown 笔记集合。文件夹选择递归包含子文件夹，但在选择时即冻结为逐篇笔记 ID，不会静默追踪后来新增的文件；超限时整体失败，不部分加入。已选笔记可预览来源并逐项移除，文件内容在确认发送后由 Obsidian 宿主重新读取并建立不可变快照。当前“对话”会启动受管 DSH `0.1.1-rc.2` session、显示流式回复并支持真实停止；该模式通过空工具清单、执行 guard 和只消费冻结上下文的系统提示三重禁止 DSH 工具，并禁止把 DSML 工具标记作为回答输出，因此只读且不会写入 Vault。“任务执行”已接通单一 Vault 外工作区：用户使用 Obsidian 桌面原生目录选择器明确选择，统一边界校验通过后才允许发送；发送前显示工作区名称与逐请求权限边界，任务以六个文件工具运行，并在结束、失败或意外断开时由逐轮账本核对真实变更。每个任务 turn 的真实文件卡默认展示三项并可展开，支持账本前后快照审核、Obsidian 原生右键文件操作和二次确认的全量冲突预检撤销；“另存为”和 VS Code 专属入口不进入 v1，避免账本外写入面与未验证外部依赖。“代码协作”与附件继续禁用；可选右侧快速助手仍不承担主对话。
+“新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生“选择知识库”流程显式加入当前笔记、当前选区、单个 Vault Markdown 文件或文件夹当下已有的 Markdown 笔记集合。文件夹选择递归包含子文件夹，但在选择时即冻结为逐篇笔记 ID，不会静默追踪后来新增的文件；超限时整体失败，不部分加入。已选笔记可预览来源并逐项移除，文件内容在确认发送后由 Obsidian 宿主重新读取并建立不可变快照。首条消息经确认和校验后，同一个 Workbench leaf 切换为正式会话；关闭/重开 leaf 会恢复当前插件生命周期内的会话，模式与规范工作区保持锁定，只有显式“新建任务”会在处置运行时后返回开启页。当前“对话”会启动受管 DSH `0.1.1-rc.2` session、显示流式回复并支持真实停止；该模式通过空工具清单、执行 guard 和只消费冻结上下文的系统提示三重禁止 DSH 工具，因此只读且不会写入 Vault。“任务执行”已接通单一 Vault 外工作区和逐轮账本；每个 turn 的真实文件卡默认展示三项并可展开，支持真实快照审核、Obsidian 原生右键文件操作和二次确认撤销。“代码协作”与附件继续禁用；可选右侧任务环境只投影公开事实，不承担主对话。插件不伪造跨重启最近会话、具体模型/预设、私有推理或完整本机路径。
 
 ## 开发运行
 
@@ -178,6 +178,7 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 - Batch 8C 已实现 Obsidian 桌面原生目录选择、Vault/状态目录隔离复验、工作区与 session 绑定、`workspace-write + ask` 进程路由、逐次权限、所有终止路径的变更核对，以及“已编辑 N 个文件”真实摘要；完整本地门为 `112 passed / 1 skipped`、runtime `27 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建和完整自检通过。
 - 实现提交 `91b21345a52657520633475dfc9e86db7b720e65` 已通过 [CI run 33188573187](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33188573187)：Ubuntu check `98907874384` 与 Windows check `98907874519` 均成功，两个原始 annotations 数组均为 `[]`。
 - Batch 8D 已实现默认三项/展开、原生右键菜单、账本前后快照审核、二次确认和全量冲突预检撤销；文件操作每次重新校验工作区与真实路径，普通 UI 不显示完整绝对路径。实现 `759ec97d4c21748016eb8e6a462ed3c78f153edb` 已通过远端 [CI run 33239392369](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33239392369)：Ubuntu `99065994296`、Windows `99065994274` 均成功且原始 annotations 为 `[]`；专用 Vault 运行与最终用户 UI 验收仍属于 Batch 10。Ardot 未修改、只读核对。
+- Batch 9 已在本地实现同 leaf 正式会话、确定性标题、模式/工作区锁定、显式新建任务、关闭/重开 leaf 恢复和插件重载清空边界；原快速助手已原位演进为默认关闭且复用 right leaf 的“任务环境”。具体模型/预设在当前协议未公开，UI 只显示由 DSH 管理；不展示私有推理、假历史或完整路径。本地完整测试为 `123 passed / 2 skipped`、runtime 为 `27 passed / 1 skipped`、真实 rc.2 bridge 为 `1 passed`，构建与完整自检通过。远端 CI 与专用 Vault 运行读回待闭环，Ardot 未修改、只读核对。
 
 ## 开发治理
 
@@ -197,6 +198,7 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 - 新建任务 v1 宿主契约 ADR：[docs/architecture/ADR-005-new-task-v1-host-contract.md](./docs/architecture/ADR-005-new-task-v1-host-contract.md)
 - Vault 外任务执行控制器 ADR：[docs/architecture/ADR-008-task-execution-controller.md](./docs/architecture/ADR-008-task-execution-controller.md)
 - 逐轮文件审核与安全撤销 ADR：[docs/architecture/ADR-009-task-change-review-and-undo-ui.md](./docs/architecture/ADR-009-task-change-review-and-undo-ui.md)
+- 正式会话与任务环境 ADR：[docs/architecture/ADR-010-formal-conversation-and-task-environment.md](./docs/architecture/ADR-010-formal-conversation-and-task-environment.md)
 
 ## License
 

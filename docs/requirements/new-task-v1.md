@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文与 Batch 7 对话发送链的实现、CI 和技术运行门已通过；Batch 8A–8D 已通过完整本地门、双平台 CI 与原始零 annotations，最终运行验收仍待 Batch 10 闭环
+- 状态：已批准的实现输入；正式 bridge、宿主 UI、只读上下文与 Batch 7 对话发送链已通过既定门，Batch 8A–8D 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 9 正式会话与任务环境已完成本地实现，远端 CI 和 Batch 10 最终运行验收待闭环
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -17,7 +17,7 @@
 - v1 发布门必须真实实现“对话”和“任务执行”。
 - “代码协作”不属于当前社区首发门。若批准后的实现仍需保留该入口，只能使用原生 `disabled` 或 `aria-disabled="true"` 与浅灰文字、图标表达不可用，不得接入占位行为。
 - “运行”位于导航最后，合并当前能力真值与只读 DSH 健康检查。
-- 右侧快速助手保持可选，不替代“新建任务”。
+- 右侧任务环境保持默认关闭和可选，不替代“新建任务”，不承载唯一确认。
 - 产品 UI 不显示开发批次、发布门、“规划中”或“尚未实现”等治理文案。
 
 ## 输入、上下文与快照
@@ -53,6 +53,8 @@ Batch 6 已依据现有 `1 MiB` NDJSON frame 上限冻结上下文子集：最�
 - 完整会话历史、DSH 设置和凭据以用户原生 `$DSH_HOME` 为唯一事实来源；插件不得在 Vault 或 `data.json` 复制 session 内容。
 - bridge overlay 与插件运行状态位于操作系统应用数据目录下的 Vault 哈希分区；目录名不得包含 Vault 原始路径。
 - 插件内存只保存当前草稿、已选笔记和公开消息投影；插件重载后清除，不伪造跨重启会话恢复。
+- 首条消息经确认且校验通过后建立当前插件生命周期内的 session 投影；关闭/重开 Workbench leaf 重新订阅并恢复正式页，模式与规范工作区保持锁定。
+- 返回开启页只能由用户显式确认“新建任务”；控制器先处置受管运行时，再清空当前投影。此操作不删除 DSH 原生 session 或 Vault 外逐轮账本。
 - `stateDirectory`、DSH `cwd` 或 `$DSH_HOME` 经真实路径/符号链接解析后位于 Vault 内时，必须在执行任何 DSH 检查或启动前 fail closed。
 
 详细归属与 Claudian 设计比较见 [ADR-006](../architecture/ADR-006-conversation-runtime-storage.md)。
@@ -90,7 +92,7 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6 只读知识库选择的隔离 Vault 门已通过；Batch 7 已把不可变快照接入产品发送链，并通过双平台 CI、专用 Vault 技术运行及真实模型冻结上下文验收。外部工作区、任务执行和最终用户验收仍未完成。
+- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6/7 已把只读知识库与不可变快照接入产品发送链；Batch 8C/8D 已接通 Vault 外工作区任务、逐轮审核与撤销；Batch 9 已完成正式会话与任务环境的本地实现。专用 Vault 的完整任务链、最终运行 UI 与用户验收仍待 Batch 10。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.1-rc.2`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。
@@ -107,6 +109,16 @@ cancelled | completed | failed
 - 外部工作区文件是当前内容真相；逐轮基线、diff 索引和撤销材料只允许进入 Vault 外状态目录，并必须限制大小、保留期与清理时机。数据契约和失败回滚由 ADR-007 冻结，产品交互由 [ADR-009](../architecture/ADR-009-task-change-review-and-undo-ui.md) 固定；UI 只消费真实账本结果，不得用占位结果冒充接通。
 
 Batch 8 变更账本契约已由 [ADR-007](../architecture/ADR-007-task-workspace-ledger.md) 实现：默认跟踪最多 `10,000` 个普通文件、单文件 `2 MiB`、原始基线合计 `64 MiB`，每工作区最多 `20` 个账本、有效期 `7` 天；标准依赖、缓存、构建和版本控制目录与符号链接不进入基线。活动账本保存全部可跟踪基线，完成后只保存真实变化文件的前后快照，均位于 Vault 外。撤销前校验全部当前哈希与账本完整性，任一冲突则零写入。Batch 8C 已接通工作区选择和正式任务控制器；Batch 8D 已实现默认三项/展开、原生右键菜单、真实前后快照和二次确认撤销，并进入双平台 `npm test` 覆盖。专用 Vault 任务运行与最终用户 UI 验收仍待 Batch 10。
+
+## 正式会话与任务环境
+
+- 开启页标题与正式会话标题互斥；首条消息只有在发送前确认及校验通过后才切换到正式页，同一个 Workbench leaf 和控制器继续承载公开消息、权限、文件结果与后续 turn。
+- 正式页提供确定性首条任务标题、真实状态、模式/工作区权限摘要、一个消息流和一个三行紧凑且可垂直增长的 composer；活动 turn 主操作仍是停止。
+- 当前恢复边界只到插件生命周期：关闭/重开 leaf 可恢复，插件重载清空；没有官方 session 恢复读回前不显示最近会话。
+- 原右侧视图原位演进为“任务环境”，默认关闭且复用同一 right leaf，只显示健康/连接、已选笔记、工作区名称、当前权限、实际观察工具和最近账本统计。
+- 当前 bridge 未公开模型/预设具体标识，因此 UI 只显示“由 DSH 配置管理”；完整绝对路径、私有推理、未验证指标和虚构历史均禁止显示。
+
+详细契约见 [ADR-010](../architecture/ADR-010-formal-conversation-and-task-environment.md)。
 
 ## 自动同步演进计划
 

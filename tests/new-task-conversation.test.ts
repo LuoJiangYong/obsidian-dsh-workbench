@@ -85,6 +85,14 @@ describe('新建任务真实对话控制器', () => {
     fileContent = '发送后修改';
 
     expect(accepted).toBe(true);
+    expect(controller.getSnapshot().session).toEqual({
+      contextLabels: ['Vault 文件 · 资料/说明.md'],
+      mode: 'chat',
+      title: '总结资料',
+      workspace: null,
+    });
+    expect(Object.isFrozen(controller.getSnapshot().session)).toBe(true);
+    expect(Object.isFrozen(controller.getSnapshot().session?.contextLabels)).toBe(true);
     expect(process.startCount).toBe(1);
     expect(client.createdModes).toEqual(['chat']);
     expect(client.startedTexts).toHaveLength(1);
@@ -132,6 +140,12 @@ describe('新建任务真实对话控制器', () => {
     expect(process.startCount).toBe(1);
     expect(client.createdModes).toEqual(['chat']);
     expect(client.startedTexts).toHaveLength(2);
+    expect(controller.getSnapshot().session).toMatchObject({
+      contextLabels: [],
+      mode: 'chat',
+      title: '总结资料',
+      workspace: null,
+    });
     expect(states).toEqual(expect.arrayContaining([
       'validating',
       'starting',
@@ -159,7 +173,92 @@ describe('新建任务真实对话控制器', () => {
       error: { code: 'task_empty', message: '任务描述不能为空。' },
       phase: 'failed',
       runtimeStatus: 'disconnected',
+      session: null,
     });
+  });
+
+  it('显式新建任务只在终态清空插件内投影并处置运行时，活动 turn 拒绝重置', async () => {
+    const client = new FakeBridgeClient();
+    const process = new FakeBridgeProcess(client);
+    const controller = new NewTaskConversationController({
+      createProcess: async () => process,
+    });
+    await controller.submit({
+      contexts: [],
+      draft: '保留到明确新建任务',
+      mode: 'chat',
+      reader: readerReturning(''),
+    });
+
+    await expect(controller.startNewTask()).resolves.toBe(false);
+    expect(controller.getSnapshot()).toMatchObject({
+      error: { code: 'turn_busy' },
+      session: { title: '保留到明确新建任务' },
+    });
+    expect(process.disposeCount).toBe(0);
+
+    client.emit(event('turn.ended', 0, { outcome: 'completed' }));
+    await expect(controller.startNewTask()).resolves.toBe(true);
+    expect(process.disposeCount).toBe(1);
+    expect(controller.getSnapshot()).toMatchObject({
+      error: null,
+      messages: [],
+      mode: null,
+      phase: 'idle',
+      runtimeStatus: 'disconnected',
+      session: null,
+      taskTurns: [],
+      tools: [],
+    });
+  });
+
+  it('正式会话锁定模式与规范工作区，禁止静默开启第二个 DSH session', async () => {
+    const client = new FakeBridgeClient();
+    const process = new FakeBridgeProcess(client);
+    const ledger = new FakeTaskLedger();
+    const controller = new NewTaskConversationController({
+      createProcess: async () => process,
+      taskLedger: ledger,
+    });
+    const workspace = { name: 'project-a', path: 'C:\\workspaces\\project-a' } as const;
+    await controller.submit({
+      contexts: [],
+      draft: '修改项目 A',
+      mode: 'task',
+      reader: readerReturning(''),
+      workspace,
+    });
+    const turnId = client.startedTurnIds[0];
+    if (!turnId) throw new Error('任务 turn 未启动');
+    client.emit(event('turn.ended', 0, { outcome: 'completed' }, turnId));
+    await vi.waitFor(() => expect(controller.getSnapshot().phase).toBe('completed'));
+
+    await expect(controller.submit({
+      contexts: [],
+      draft: '切换到项目 B',
+      mode: 'task',
+      reader: readerReturning(''),
+      workspace: { name: 'project-b', path: 'C:\\workspaces\\project-b' },
+    })).resolves.toBe(false);
+    expect(controller.getSnapshot()).toMatchObject({
+      error: { code: 'session_workspace_locked' },
+      session: {
+        mode: 'task',
+        title: '修改项目 A',
+        workspace: { name: 'external-project', path: workspace.path },
+      },
+    });
+    expect(process.startCount).toBe(1);
+    expect(client.createdModes).toEqual(['task']);
+
+    await expect(controller.submit({
+      contexts: [],
+      draft: '切换对话模式',
+      mode: 'chat',
+      reader: readerReturning(''),
+    })).resolves.toBe(false);
+    expect(controller.getSnapshot().error?.code).toBe('session_mode_locked');
+    expect(client.createdModes).toEqual(['task']);
   });
 
   it('任务模式在已校验 Vault 外工作区建立基线，以 task session 执行并在终态生成变更事实', async () => {

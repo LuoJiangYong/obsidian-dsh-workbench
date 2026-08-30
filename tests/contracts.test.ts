@@ -38,9 +38,9 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话的代码、双平台 CI、rc.2 运行时及专用隔离 Vault 技术验收已通过；Batch 8C/8D 已通过完整本地门、双平台 CI 与原始零 annotations');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库与 Batch 7 真实只读对话已通过既定门；Batch 8C/8D 已通过完整本地门、双平台 CI 与原始零 annotations；Batch 9 正式会话与任务环境已完成本地实现');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
-    expect(readme).toContain('| 可选右侧快速助手容器 | Ardot `v2` 宿主 UI 已实现；当前显示健康、Workbench 已选笔记摘要或真实空态，两个快捷提问保持禁用，不承担主对话；Batch 6 专用 Vault 运行验收已通过 |');
+    expect(readme).toContain('| 可选右侧任务环境 | 原“快速助手”已在 Batch 9 原位演进为默认关闭的原生 `ItemView`；显示公开健康/连接、已选笔记、工作区名称、权限、DSH 配置边界、已观察工具和最近变更，不承担主对话或唯一确认');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
     expect(readme).toContain('| DSH 路径配置与健康检查 | 命令校验和进程边界已实现；目标统一为 `0.1.1-rc.2`，本地、双平台 CI 与专用隔离 Vault 读回均通过 |');
     expect(readme).toContain('用户在发送前确认后，插件才启动正式 bridge');
@@ -54,7 +54,7 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('- 不采集客户端遥测。');
   });
 
-  it('DESIGN 与 ADR 固定中央工作台、内部导航和可选快速助手边界', async () => {
+  it('DESIGN 与 ADR 固定中央工作台、内部导航和可选任务环境边界', async () => {
     const design = await readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8');
     const adr = await readFile(
       path.join(repositoryRoot, 'docs', 'architecture', 'ADR-002-workbench-shell.md'),
@@ -66,15 +66,15 @@ describe('发布与治理契约', () => {
     expect(design).toContain('桌面宽屏导航宽度固定为 `194px`');
     expect(design).toContain('导航首位固定为“新建任务”');
     expect(design).toContain('“概览”和“运行状态”合并为“运行”，固定在功能导航最后');
-    expect(design).toContain('快速助手是独立、按需打开的 Obsidian 右侧视图');
-    expect(design).toContain('当前不得显示可编辑对话框、发送、停止、模型选择');
+    expect(design).toContain('### 3.3 可选右侧任务环境');
+    expect(design).toContain('不随 Workbench 自动打开，重复开启复用同一右侧 leaf');
     expect(adr).toContain('状态：已接受');
     expect(adr).toContain("调用 `workspace.getLeaf('tab')`");
     expect(adr).toContain('不建立公共模块注册器、动态加载器或数据协议');
   });
 
   it('Codex 参考路线固定正式会话、原生右侧栏与 DSH 能力投影边界', async () => {
-    const [assessment, design, roadmap, readme] = await Promise.all([
+    const [assessment, design, roadmap, readme, adr] = await Promise.all([
       readFile(
         path.join(repositoryRoot, 'docs', 'design', 'codex-reference-ui-assessment.md'),
         'utf8',
@@ -82,6 +82,15 @@ describe('发布与治理契约', () => {
       readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
       readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
       readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'ADR-010-formal-conversation-and-task-environment.md',
+        ),
+        'utf8',
+      ),
     ]);
 
     expect(assessment).toContain('Ardot 文件 `718186366720195`');
@@ -96,14 +105,18 @@ describe('发布与治理契约', () => {
     expect(assessment).toContain('Batch 9');
     expect(assessment).toContain('Batch 10');
     expect(assessment).toContain('精确 `700px` 容器无水平滚动');
-    expect(design).toContain('### 4.2 正式会话页（Batch 9 目标）');
+    expect(design).toContain('### 4.2 正式会话页（Batch 9 已实现，运行验收待 Batch 10）');
     expect(design).toContain('开启页主标题与正式页会话标题互斥');
     expect(design).toContain('## 6.1 DSH 原生能力投影');
     expect(design).toContain('不提供完全权限、跨会话永久授权、任意 Shell');
     expect(roadmap).toContain('`startup → conversation` 同 leaf 正式会话切换');
-    expect(roadmap).toContain('默认关闭的 Obsidian 原生右侧环境栏');
+    expect(roadmap).toContain('默认关闭并复用同一 right leaf 的原生任务环境');
     expect(readme).toContain('Ardot 未修改');
     expect(readme).toContain('Codex 参考界面评估与正式会话路线');
+    expect(readme).toContain('正式会话与任务环境 ADR');
+    expect(adr).toContain('状态：已接受并完成本地实现');
+    expect(adr).toContain('插件重载后投影清空，不显示“最近任务”');
+    expect(adr).toContain('当前协议未公开具体标识');
   });
 
   it('Ardot v2 固定用户审阅真相、AI 只读边界、插件反馈差异和社区首发门', async () => {
@@ -148,7 +161,7 @@ describe('发布与治理契约', () => {
     expect(design).toContain('模式分段控件在插件中使用左右半圆胶囊边界');
     expect(design).toContain('首个 Obsidian 社区插件发布功能固定为“新建任务”');
     expect(design).toContain('当前实现已注册同一鲸鱼 path 几何');
-    expect(readme).toContain('Obsidian ribbon、活动标签页、Workbench 左上角和快速助手继续使用同一 DeepSeek 鲸鱼几何');
+    expect(readme).toContain('Obsidian ribbon、活动标签页、Workbench 左上角和任务环境继续使用同一 DeepSeek 鲸鱼几何');
     expect(adr).toContain('状态：已接受');
     expect(adr).toContain('当前批准基线为页面 `UI 真相 v2`（`12:1`）');
     expect(adr).toContain('同一 Ardot 项目持续演进');
@@ -178,7 +191,7 @@ describe('发布与治理契约', () => {
     }
   });
 
-  it('Batch 5A UI 基线与 Batch 7 插件级对话状态各自保持单一职责', async () => {
+  it('Batch 5A UI 基线、Batch 7 对话与 Batch 9 正式会话各自保持单一职责', async () => {
     const [main, workbench, quickAssistant, newTaskState, conversation, styles, designQa]
       = await Promise.all([
       readFile(path.join(repositoryRoot, 'src', 'main.ts'), 'utf8'),
@@ -200,20 +213,32 @@ describe('发布与治理契约', () => {
     expect(workbench).toContain('disabledModeEl.disabled = true');
     expect(workbench).toContain('canSubmitNewTask(this.newTaskState, phase)');
     expect(workbench).not.toMatch(/text:\s*['`](?:首发|规划中|尚未实现)/u);
-    expect(quickAssistant).toContain("promptEl.disabled = true");
-    expect(quickAssistant).toContain('新建任务是主对话入口');
+    expect(main).toContain("name: '打开任务环境'");
+    expect(quickAssistant).toContain("return '任务环境'");
+    expect(quickAssistant).toContain('conversationHost.subscribe');
+    expect(quickAssistant).toContain('当前协议未公开具体标识');
+    expect(quickAssistant).not.toContain('快捷提问');
     expect(newTaskState).toContain("mode: 'chat'");
     expect(newTaskState).toContain("'awaiting_permission'");
     expect(newTaskState).not.toContain('reviewStatus');
     expect(conversation).toContain("runtimeStatus: 'disconnected'");
+    expect(conversation).toContain('readonly session: NewTaskConversationSession | null');
+    expect(conversation).toContain('async startNewTask(): Promise<boolean>');
+    expect(conversation).toContain('session_workspace_locked');
     expect(conversation).toContain('NewTaskConversationController');
     expect(workbench).toContain('NewTaskReviewModal');
+    expect(workbench).toContain('renderFormalConversation');
+    expect(workbench).toContain("text: '任务环境'");
+    expect(workbench).toContain('NewTaskResetModal');
+    expect(workbench).toContain("'aria-busy': isConversationBusy(snapshot.phase) ? 'true' : 'false'");
     expect(styles).toContain('@container dsh-workbench-view (max-width: 760px)');
     expect(styles).toContain('.dsh-workbench-sidebar {');
     expect(styles).toContain('border-radius: 999px;');
     expect(styles).toContain('.dsh-workbench-view button.dsh-new-task-mode__button:first-child');
     expect(styles).toContain('.dsh-workbench-view button.dsh-new-task-mode__button:last-child');
     expect(styles).toContain('var(--background-secondary) 58%');
+    expect(styles).toContain('.dsh-new-task-composer.is-compact');
+    expect(styles).toContain('.dsh-task-environment__section');
     expect(styles).not.toContain('min-height: 258px');
     expect(styles).not.toContain('min-height: 175px');
     expect(designQa).toContain('D:\\codex workspace\\_test-vaults\\obsidian-dsh-workbench-evidence');
@@ -315,7 +340,7 @@ describe('发布与治理契约', () => {
     expect(styles).toContain('.dsh-new-task-context__item');
     expect(styles).toMatch(/\.dsh-context-picker button\.dsh-context-picker__choice \{[\s\S]*?box-shadow: none;/u);
     expect(readme).toContain('## Batch 6：只读知识库（实现与运行门已通过）');
-    expect(design).toContain('宿主 UI、只读知识库与 Batch 7 的真实只读对话');
+    expect(design).toContain('宿主 UI、只读知识库、真实对话以及 Batch 8A–8D');
     expect(hostContract).toContain('最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`');
     expect(roadmap).toContain('Batch 6 已实现只读知识库纯契约');
     expect(designQa).toContain('CI run 33031107880');
@@ -441,7 +466,7 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('每个 turn 只能产生一个终态');
     expect(requirements).toContain('`failed(runtime_terminated)`');
     expect(requirements).toContain('当前核验到的正式 bridge 目标是 `0.1.1-rc.2`');
-    expect(requirements).toContain('Batch 7 已把不可变快照接入产品发送链');
+    expect(requirements).toContain('Batch 6/7 已把只读知识库与不可变快照接入产品发送链');
     expect(requirements).toContain('`obsidian:chat-boundary` 系统提示三层拒绝全部工具');
     expect(requirements).toContain('任务结束后的已编辑文件');
     expect(requirements).toContain('插件自动安装或更新 DSH');
@@ -699,7 +724,7 @@ describe('发布与治理契约', () => {
     expect(styles).toContain('box-shadow: none');
     expect(requirements).toContain('用户明确请求后复制完整路径');
     expect(requirements).toContain('不加入“另存为”');
-    expect(design).toContain('Batch 8D 已加入默认三项/展开的真实文件卡');
+    expect(design).toContain('Batch 8C/8D 接通单一 Vault 外工作区、任务控制器、逐请求权限、真实文件卡');
     expect(designQa).toContain('Batch 8D implementation and remote CI gate: passed');
   });
 

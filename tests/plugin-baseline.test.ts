@@ -35,7 +35,7 @@ describe('原生 Workbench 插件基线', () => {
     expect(mockObsidian.settingTabs).toHaveLength(1);
     expect(mockObsidian.commands).toEqual([
       expect.objectContaining({ id: 'open-workbench', name: '打开工作台' }),
-      expect.objectContaining({ id: 'open-quick-assistant', name: '打开快速助手' }),
+      expect.objectContaining({ id: 'open-quick-assistant', name: '打开任务环境' }),
     ]);
   });
 
@@ -173,7 +173,7 @@ describe('原生 Workbench 插件基线', () => {
     expect(content.allText()).toEqual([]);
   });
 
-  it('只在显式请求时打开并复用右侧快速助手真实上下文摘要', async () => {
+  it('只在显式请求时打开并复用右侧任务环境的真实启动上下文', async () => {
     const PluginConstructor = DeepSeekHarnessWorkbenchPlugin as unknown as ConstructablePlugin;
     const plugin = new PluginConstructor();
     await plugin.onload();
@@ -206,16 +206,16 @@ describe('原生 Workbench 插件基线', () => {
 
     const content = view.contentEl as unknown as MockElement;
     expect(content.allText()).toEqual(expect.arrayContaining([
-      '快速助手',
-      '尚未检测',
+      '任务环境',
+      '尚未连接 DSH · 健康检查：尚未检测',
+      '已选笔记',
       '已选择 1 项：当前选区 · 项目/上下文.md',
-      '总结当前上下文',
-      '检查运行状态',
-      '新建任务是主对话入口。快速助手仅展示健康状态、当前上下文和快捷提问。',
+      '未选择外部写入工作区',
+      '由 DSH 配置管理；当前协议未公开具体标识',
+      '尚未开始会话；当前只显示已选择但尚未发送的知识库范围。',
     ]));
-    expect(content.allText()).toContain('仅辅助展示健康、当前上下文和快捷提问，不承担主对话。');
-    expect(content.findAllByClass('dsh-quick-assistant__prompt')).toHaveLength(2);
-    expect(content.findAllByClass('dsh-quick-assistant__prompt').every((item) => item.disabled)).toBe(true);
+    expect(content.allText()).toContain('投影当前会话的公开环境事实；关闭此栏不影响中央任务。');
+    expect(content.findAllByClass('dsh-task-environment__section')).toHaveLength(7);
 
     await plugin.activateQuickAssistant();
     expect(plugin.app.workspace.getLeavesOfType(VIEW_TYPE_QUICK_ASSISTANT)).toHaveLength(1);

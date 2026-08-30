@@ -300,7 +300,7 @@ Batch 8C implementation and CI: passed; final Obsidian UI user acceptance: pendi
 
 ## Batch 8D：逐轮文件审核与安全撤销实施门
 
-- 日期：`2026-08-29`；Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）与产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360`、QA `12:530` 保持只读。Ardot 未修改，只读核对。
+- 日期：`2026-08-29` 至 `2026-08-30`；Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）与产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360`、QA `12:530` 保持只读。Ardot 未修改，只读核对。
 - 用户结果：每个任务 turn 的真实文件卡默认展示三个相对路径并可展开/收起；文件行显示变更类型和文本增删，主点击打开账本修改前/后快照，右键使用 Obsidian 原生 `Menu`。
 - 文件菜单：提供审核、系统默认应用、资源管理器、复制相对路径、用户明确请求后复制完整路径，以及复制当前 UTF-8 内容；每次操作重新校验规范工作区、路径包含关系、排除目录、普通文件和真实路径。已删除文件的当前内容操作保持禁用。
 - 产品取舍：不加入 VS Code 专属入口、桌面“打开方式”克隆或“另存为”；前两者不是已验证的 Obsidian 原生依赖，后者会新增逐轮账本无法覆盖的写入面。
@@ -313,3 +313,18 @@ Batch 8C implementation and CI: passed; final Obsidian UI user acceptance: pendi
 - 远端 CI：[run `33239392369`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33239392369) 已完成且结论为 `success`；Ubuntu job `99065994296`、Windows job `99065994274` 均成功，两个 check-run 的原始 annotations 数组均为 `[]`。
 
 Batch 8D implementation and remote CI gate: passed; final Obsidian UI user acceptance: pending
+
+## Batch 9：正式会话与原生任务环境实施门
+
+- 日期：`2026-08-29`；Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）与产品画板 `12:2`、`12:41`、`12:120`、`12:191`、`12:275`、`12:360`、QA `12:530` 保持只读。Ardot 未修改，只读核对。
+- 用户结果：首条消息经发送前审阅和真实校验后，同一个 Workbench leaf 从开启页切换为正式会话；开启标题与正式标题互斥，公开消息、权限、文件结果和一个紧凑 composer 保持连续。重复点击 ribbon/命令只复用 leaf，不重置会话。
+- 会话边界：插件级控制器只保存当前生命周期内的 session 投影；关闭/重开 Workbench leaf 会恢复正式页，模式与规范工作区锁定，输入不一致时 fail closed。插件重载后投影清空，不显示“最近任务”或伪造跨重启恢复。
+- 新建任务：正式页显式按钮先打开确认；仅在无活动 turn 时先处置受管运行时，再清空当前消息、权限、工具、逐轮结果和 session 投影。DSH 原生 session 与 Vault 外账本不删除。
+- 任务环境：原“快速助手”沿用既有 view type/命令 ID 原位演进为默认关闭的右侧 `ItemView`，重复开启复用同一 right leaf；只显示 DSH 健康/连接、已选笔记、工作区名称、当前权限、已观察工具和最近变更。模型/预设具体标识因当前协议未公开，只显示由 DSH 管理。
+- 隐私与能力真相：普通 UI 不显示完整绝对路径、DSH 私有推理、未经读回的 token/速度/缓存指标、假历史或“完全权限”；右侧栏不承载唯一权限确认、停止、审核或撤销。
+- 可访问性与布局：正式消息流使用 `aria-live="polite"`，活动阶段同步 `aria-busy="true"`；composer 初始三行并允许垂直增长；`760px` 容器门继续折叠内部导航，正式页头在窄容器改为纵向。精确 `700px` 几何、明暗主题与真实运行截图进入 Batch 10。
+- 自动验证：控制器覆盖投影冻结、同 session 续轮、模式/工作区锁定、活动 turn 拒绝重置和终态处置；Workbench 覆盖开启/正式互斥、关闭/重开恢复、显式返回开启页、环境按钮和绝对路径排除；任务环境覆盖公开事实更新、权限/工具/变更、关闭解除订阅；插件基线覆盖默认关闭和同一 right leaf 复用。
+- 本地质量门通过：`typecheck`、零警告 `lint`、完整 `npm test` 为 `123 passed / 2 skipped`；runtime 为 `27 passed / 1 skipped`；默认锁文件夹具重新执行 `npm ci` 后真实 rc.2 bridge 为 `1 passed`；生产构建、仓库边界、CI 覆盖与 bridge artifact 自检均通过。
+- 远端 CI 尚未在本段记录为通过；实现提交、双平台 job 与原始 annotations 必须在 push 后读回，再更新本段。专用 Vault 运行与最终 Obsidian UI 用户验收仍属于 Batch 10。
+
+Batch 9 local implementation: complete; remote CI and final Obsidian UI user acceptance: pending

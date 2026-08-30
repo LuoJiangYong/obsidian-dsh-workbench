@@ -14,6 +14,7 @@ import type {
 } from './bridge-protocol-client';
 import { redactDiagnostic } from './dsh-health';
 import {
+  contextSelectionLabel,
   createNewTaskContextSnapshot,
   type NewTaskContextReader,
   type NewTaskContextSelection,
@@ -57,6 +58,13 @@ export interface NewTaskConversationFailure {
   readonly message: string;
 }
 
+export interface NewTaskConversationSession {
+  readonly contextLabels: readonly string[];
+  readonly mode: NewTaskMode;
+  readonly title: string;
+  readonly workspace: TaskWorkspaceSelection | null;
+}
+
 export interface NewTaskConversationSnapshot {
   readonly error: NewTaskConversationFailure | null;
   readonly messages: readonly NewTaskConversationMessage[];
@@ -64,6 +72,7 @@ export interface NewTaskConversationSnapshot {
   readonly permission: NewTaskConversationPermission | null;
   readonly phase: NewTaskPhase;
   readonly runtimeStatus: NewTaskRuntimeStatus;
+  readonly session: NewTaskConversationSession | null;
   readonly taskTurns: readonly TaskWorkspaceTurnResult[];
   readonly tools: readonly NewTaskConversationTool[];
 }
@@ -130,6 +139,7 @@ export interface NewTaskConversationHost {
   dispose(): Promise<void>;
   getSnapshot(): NewTaskConversationSnapshot;
   resolvePermission(decision: BridgePermissionDecision): Promise<boolean>;
+  startNewTask(): Promise<boolean>;
   submit(input: NewTaskConversationSubmitInput): Promise<boolean>;
   subscribe(listener: () => void): () => void;
   undoTaskTurn(turnId: string): Promise<TaskWorkspaceTurnResult>;
@@ -171,6 +181,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     permission: null,
     phase: 'idle',
     runtimeStatus: 'disconnected',
+    session: null,
     taskTurns: [],
     tools: [],
   });
@@ -192,10 +203,46 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     return () => this.listeners.delete(listener);
   }
 
+  async startNewTask(): Promise<boolean> {
+    if (this.disposed) return this.fail('controller_disposed', '对话控制器已关闭。');
+    if (!canBeginTurn(this.snapshot.phase)) {
+      return this.failWithoutChangingPhase('turn_busy', '当前运行尚未结束，不能新建任务。');
+    }
+    try {
+      await this.invalidateRuntime();
+    } catch (error) {
+      const failure = normalizeConversationError(error, 'runtime_dispose_failed');
+      return this.fail(failure.code, failure.message);
+    }
+    this.activeTaskTurnId = undefined;
+    this.activeTurnId = undefined;
+    this.taskLedgerCompletion = undefined;
+    this.undoingTaskTurnIds.clear();
+    this.snapshot = freezeSnapshot({
+      error: null,
+      messages: [],
+      mode: null,
+      permission: null,
+      phase: 'idle',
+      runtimeStatus: 'disconnected',
+      session: null,
+      taskTurns: [],
+      tools: [],
+    });
+    this.emit();
+    return true;
+  }
+
   async submit(input: NewTaskConversationSubmitInput): Promise<boolean> {
     if (this.disposed) return this.fail('controller_disposed', '对话控制器已关闭。');
     if (!canBeginTurn(this.snapshot.phase)) {
       return this.failWithoutChangingPhase('turn_busy', '当前回复尚未结束。');
+    }
+    if (this.snapshot.session && this.snapshot.session.mode !== input.mode) {
+      return this.failWithoutChangingPhase(
+        'session_mode_locked',
+        '当前会话模式已锁定；请先新建任务再切换模式。',
+      );
     }
     this.update({
       error: null,
@@ -221,6 +268,16 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       const contextSnapshot = await createNewTaskContextSnapshot(input.contexts, input.reader);
       task = validateNewTaskDraft(input.draft);
       turnText = createNewTaskTurnText(task, contextSnapshot);
+      assertSessionBoundary(this.snapshot.session, input.mode, workspace);
+      this.update({
+        session: createSessionProjection(
+          this.snapshot.session,
+          task,
+          input.contexts,
+          input.mode,
+          workspace,
+        ),
+      });
     } catch (error) {
       const failure = normalizeConversationError(error);
       return this.fail(failure.code, failure.message);
@@ -715,10 +772,14 @@ export class NewTaskConversationController implements NewTaskConversationHost {
   private update(
     patch: Partial<Pick<
       NewTaskConversationSnapshot,
-      'error' | 'messages' | 'mode' | 'permission' | 'phase' | 'runtimeStatus' | 'taskTurns' | 'tools'
+      'error' | 'messages' | 'mode' | 'permission' | 'phase' | 'runtimeStatus' | 'session' | 'taskTurns' | 'tools'
     >>,
   ): void {
     this.snapshot = freezeSnapshot({ ...this.snapshot, ...patch });
+    this.emit();
+  }
+
+  private emit(): void {
     for (const listener of this.listeners) {
       try {
         listener();
@@ -781,9 +842,59 @@ function freezeSnapshot(snapshot: NewTaskConversationSnapshot): NewTaskConversat
   return Object.freeze({
     ...snapshot,
     messages: Object.freeze([...snapshot.messages]),
+    session: snapshot.session === null ? null : Object.freeze({
+      ...snapshot.session,
+      contextLabels: Object.freeze([...snapshot.session.contextLabels]),
+      workspace: snapshot.session.workspace === null
+        ? null
+        : Object.freeze({ ...snapshot.session.workspace }),
+    }),
     taskTurns: Object.freeze([...snapshot.taskTurns]),
     tools: Object.freeze([...snapshot.tools]),
   });
+}
+
+function createSessionProjection(
+  current: NewTaskConversationSession | null,
+  task: string,
+  contexts: readonly NewTaskContextSelection[],
+  mode: NewTaskMode,
+  workspace: TaskWorkspaceSelection | null,
+): NewTaskConversationSession {
+  return Object.freeze({
+    contextLabels: Object.freeze(contexts.map(contextSelectionLabel)),
+    mode,
+    title: current?.title ?? createSessionTitle(task),
+    workspace: workspace === null ? null : Object.freeze({ ...workspace }),
+  });
+}
+
+function createSessionTitle(task: string): string {
+  const compact = task.replace(/\s+/gu, ' ').trim();
+  const characters = Array.from(compact);
+  return characters.length <= 48 ? compact : `${characters.slice(0, 48).join('')}…`;
+}
+
+function assertSessionBoundary(
+  session: NewTaskConversationSession | null,
+  mode: NewTaskMode,
+  workspace: TaskWorkspaceSelection | null,
+): void {
+  if (!session) return;
+  if (session.mode !== mode) {
+    throw new NewTaskConversationError(
+      'session_mode_locked',
+      '当前会话模式已锁定；请先新建任务再切换模式。',
+    );
+  }
+  const currentPath = session.workspace?.path;
+  const nextPath = workspace?.path;
+  if (currentPath !== nextPath) {
+    throw new NewTaskConversationError(
+      'session_workspace_locked',
+      '当前会话工作区已锁定；请先新建任务再选择其他工作区。',
+    );
+  }
 }
 
 function normalizeConversationError(

@@ -77,6 +77,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
         getDshHealth: () => this.health,
         contextHost: this.contextHost,
         onContextsChanged: () => this.refreshQuickAssistantViews(),
+        openEnvironmentPanel: async () => await this.activateQuickAssistant(),
         runDshHealthCheck: async () => await this.runDshHealthCheck(),
         taskWorkspaceFileActions: this.taskWorkspaceFileActions,
         taskWorkspaceHost: this.taskWorkspaceHost,
@@ -85,6 +86,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     this.registerView(
       VIEW_TYPE_QUICK_ASSISTANT,
       (leaf: WorkspaceLeaf) => new QuickAssistantView(leaf, {
+        conversationHost: this.conversationHost,
         getContextSummary: () => this.getNewTaskContextSummary(),
         getDshHealth: () => this.health,
       }),
@@ -113,7 +115,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
 
     this.addCommand({
       id: 'open-quick-assistant',
-      name: '打开快速助手',
+      name: '打开任务环境',
       callback: () => {
         void this.activateQuickAssistant().catch((error: unknown) => {
           new Notice(this.quickAssistantActivationErrorMessage(error));
@@ -166,7 +168,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     const leaf = existingLeaf ?? this.app.workspace.getRightLeaf(false);
 
     if (!leaf) {
-      throw new Error('无法创建右侧快速助手视图');
+      throw new Error('无法创建右侧任务环境视图');
     }
 
     await leaf.setViewState({ type: VIEW_TYPE_QUICK_ASSISTANT, active: true });
@@ -180,7 +182,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
 
   private quickAssistantActivationErrorMessage(error: unknown): string {
     const detail = error instanceof Error ? error.message : String(error);
-    return `无法打开快速助手：${detail}`;
+    return `无法打开任务环境：${detail}`;
   }
 
   private refreshWorkbenchViews(): void {

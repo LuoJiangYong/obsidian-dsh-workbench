@@ -43,6 +43,7 @@ export const VIEW_TYPE_WORKBENCH = 'deepseek-harness-workbench-view';
 const BRAND_DEEPSEEK = 'DeepSeek';
 const NEW_TASK_HEADING = '今天想让 DeepSeek Harness 做什么？';
 const NEW_TASK_PLACEHOLDER = '描述目标，@ 引用上下文，/ 调用 Skill 或命令';
+const CONVERSATION_PLACEHOLDER = '继续当前会话，或选择更多只读笔记';
 const DEFAULT_VISIBLE_TASK_FILES = 3;
 const MAX_REVIEW_PREVIEW_CHARACTERS = 200_000;
 const MAX_REVIEW_PREVIEW_FILES = 50;
@@ -65,6 +66,7 @@ interface WorkbenchViewOptions {
   readonly contextHost: NewTaskContextHost;
   readonly getDshHealth: () => DshHealthResult;
   readonly onContextsChanged: () => void;
+  readonly openEnvironmentPanel: () => Promise<void>;
   readonly runDshHealthCheck: () => Promise<void>;
   readonly taskWorkspaceFileActions: TaskWorkspaceFileActionsHost;
   readonly taskWorkspaceHost: TaskWorkspaceHost;
@@ -73,9 +75,11 @@ interface WorkbenchViewOptions {
 export class WorkbenchView extends ItemView {
   private activeSection: WorkbenchSectionId = 'new-task';
   private conversationEl: HTMLElement | undefined;
+  private conversationStatusEl: HTMLElement | undefined;
   private detachConversation: (() => void) | undefined;
   private readonly expandedTaskTurnIds = new Set<string>();
   private newTaskState: NewTaskState = createNewTaskState();
+  private renderedSessionActive = false;
   private sendButtonEl: HTMLButtonElement | undefined;
   private readonly taskActionBusy = new Set<string>();
   private readonly taskActionErrors = new Map<string, string>();
@@ -101,8 +105,9 @@ export class WorkbenchView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    this.hydrateNewTaskStateFromSession();
     this.detachConversation ??= this.options.conversationHost.subscribe(
-      () => this.syncConversationSurface(),
+      () => this.handleConversationChanged(),
     );
     this.render();
   }
@@ -110,6 +115,7 @@ export class WorkbenchView extends ItemView {
   render(): void {
     const { contentEl } = this;
     this.conversationEl = undefined;
+    this.conversationStatusEl = undefined;
     this.sendButtonEl = undefined;
     this.textareaEl = undefined;
     contentEl.empty();
@@ -132,6 +138,8 @@ export class WorkbenchView extends ItemView {
     this.detachConversation = undefined;
     this.newTaskState = createNewTaskState();
     this.conversationEl = undefined;
+    this.conversationStatusEl = undefined;
+    this.renderedSessionActive = false;
     this.sendButtonEl = undefined;
     this.textareaEl = undefined;
     this.contentEl.empty();
@@ -139,6 +147,12 @@ export class WorkbenchView extends ItemView {
   }
 
   getContextSummary(): string {
+    const session = this.options.conversationHost.getSnapshot().session;
+    if (session) {
+      return session.contextLabels.length === 0
+        ? '本次会话未加入只读笔记'
+        : `本次会话已加入 ${String(session.contextLabels.length)} 项：${session.contextLabels.join('、')}`;
+    }
     if (this.newTaskState.contexts.length === 0) return '未选择笔记或工作范围';
     const labels = this.newTaskState.contexts.map((context) => contextSelectionLabel(context));
     return `已选择 ${String(labels.length)} 项：${labels.join('、')}`;
@@ -198,37 +212,105 @@ export class WorkbenchView extends ItemView {
   }
 
   private renderNewTask(parentEl: HTMLElement): void {
-    const taskEl = parentEl.createEl('section', { cls: 'dsh-new-task' });
+    const snapshot = this.options.conversationHost.getSnapshot();
+    const session = snapshot.session;
+    this.renderedSessionActive = session !== null;
+    const taskEl = parentEl.createEl('section', {
+      cls: `dsh-new-task${session ? ' is-conversation' : ''}`,
+    });
+    if (session) this.renderFormalConversation(taskEl, snapshot);
+    else this.renderNewTaskStartup(taskEl);
+    this.syncConversationSurface();
+  }
+
+  private renderNewTaskStartup(taskEl: HTMLElement): void {
     taskEl.createEl('h3', { text: NEW_TASK_HEADING });
     this.renderNewTaskModes(taskEl);
+    this.renderComposer(taskEl, false);
+
+    const confirmationEl = taskEl.createEl('section', { cls: 'dsh-new-task-confirmation' });
+    const confirmationIconEl = confirmationEl.createSpan({
+      cls: 'dsh-new-task-confirmation__icon',
+    });
+    setIcon(confirmationIconEl, 'shield-check');
+    const confirmationCopyEl = confirmationEl.createDiv();
+    confirmationCopyEl.createEl('strong', { text: '执行前确认' });
+    confirmationCopyEl.createEl('p', {
+      text: this.newTaskState.mode === 'task'
+        ? '发送前确认任务、只读笔记与 Vault 外工作区；文件工具逐次授权，不写入知识库。'
+        : '发送前确认任务和只读笔记；对话不开放 DSH 工具，也不会写入知识库。',
+    });
+  }
+
+  private renderFormalConversation(
+    taskEl: HTMLElement,
+    snapshot: NewTaskConversationSnapshot,
+  ): void {
+    const session = snapshot.session;
+    if (!session) return;
+    const headerEl = taskEl.createEl('header', { cls: 'dsh-formal-conversation__header' });
+    const copyEl = headerEl.createDiv({ cls: 'dsh-formal-conversation__copy' });
+    copyEl.createEl('h3', { text: session.title });
+    this.conversationStatusEl = copyEl.createEl('p', {
+      cls: 'dsh-formal-conversation__status',
+      text: formalConversationStatus(snapshot),
+    });
+    copyEl.createEl('p', {
+      cls: 'dsh-formal-conversation__boundary',
+      text: session.mode === 'task'
+        ? `${session.workspace?.name ?? '外部工作区'} · 仅本次工作区可写 · 文件工具逐次确认`
+        : '只读对话 · 不开放 DSH 工具 · 不写入知识库',
+    });
+    const actionsEl = headerEl.createDiv({ cls: 'dsh-formal-conversation__actions' });
+    const environmentEl = actionsEl.createEl('button', {
+      text: '任务环境',
+      attr: { type: 'button' },
+    });
+    environmentEl.addEventListener('click', () => {
+      void this.options.openEnvironmentPanel().catch(
+        (error: unknown) => new Notice(taskActionFailureMessage(error)),
+      );
+    });
+    const newTaskEl = actionsEl.createEl('button', {
+      text: '新建任务',
+      attr: { type: 'button', 'aria-haspopup': 'dialog' },
+    });
+    newTaskEl.disabled = !canChangeMode(snapshot.phase);
+    newTaskEl.addEventListener('click', () => this.openNewTaskReset());
 
     this.conversationEl = taskEl.createEl('section', {
       cls: 'dsh-new-task-conversation',
       attr: {
         'aria-label': '对话记录',
         'aria-live': 'polite',
+        'aria-busy': isConversationBusy(snapshot.phase) ? 'true' : 'false',
       },
     });
 
+    this.renderComposer(taskEl, true);
+  }
+
+  private renderComposer(taskEl: HTMLElement, compact: boolean): void {
     const composerEl = taskEl.createDiv({ cls: 'dsh-new-task-composer' });
+    if (compact) composerEl.addClass('is-compact');
     const textareaEl = composerEl.createEl('textarea', {
       cls: 'dsh-new-task-composer__input',
       attr: {
         'aria-label': '任务描述',
-        placeholder: NEW_TASK_PLACEHOLDER,
-        rows: '4',
+        placeholder: compact ? CONVERSATION_PLACEHOLDER : NEW_TASK_PLACEHOLDER,
+        rows: compact ? '3' : '4',
       },
     });
     this.textareaEl = textareaEl;
     textareaEl.value = this.newTaskState.draft;
 
-    this.renderSelectedWorkspace(composerEl);
+    if (!compact) this.renderSelectedWorkspace(composerEl);
     this.renderSelectedContexts(composerEl);
     const footerEl = composerEl.createDiv({ cls: 'dsh-new-task-composer__footer' });
     const toolsEl = footerEl.createDiv({ cls: 'dsh-new-task-composer__tools' });
     this.renderDisabledComposerTool(toolsEl, 'circle-plus', '添加附件', 'attachment');
     this.renderContextTool(toolsEl);
-    if (this.newTaskState.mode === 'task') this.renderWorkspaceTool(toolsEl);
+    if (!compact && this.newTaskState.mode === 'task') this.renderWorkspaceTool(toolsEl);
     this.renderDisabledComposerTool(
       toolsEl,
       'shield-check',
@@ -262,19 +344,6 @@ export class WorkbenchView extends ItemView {
       void this.handlePrimaryAction();
     });
 
-    const confirmationEl = taskEl.createEl('section', { cls: 'dsh-new-task-confirmation' });
-    const confirmationIconEl = confirmationEl.createSpan({
-      cls: 'dsh-new-task-confirmation__icon',
-    });
-    setIcon(confirmationIconEl, 'shield-check');
-    const confirmationCopyEl = confirmationEl.createDiv();
-    confirmationCopyEl.createEl('strong', { text: '执行前确认' });
-    confirmationCopyEl.createEl('p', {
-      text: this.newTaskState.mode === 'task'
-        ? '发送前确认任务、只读笔记与 Vault 外工作区；文件工具逐次授权，不写入知识库。'
-        : '发送前确认任务和只读笔记；对话不开放 DSH 工具，也不会写入知识库。',
-    });
-    this.syncConversationSurface();
   }
 
   private renderNewTaskModes(parentEl: HTMLElement): void {
@@ -513,6 +582,46 @@ export class WorkbenchView extends ItemView {
     return compact.length <= 120 ? compact : `${compact.slice(0, 120)}…`;
   }
 
+  private handleConversationChanged(): void {
+    const sessionActive = this.options.conversationHost.getSnapshot().session !== null;
+    if (sessionActive !== this.renderedSessionActive) {
+      this.hydrateNewTaskStateFromSession();
+      this.render();
+      return;
+    }
+    this.syncConversationSurface();
+  }
+
+  private hydrateNewTaskStateFromSession(): void {
+    const session = this.options.conversationHost.getSnapshot().session;
+    if (!session) return;
+    this.newTaskState = reduceNewTaskState(this.newTaskState, {
+      type: 'mode-changed',
+      mode: session.mode,
+    });
+    this.newTaskState = reduceNewTaskState(this.newTaskState, {
+      type: 'workspace-changed',
+      workspace: session.workspace,
+    });
+  }
+
+  private openNewTaskReset(): void {
+    new NewTaskResetModal(
+      this.app,
+      async () => {
+        const started = await this.options.conversationHost.startNewTask();
+        if (started) {
+          this.newTaskState = createNewTaskState();
+          this.expandedTaskTurnIds.clear();
+          this.taskActionBusy.clear();
+          this.taskActionErrors.clear();
+          this.render();
+        }
+        return started;
+      },
+    ).open();
+  }
+
   private async handlePrimaryAction(): Promise<void> {
     const snapshot = this.options.conversationHost.getSnapshot();
     if (snapshot.phase === 'running' || snapshot.phase === 'awaiting_permission') {
@@ -523,8 +632,8 @@ export class WorkbenchView extends ItemView {
 
     const draft = this.newTaskState.draft;
     const contexts = this.newTaskState.contexts;
-    const mode = this.newTaskState.mode;
-    const workspace = this.newTaskState.workspace;
+    const mode = snapshot.session?.mode ?? this.newTaskState.mode;
+    const workspace = snapshot.session?.workspace ?? this.newTaskState.workspace;
     new NewTaskReviewModal(
       this.app,
       draft,
@@ -560,6 +669,14 @@ export class WorkbenchView extends ItemView {
     }
     const snapshot = this.options.conversationHost.getSnapshot();
     conversationEl.empty();
+    conversationEl.addClass('dsh-new-task-conversation');
+    conversationEl.setAttr(
+      'aria-busy',
+      isConversationBusy(snapshot.phase) ? 'true' : 'false',
+    );
+    if (this.conversationStatusEl) {
+      this.conversationStatusEl.setText(formalConversationStatus(snapshot));
+    }
 
     for (const message of snapshot.messages) {
       const messageEl = conversationEl.createEl('article', {
@@ -950,6 +1067,66 @@ export class WorkbenchView extends ItemView {
   }
 }
 
+class NewTaskResetModal extends Modal {
+  constructor(
+    app: WorkbenchView['app'],
+    private readonly onConfirm: () => Promise<boolean>,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.setTitle('新建任务');
+    this.contentEl.createEl('p', {
+      cls: 'dsh-new-task-reset__boundary',
+      text: '将清除当前工作台在本次插件生命周期内的会话投影并返回开启页。DSH 原生会话与 Vault 外逐轮账本不会被删除；当前版本不提供跨重启的最近会话恢复。',
+    });
+    const errorEl = this.contentEl.createEl('p', {
+      cls: 'dsh-new-task-reset__error',
+      attr: { role: 'alert' },
+    });
+    const actionsEl = this.contentEl.createDiv({ cls: 'dsh-new-task-reset__actions' });
+    const cancelEl = actionsEl.createEl('button', {
+      text: '取消',
+      attr: { type: 'button' },
+    });
+    cancelEl.addEventListener('click', () => this.close());
+    const confirmEl = actionsEl.createEl('button', {
+      cls: 'mod-cta',
+      text: '新建任务',
+      attr: { type: 'button' },
+    });
+    confirmEl.addEventListener('click', () => {
+      void this.confirm(confirmEl, cancelEl, errorEl);
+    });
+  }
+
+  private async confirm(
+    confirmEl: HTMLButtonElement,
+    cancelEl: HTMLButtonElement,
+    errorEl: HTMLElement,
+  ): Promise<void> {
+    confirmEl.disabled = true;
+    cancelEl.disabled = true;
+    errorEl.setText('');
+    try {
+      if (await this.onConfirm()) {
+        this.close();
+        return;
+      }
+      errorEl.setText('当前运行尚未结束，暂时不能新建任务。');
+    } catch (error) {
+      errorEl.setText(taskActionFailureMessage(error));
+    }
+    confirmEl.disabled = false;
+    cancelEl.disabled = false;
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
 class NewTaskReviewModal extends Modal {
   constructor(
     app: WorkbenchView['app'],
@@ -1197,6 +1374,20 @@ function conversationPhaseStatus(
     validating: mode === 'task' ? '正在校验工作区和只读笔记…' : '正在校验只读笔记…',
   };
   return statuses[snapshot.phase];
+}
+
+function formalConversationStatus(snapshot: NewTaskConversationSnapshot): string {
+  return conversationPhaseStatus(snapshot, snapshot.session?.mode ?? snapshot.mode ?? 'chat')
+    ?? '可以继续当前会话';
+}
+
+function isConversationBusy(phase: NewTaskConversationSnapshot['phase']): boolean {
+  return phase === 'validating'
+    || phase === 'starting'
+    || phase === 'running'
+    || phase === 'awaiting_permission'
+    || phase === 'cancelling'
+    || phase === 'finalizing';
 }
 
 function canChangeMode(phase: NewTaskConversationSnapshot['phase']): boolean {

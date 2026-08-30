@@ -20,6 +20,7 @@ const taskWorkspaceFileActionTests = await readFile(
 );
 const newTaskConversationTests = await readFile('tests/new-task-conversation.test.ts', 'utf8');
 const conversationUiTests = await readFile('tests/workbench-conversation-ui.test.ts', 'utf8');
+const taskEnvironmentTests = await readFile('tests/task-environment-view.test.ts', 'utf8');
 const runtimeFixture = JSON.parse(await readFile('tests/runtime-fixture/package.json', 'utf8'));
 
 const requiredCommands = [
@@ -102,7 +103,7 @@ assert(
 for (const uiContract of [
   '在中央标签页打开并复用 Workbench 视图',
   '按用户反馈渲染精简导航和胶囊模式，并把不可用动作保持为真实禁用态',
-  '只在显式请求时打开并复用右侧快速助手真实上下文摘要',
+  '只在显式请求时打开并复用右侧任务环境的真实启动上下文',
   '插件卸载时关闭仍打开的上下文选择器',
 ]) {
   assert(pluginBaseline.includes(uiContract), `插件基线缺少 UI 契约：${uiContract}`);
@@ -141,12 +142,23 @@ for (const ardotContract of [
   '不显示“首发”“规划中”“尚未实现”等开发阶段、发布批次或治理审批文案',
   '未实现模块不在插件导航中渲染',
   '模式分段控件在插件中使用左右半圆胶囊边界',
-  'Batch 5A UI 基线与 Batch 7 插件级对话状态各自保持单一职责',
+  'Batch 5A UI 基线、Batch 7 对话与 Batch 9 正式会话各自保持单一职责',
   '同一个 Workbench leaf 内切换为正式会话页',
   '右侧信息应使用 Obsidian 原生右侧 leaf，默认关闭且可选打开',
   '不提供完全权限、跨会话永久授权或任意 Shell',
 ]) {
   assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
+}
+
+for (const environmentContract of [
+  '原生右侧任务环境',
+  '只投影当前公开会话事实并在关闭后停止订阅',
+  "not.toContain('C:\\\\private')",
+]) {
+  assert(
+    taskEnvironmentTests.includes(environmentContract),
+    `任务环境测试缺少契约：${environmentContract}`,
+  );
 }
 for (const newTaskContract of [
   '新建任务 v1 固定宿主边界、真实取消、运行数据与只读自动演进',
@@ -249,6 +261,8 @@ for (const taskWorkspaceFileActionContract of [
 for (const conversationContract of [
   '新建任务真实对话控制器',
   '发送前重读上下文，复用同一 session，并投影流式回复、工具、权限和完成终态',
+  '显式新建任务只在终态清空插件内投影并处置运行时，活动 turn 拒绝重置',
+  '正式会话锁定模式与规范工作区，禁止静默开启第二个 DSH session',
   '任务模式在已校验 Vault 外工作区建立基线，以 task session 执行并在终态生成变更事实',
   '仅在任务终态允许按同一 turn 账本安全撤销，并用撤销结果替换当前快照',
   '任务模式缺少工作区时 fail closed，不启动进程或建立账本',
@@ -268,6 +282,7 @@ for (const conversationUiContract of [
   'Workbench 真实对话界面',
   '发送前展示只读审阅，取消保留草稿，确认后清空草稿并显示流式结果',
   '只提供本次权限决定并把错误作为可访问终态呈现',
+  '重开同一视图恢复插件生命周期内正式页，并只由显式新建任务返回开启页',
   '任务模式选择 Vault 外工作区后才允许发送，并在结束时显示真实变更摘要',
   '每轮默认展示三个真实文件，支持展开、审核、原生右键操作和二次确认撤销',
   '撤销冲突时保持确认窗口并把零写入失败展示为可访问错误',
@@ -288,7 +303,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench UI、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {
