@@ -55,7 +55,7 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('- 不采集客户端遥测。');
   });
 
-  it('G0-1 统一第一批完成、当前 v1 支持与发布延期状态', async () => {
+  it('G0-1 完成状态与 G0-2 只读预检边界保持一致', async () => {
     const [
       design,
       designQa,
@@ -136,9 +136,14 @@ describe('发布与治理契约', () => {
     expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `supported`（当前 v1） |');
     expect(ciRoadmap).toContain('状态：当前 v1 范围已通过');
     expect(ciRoadmap).toContain('发布资产验收、Release 与社区提交仍未完成或未授权');
+    expect(ciRoadmap).toContain('npm run verify:isolated-vault');
+    expect(ciRoadmap).toContain('入口默认且仅执行 dry-run');
     expect(codexAssessment).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
     expect(releaseStatus).toContain('GitHub Release、发布资产验收和 Obsidian 社区提交仍未批准或执行');
-    expect(implementationRoadmap).toContain('状态：G0-1 已完成；G0-2 及后续批次尚未获授权');
+    expect(implementationRoadmap).toContain('状态：G0-1、G0-2 已完成；R1 及后续批次尚未获授权');
+    expect(implementationRoadmap).toContain('权威配置来源固定为 Obsidian 桌面 Vault 注册表');
+    expect(designQa).toContain('G0-2 dedicated Vault reproducible read-only preflight: passed');
+    expect(designQa).toContain('Ardot 未修改、只读核对');
   });
 
   it('DESIGN 与 ADR 固定中央工作台、内部导航和可选任务环境边界', async () => {

@@ -20,6 +20,7 @@
     "verify:release-state": "node scripts/verify-release-state.mjs",
     "verify:boundaries": "node scripts/verify-repo-boundaries.mjs",
     "verify:ci-coverage": "node scripts/verify-ci-coverage.mjs",
+    "verify:isolated-vault": "node scripts/verify-isolated-vault.mjs --dry-run",
     "verify:bridge-artifact": "node scripts/verify-bridge-artifact.mjs",
     "verify": "npm run verify:release-state && npm run verify:boundaries && npm run verify:ci-coverage && npm run verify:bridge-artifact"
   },

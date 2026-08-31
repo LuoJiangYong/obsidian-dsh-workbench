@@ -21,6 +21,8 @@ const taskWorkspaceFileActionTests = await readFile(
 const newTaskConversationTests = await readFile('tests/new-task-conversation.test.ts', 'utf8');
 const conversationUiTests = await readFile('tests/workbench-conversation-ui.test.ts', 'utf8');
 const taskEnvironmentTests = await readFile('tests/task-environment-view.test.ts', 'utf8');
+const isolatedVaultTests = await readFile('tests/isolated-vault-entry.test.ts', 'utf8');
+const isolatedVaultVerifier = await readFile('scripts/verify-isolated-vault.mjs', 'utf8');
 const runtimeFixture = JSON.parse(await readFile('tests/runtime-fixture/package.json', 'utf8'));
 
 const requiredCommands = [
@@ -70,6 +72,7 @@ for (const script of [
   'prepare:runtime-fixture',
   'build',
   'verify:bridge-artifact',
+  'verify:isolated-vault',
   'verify',
 ]) {
   assert(typeof packageJson.scripts?.[script] === 'string', `package scripts 缺少 ${script}`);
@@ -100,6 +103,32 @@ assert(
   packageJson.scripts.test === 'vitest run',
   'test 必须执行完整 Vitest 集，不能把 UI 契约排除在双平台 CI 外',
 );
+assert(
+  packageJson.scripts['verify:isolated-vault'] === 'node scripts/verify-isolated-vault.mjs --dry-run',
+  '专用隔离 Vault 必须保留仓库内单一 dry-run 入口',
+);
+for (const vaultGuardContract of [
+  '从 Obsidian 注册表唯一解析专用 Vault，输出脱敏清单且不修改输入',
+  '注册表只包含另一个插件 Vault 时明确拒绝',
+  '专用目录中的插件 ID 不匹配时 fail closed',
+  '插件目录通过符号链接或 junction 越出 Vault 时 fail closed',
+]) {
+  assert(
+    isolatedVaultTests.includes(vaultGuardContract),
+    `隔离 Vault 预检测试缺少契约：${vaultGuardContract}`,
+  );
+}
+for (const vaultVerifierContract of [
+  "const EXPECTED_VAULT_NAME = 'obsidian-dsh-workbench-evidence'",
+  "const FORBIDDEN_VAULT_NAME = 'obsidian-trend-radar-evidence'",
+  "vaultWrite: 'not-authorized'",
+  "path: '[redacted]'",
+]) {
+  assert(
+    isolatedVaultVerifier.includes(vaultVerifierContract),
+    `隔离 Vault 预检脚本缺少 guard：${vaultVerifierContract}`,
+  );
+}
 for (const uiContract of [
   '在中央标签页打开并复用 Workbench 视图',
   '按用户反馈渲染精简导航和胶囊模式，并把不可用动作保持为真实禁用态',
@@ -304,7 +333,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、专用隔离 Vault dry-run guard、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

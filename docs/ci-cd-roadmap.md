@@ -137,6 +137,10 @@ Phase D 中既有代码门仍有效；此前使用 `obsidian-trend-radar-evidenc
 
 Ardot v2 进一步把“新建任务”固定为首个社区发布功能。它的完整实现、相应 CI、隔离 Vault 运行验收和用户对最终运行 UI 的明确验收，都是进入社区发布审批的前置条件；这些第一批前置条件现已闭环，但不自动完成发布资产验收，也不授权 Release 或社区提交。
 
+G0-2 已新增仓库内单一入口 `npm run verify:isolated-vault`。入口默认且仅执行 dry-run：从 Obsidian 桌面 Vault 注册表唯一解析 `obsidian-dsh-workbench-evidence`，对 Vault、配置目录、插件目录和 `manifest.json` 执行规范路径与包含关系读回，要求插件 ID 精确为 `deepseek-harness-workbench`，并以 `[redacted]` 代替绝对路径输出验收清单。缺失、重复、错误插件 ID、符号链接或 junction 越界、另一个插件 Vault、`--write` 与未知参数均 fail closed；入口不包含 Vault 写入、Obsidian 自动交互或产品运行路径。
+
+同一 CLI 由 `tests/isolated-vault-entry.test.ts` 黑盒启动，测试输入使用临时夹具并比较前后文件哈希与修改时间；双平台现有 `npm test` 已实际执行该测试，`verify:ci-coverage` 另行固定 npm 入口、测试语义与 guard 字面契约，因此无需新增或修改 workflow job。本机 Windows 已通过真实 Obsidian 注册表完成只读预检，结果为 `ready`，插件清单 ID 读回正确且输出没有本机绝对路径；这只证明入口和当前专用 Vault 身份，不冒充新的产品 UI、Vault 写入或 R1 验收。
+
 ## Phase E：Release Automation
 
 状态：未批准，禁止实施。
@@ -168,4 +172,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10 的精确范围已通过本地门、专用 Vault 技术运行门、双平台 CI、原始零 annotations 与用户确认。当前仅批准 G0-1 统一状态真相，完成后必须停止；G0-2 及统一工作台产品批次需要另行逐批批准。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 默认只读，除非用户明确要求不得修改。当前授权不包括 Release、发布资产、社区提交、真实或隔离 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10 的精确范围已通过本地门、专用 Vault 技术运行门、双平台 CI、原始零 annotations 与用户确认。G0-1 状态真相与 G0-2 专用隔离 Vault 只读预检入口均已完成；现在必须停止，R1 及统一工作台产品批次需要另行逐批批准。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 默认只读，除非用户明确要求不得修改。当前授权不包括 Release、发布资产、社区提交、真实或隔离 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。

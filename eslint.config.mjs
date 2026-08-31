@@ -51,4 +51,14 @@ export default defineConfig(
       'obsidianmd/prefer-window-timers': 'off',
     },
   },
+  {
+    files: [
+      'scripts/verify-isolated-vault.mjs',
+      'tests/isolated-vault-entry.test.ts',
+    ],
+    rules: {
+      // 仓库外预检没有运行中的 Vault 实例，只读核验专用验收 Vault 的默认插件目录。
+      'obsidianmd/hardcoded-config-path': 'off',
+    },
+  },
 );

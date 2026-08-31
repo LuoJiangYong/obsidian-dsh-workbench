@@ -1,6 +1,6 @@
 # 统一工作台下一批实施总路线
 
-- 状态：G0-1 已完成；G0-2 及后续批次尚未获授权
+- 状态：G0-1、G0-2 已完成；R1 及后续批次尚未获授权
 - 路线日期：2026-08-31
 - 审计基线：main / 7254228b1cc16f9bd3e9221379026c9127eb0c46
 - 产品输入：[统一工作台下一批未来实施契约](../requirements/unified-workbench-next-batch.md)
@@ -15,7 +15,7 @@
 
 每批只有一个用户可见或契约可验证结果；完成、push 和远端 CI 成功只关闭当前批次，不自动授权下一批。
 
-G0-1 是本轮唯一获准实施的批次，现已完成状态真相闭环。G0-2 及后续产品批次均需逐批明确批准。在获得相应批准前，本路线不授权修改产品源码、bridge 协议、GitHub Actions、DSH 配置、真实或隔离 Vault、Ardot、Release 或 Obsidian 社区提交。
+G0-1 与 G0-2 已分别获得用户明确批准并完成；G0-2 只建立了专用隔离 Vault 的只读预检入口，没有修改 Vault 或产品功能。R1 及后续产品批次均需逐批明确批准。在获得相应批准前，本路线不授权修改产品源码、bridge 协议、GitHub Actions、DSH 配置、真实或隔离 Vault、Ardot、Release 或 Obsidian 社区提交。
 
 路线固定以下最终方向，但不把它们描述成当前已经交付：
 
@@ -128,12 +128,12 @@ R2 是任务持久化事实源的门；D1 与 U1 可在 R2 完成后分别提案
 - 前置依赖：G0-1。
 - 允许范围：专用 Vault 解析、只读预检、脱敏证据契约、脚本和 CI 入口设计。
 - 禁止范围：创建或修改真实 Vault、使用 obsidian-trend-radar-evidence、自动点击、产品功能修改和发布。
-- 预计文件：scripts/verify-*、tests、docs/ci-cd-roadmap.md、design-qa.md；确需 workflow 修改时必须在批次批准中明示。
+- 预计文件：scripts/verify-*、tests、package.json、eslint.config.mjs、docs/ci-cd-roadmap.md、design-qa.md 与本路线状态；现有 workflow 已实际执行完整 `npm test` 和 `npm run verify`，无需新增 job。
 - 迁移与消费者：无用户数据迁移；消费者是后续 F1、M1 和 CI/人工运行门。
 - 验证：缺失、错插件 ID、路径越界和另一个插件 Vault 必须 fail closed；Windows 真实路径解析和读回通过。
 - 失败与回滚：入口无法证明隔离或输出个人绝对路径即失败；删除本批新增入口即可回滚。
 - 停止边界：只建立可复现入口，不运行写入性验收，不进入 R1。
-- 另行决策：需要用户批准 G0-2，并提供或确认专用 Vault 的权威配置来源。
+- 另行决策：用户已批准 G0-2；权威配置来源固定为 Obsidian 桌面 Vault 注册表。入口不提交本机路径，只接受注册表中唯一的 `obsidian-dsh-workbench-evidence`，使用默认插件配置目录；若该专用 Vault 改用自定义配置目录则 fail closed，后续需另行批准适配，不猜路径。
 
 ## 7. DSH 能力与恢复批次
 
@@ -382,4 +382,4 @@ R2 是任务持久化事实源的门；D1 与 U1 可在 R2 完成后分别提案
 
 ## 15. 当前硬停止
 
-G0-1 已完成，现在必须停止；不得自动进入 G0-2、R1 或任何产品实现，不得修改 Ardot、写入 Vault、安装或升级 DSH、创建 Release 或提交 Obsidian 社区目录。
+G0-1、G0-2 已完成，现在必须停止；不得自动进入 R1 或任何产品实现，不得修改 Ardot、写入 Vault、安装或升级 DSH、创建 Release 或提交 Obsidian 社区目录。
