@@ -95,13 +95,22 @@ describe('发布与治理契约', () => {
   });
 
   it('下一批契约固定统一运行、项目与最近、手动排序和运行规划', async () => {
-    const [requirements, design, readme, permissionAdr] = await Promise.all([
+    const [requirements, implementationRoadmap, design, readme, permissionAdr] = await Promise.all([
       readFile(
         path.join(
           repositoryRoot,
           'docs',
           'requirements',
           'unified-workbench-next-batch.md',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'implementation',
+          'unified-workbench-roadmap.md',
         ),
         'utf8',
       ),
@@ -129,9 +138,17 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('用户首次执行手动排序后');
     expect(requirements).toContain('`运行` 保留在上方产品功能导航');
     expect(requirements).toContain('项目归档、移除与任务归档、删除的准确语义');
-    expect(requirements).toContain('当前批次不修改插件源码');
+    expect(requirements).toContain('统一工作台分批实施路线');
+    expect(requirements).toContain('不自动批准任何产品代码批次');
+    expect(implementationRoadmap).toContain('G0-1：第一批状态真相闭环');
+    expect(implementationRoadmap).toContain('G0-2：隔离 Vault 可复现验收入口');
+    expect(implementationRoadmap).toContain('R1：DSH 正式控制面兼容候选');
+    expect(implementationRoadmap).toContain('任务归档、删除和恢复语义');
+    expect(implementationRoadmap).toContain('后续产品批次均需逐批明确批准');
+    expect(implementationRoadmap).toContain('Ardot 未修改、只读核对');
     expect(design).toContain('统一工作台下一批未来实施契约');
     expect(readme).toContain('统一工作台下一批未来实施契约');
+    expect(readme).toContain('统一工作台分批实施路线');
     expect(permissionAdr).toContain('后续综合实施契约');
   });
 

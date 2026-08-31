@@ -3,6 +3,7 @@
 - 状态：已确认的未来实施输入，尚未批准开始代码实施
 - 日期：2026-08-31
 - 当前能力基线：[新建任务 v1](./new-task-v1.md)
+- 分批实施路线：[统一工作台分批实施路线](../implementation/unified-workbench-roadmap.md)
 - 权限分层：[ADR-011](../architecture/ADR-011-context-environment-and-permission-levels.md)
 - UI 审阅真相：Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）；本决策批次未修改 Ardot
 
@@ -182,4 +183,4 @@ Vault 高风险变更、stdio MCP 宿主约束、权限默认值和跨会话授�
 
 ## 12. 当前停止边界
 
-本文件只落盘未来实施决策。当前批次不修改插件源码、bridge、运行数据、真实 Vault、隔离 Vault、DSH 配置或 Ardot，不开展 Claudian/DSH/Codex 实施审计，也不批准下一批代码实施。
+本文件固定未来产品契约，具体依赖、批次、验证和审批门以[统一工作台分批实施路线](../implementation/unified-workbench-roadmap.md)为准。当前不因此修改插件源码、bridge、运行数据、真实 Vault、隔离 Vault、DSH 配置或 Ardot，也不自动批准任何产品代码批次。

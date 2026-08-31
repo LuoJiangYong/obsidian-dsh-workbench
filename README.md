@@ -203,6 +203,7 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 - 生产运行时 ADR：[docs/architecture/ADR-001-runtime-integration.md](./docs/architecture/ADR-001-runtime-integration.md)
 - 新建任务 v1 需求：[docs/requirements/new-task-v1.md](./docs/requirements/new-task-v1.md)
 - 统一工作台下一批未来实施契约：[docs/requirements/unified-workbench-next-batch.md](./docs/requirements/unified-workbench-next-batch.md)
+- 统一工作台分批实施路线：[docs/implementation/unified-workbench-roadmap.md](./docs/implementation/unified-workbench-roadmap.md)
 - 新建任务 v1 宿主契约 ADR：[docs/architecture/ADR-005-new-task-v1-host-contract.md](./docs/architecture/ADR-005-new-task-v1-host-contract.md)
 - Vault 外任务执行控制器 ADR：[docs/architecture/ADR-008-task-execution-controller.md](./docs/architecture/ADR-008-task-execution-controller.md)
 - 逐轮文件审核与安全撤销 ADR：[docs/architecture/ADR-009-task-change-review-and-undo-ui.md](./docs/architecture/ADR-009-task-change-review-and-undo-ui.md)
