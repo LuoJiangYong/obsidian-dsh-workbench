@@ -1,4 +1,4 @@
-import { readFile, realpath, stat } from 'node:fs/promises';
+import { lstat, readFile, realpath, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -58,12 +58,19 @@ async function verifyIsolatedVault(registryPath) {
   }
 
   const vaultPath = path.resolve(configuredVaultPath);
-  await requireDirectory(vaultPath, 'dedicated_vault_unavailable');
+  await requireUnaliasedDirectory(
+    vaultPath,
+    'dedicated_vault_unavailable',
+    'vault_path_alias_rejected',
+  );
+  // Windows 的 8.3 路径与 realpath 文本可能不同；逐段拒绝真实链接，避免把合法短路径误判为逃逸。
+  await requirePathWithoutSymbolicSegments(
+    vaultPath,
+    'dedicated_vault_unavailable',
+    'vault_path_alias_rejected',
+  );
   const canonicalVaultPath = await canonicalize(vaultPath, 'dedicated_vault_unavailable');
-  if (
-    !samePath(vaultPath, canonicalVaultPath)
-    || path.basename(canonicalVaultPath) !== EXPECTED_VAULT_NAME
-  ) {
+  if (path.basename(canonicalVaultPath) !== EXPECTED_VAULT_NAME) {
     throw new PreflightError('vault_path_alias_rejected');
   }
 
@@ -78,9 +85,13 @@ async function verifyIsolatedVault(registryPath) {
     'plugin_directory_unavailable',
   );
   const manifestPath = path.join(pluginDirectory, 'manifest.json');
-  await requireFile(manifestPath, 'plugin_manifest_unavailable');
+  await requireUnaliasedFile(
+    manifestPath,
+    'plugin_manifest_unavailable',
+    'plugin_path_escape',
+  );
   const canonicalManifestPath = await canonicalize(manifestPath, 'plugin_manifest_unavailable');
-  if (!samePath(manifestPath, canonicalManifestPath) || !isStrictlyInside(pluginDirectory, canonicalManifestPath)) {
+  if (!isStrictlyInside(pluginDirectory, canonicalManifestPath)) {
     throw new PreflightError('plugin_path_escape');
   }
 
@@ -183,22 +194,48 @@ function readRegisteredVaultPaths(registry) {
 }
 
 async function requireConfinedDirectory(parentPath, candidatePath, unavailableCode) {
-  await requireDirectory(candidatePath, unavailableCode);
+  await requireUnaliasedDirectory(candidatePath, unavailableCode, 'plugin_path_escape');
   const canonicalCandidatePath = await canonicalize(candidatePath, unavailableCode);
-  if (!samePath(candidatePath, canonicalCandidatePath) || !isStrictlyInside(parentPath, canonicalCandidatePath)) {
+  if (!isStrictlyInside(parentPath, canonicalCandidatePath)) {
     throw new PreflightError('plugin_path_escape');
   }
   return canonicalCandidatePath;
 }
 
-async function requireDirectory(candidatePath, code) {
-  const candidateStat = await readStat(candidatePath, code);
-  if (!candidateStat.isDirectory()) throw new PreflightError(code);
+async function requireUnaliasedDirectory(candidatePath, unavailableCode, aliasCode) {
+  const candidateStat = await readLstat(candidatePath, unavailableCode);
+  if (candidateStat.isSymbolicLink()) throw new PreflightError(aliasCode);
+  if (!candidateStat.isDirectory()) throw new PreflightError(unavailableCode);
+}
+
+async function requireUnaliasedFile(candidatePath, unavailableCode, aliasCode) {
+  const candidateStat = await readLstat(candidatePath, unavailableCode);
+  if (candidateStat.isSymbolicLink()) throw new PreflightError(aliasCode);
+  if (!candidateStat.isFile()) throw new PreflightError(unavailableCode);
+}
+
+async function requirePathWithoutSymbolicSegments(candidatePath, unavailableCode, aliasCode) {
+  const parsedPath = path.parse(candidatePath);
+  const relativePath = path.relative(parsedPath.root, candidatePath);
+  let currentPath = parsedPath.root;
+  for (const segment of relativePath.split(path.sep).filter(Boolean)) {
+    currentPath = path.join(currentPath, segment);
+    const segmentStat = await readLstat(currentPath, unavailableCode);
+    if (segmentStat.isSymbolicLink()) throw new PreflightError(aliasCode);
+  }
 }
 
 async function requireFile(candidatePath, code) {
   const candidateStat = await readStat(candidatePath, code);
   if (!candidateStat.isFile()) throw new PreflightError(code);
+}
+
+async function readLstat(candidatePath, code) {
+  try {
+    return await lstat(candidatePath);
+  } catch {
+    throw new PreflightError(code);
+  }
 }
 
 async function readStat(candidatePath, code) {
@@ -232,14 +269,6 @@ function hasParentTraversal(candidatePath) {
 function isStrictlyInside(parentPath, candidatePath) {
   const relative = path.relative(parentPath, candidatePath);
   return relative.length > 0 && !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative);
-}
-
-function samePath(left, right) {
-  const normalizedLeft = path.normalize(left);
-  const normalizedRight = path.normalize(right);
-  return process.platform === 'win32'
-    ? normalizedLeft.toLocaleLowerCase('en-US') === normalizedRight.toLocaleLowerCase('en-US')
-    : normalizedLeft === normalizedRight;
 }
 
 function isRecord(value) {

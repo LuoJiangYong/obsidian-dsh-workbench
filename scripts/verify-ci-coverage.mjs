@@ -112,6 +112,7 @@ for (const vaultGuardContract of [
   '注册表只包含另一个插件 Vault 时明确拒绝',
   '专用目录中的插件 ID 不匹配时 fail closed',
   '插件目录通过符号链接或 junction 越出 Vault 时 fail closed',
+  '专用 Vault 路径本身是符号链接或 junction 时拒绝别名',
 ]) {
   assert(
     isolatedVaultTests.includes(vaultGuardContract),

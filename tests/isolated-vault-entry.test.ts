@@ -111,6 +111,40 @@ describe('G0-2 专用隔离 Vault 只读预检', () => {
     expectBlocked(result, 'plugin_path_escape', fixture.root);
   });
 
+  it('专用 Vault 路径本身是符号链接或 junction 时拒绝别名', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'dsh-workbench-vault-alias-'));
+    temporaryRoots.push(root);
+    const targetVaultPath = path.join(root, 'target', 'obsidian-dsh-workbench-evidence');
+    const targetPluginDirectory = path.join(
+      targetVaultPath,
+      '.obsidian',
+      'plugins',
+      'deepseek-harness-workbench',
+    );
+    await mkdir(targetPluginDirectory, { recursive: true });
+    await writeFile(
+      path.join(targetPluginDirectory, 'manifest.json'),
+      JSON.stringify({ id: 'deepseek-harness-workbench' }),
+      'utf8',
+    );
+    const aliasVaultPath = path.join(root, 'obsidian-dsh-workbench-evidence');
+    await symlink(
+      targetVaultPath,
+      aliasVaultPath,
+      process.platform === 'win32' ? 'junction' : 'dir',
+    );
+    const registryPath = path.join(root, 'obsidian.json');
+    await writeFile(
+      registryPath,
+      JSON.stringify({ vaults: { dedicated: { path: aliasVaultPath } } }),
+      'utf8',
+    );
+
+    const result = await runVerifier(['--obsidian-config', registryPath]);
+
+    expectBlocked(result, 'vault_path_alias_rejected', root);
+  });
+
   it('重复的专用 Vault 注册项与任何写入参数都 fail closed', async () => {
     const duplicateFixture = await createFixture();
     await writeFile(
