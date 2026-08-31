@@ -19,6 +19,8 @@ Ardot 负责页面、布局、状态、图标、文案层级和响应式外观�
 
 `2026-08-28` 用户继续授权插件路线演进：整体 UI 后续评估 Codex 的会话导航、中央工作流与可选右侧栏；首条消息确认发送后，开启页在同一个 Workbench leaf 内切换为正式会话页；同时按 Obsidian 原生插件边界保留 DSH 能力。该反馈只进入插件、文字契约、测试和 CI，Ardot 未修改、只读核对。详细取舍与验收目标见 [`docs/design/codex-reference-ui-assessment.md`](./docs/design/codex-reference-ui-assessment.md)。
 
+`2026-08-31` 用户确认后续产品把“上下文”“工作环境”和“权限级别”拆为三层：当前 Obsidian Vault 自动成为可读写知识库，笔记/文件夹只表达本次上下文，外部工作区单独选择，权限选择器只保留“标准权限”和“完全权限”；完全权限的已确认语义是当前 Windows 用户可访问范围内的全磁盘权限。Shell、网络、Vault 变更确认与权限默认值仍待讨论。该决策记录在 [ADR-011](./docs/architecture/ADR-011-context-environment-and-permission-levels.md)，目前仅为后续产品契约，尚未实现；Ardot 未修改、只读核对，当前 v1 能力真相不变。
+
 ## 1. 产品定位
 
 DeepSeek Harness Workbench 是 Obsidian 内的中央智能体工作台，不是常驻聊天侧边栏，也不复制 Obsidian 自己的标题栏、ribbon、标签栏、文件导航或全局设置。
