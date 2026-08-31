@@ -73,6 +73,27 @@ describe('发布与治理契约', () => {
     expect(adr).toContain('不建立公共模块注册器、动态加载器或数据协议');
   });
 
+  it('开发宪法固定原生能力优先、Claudian 对照与最小运行时接缝', async () => {
+    const [agents, assessment, design] = await Promise.all([
+      readFile(path.join(repositoryRoot, 'AGENTS.md'), 'utf8'),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'governance', 'development-constitution-assessment.md'),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
+    ]);
+
+    expect(agents).toContain('先只读检查 Claudian 当时的公开源码和文档');
+    expect(agents).toContain('DSH 已经可靠提供的能力，插件优先调用、编排或投影');
+    expect(agents).toContain('为后续切换 PI、Codex 等同类运行时保留演进路径');
+    expect(agents).toContain('不授权现在建立多运行时框架');
+    expect(agents).toContain('不得把每个细分场景写成彼此独立的插件执行系统');
+    expect(assessment).toContain('原生能力优先与供应商可替换边界');
+    expect(assessment).toContain('DSH 仍是唯一生产路线');
+    expect(design).toContain('只删除这一处文字');
+    expect(design).toContain('保留标签页名称、鲸鱼图标、标签栏、返回/前进、更多菜单');
+  });
+
   it('Codex 参考路线固定正式会话、原生右侧栏与 DSH 能力投影边界', async () => {
     const [assessment, design, roadmap, readme, adr] = await Promise.all([
       readFile(
