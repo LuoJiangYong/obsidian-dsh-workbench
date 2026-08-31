@@ -34,9 +34,18 @@ assert(
   'README 缺少目标 DSH 版本',
 );
 assert(
-  readme.includes('在用户最终验收完成前仍不得进入 `supported`'),
-  'README 提前把 rc.2 标为 supported',
+  readme.includes('用户已明确确认第一批开发目标完成'),
+  'README 缺少第一批开发目标完成状态',
 );
+assert(
+  readme.includes('正式 bridge + 产品对话/任务组合推进到 `supported`'),
+  'README 缺少当前 v1 与 rc.2 的产品支持状态',
+);
+assert(
+  readme.includes('跨重启恢复仍属于下一批'),
+  'README 误报跨重启恢复状态',
+);
+assert(readme.includes('GitHub Release | 未创建'), 'README 误报 GitHub Release 状态');
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');
 
 await access('main.js');

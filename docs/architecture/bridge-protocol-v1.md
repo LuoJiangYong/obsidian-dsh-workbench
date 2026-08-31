@@ -3,14 +3,14 @@
 - 协议版本：`1`
 - 目标 bridge 版本：`0.1.0`
 - 目标 DSH：`0.1.1-rc.2`
-- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.1-rc.2` 真实运行已实现；“新建任务”的只读对话、Vault 外任务控制器、工作区选择、逐轮账本、文件审核/操作/撤销和正式会话均已接通，并通过 Batch 10 专用 Vault 技术运行门
-- 未通过：跨重启恢复、远端 CI 最终闭环与用户最终 Obsidian UI 明确验收
+- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.1-rc.2` 真实运行已实现；“新建任务”的只读对话、Vault 外任务控制器、工作区选择、逐轮账本、文件审核/操作/撤销和正式会话均已接通，通过 Batch 10 专用 Vault 技术运行门与实现 SHA 双平台 CI，用户已于 `2026-08-31` 明确确认第一批开发目标完成
+- 明确延期或未授权：跨重启恢复属于下一批；Release、发布资产与社区提交未获授权
 
 ## 目标与边界
 
 协议 v1 只服务首发“新建任务”的对话与任务执行共同运行时需求。它不是通用 DSH API，不复制 DSH session 日志，不提供 SDK/ACP/CLI fallback，也不读取 Vault、接受任意 Shell 或保存凭据。
 
-Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文；Batch 7 由插件级控制器把发送时快照交给真实 bridge，投影流式文本、一次性权限、取消和明确终态；Batch 8/9 已接通 Vault 外任务、文件结果和正式会话。对话模式在 DSH scoped context 中隐藏并拒绝全部工具，并在最终系统提示中要求只消费信封内的 `contexts[].content`、不输出 DSML 或其他工具调用标记。Batch 10 专用 Vault 已验证真实对话与任务链；它仍不等于用户最终验收或发布批准。
+Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文；Batch 7 由插件级控制器把发送时快照交给真实 bridge，投影流式文本、一次性权限、取消和明确终态；Batch 8/9 已接通 Vault 外任务、文件结果和正式会话。对话模式在 DSH scoped context 中隐藏并拒绝全部工具，并在最终系统提示中要求只消费信封内的 `contexts[].content`、不输出 DSML 或其他工具调用标记。Batch 10 专用 Vault 已验证真实对话与任务链，用户随后明确确认第一批开发目标完成；该产品支持结论不包含跨重启恢复，也不批准发布动作。
 
 ## 精确握手
 

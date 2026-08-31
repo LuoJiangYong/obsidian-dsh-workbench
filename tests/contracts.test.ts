@@ -38,7 +38,7 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库、真实对话与 Vault 外任务链均已实现；Batch 10 专用 Vault 技术运行门与双平台 CI 已通过，当前等待用户最终 Obsidian UI 明确验收 |');
+    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库、真实对话与 Vault 外任务链均已实现；Batch 10 专用 Vault 技术运行门与双平台 CI 已通过；用户已明确确认第一批开发目标完成，当前 v1 与 DSH `0.1.1-rc.2` 组合已获得产品支持 |');
     expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
     expect(readme).toContain('| 可选右侧任务环境 | 原“快速助手”已原位演进为默认关闭的原生 `ItemView`；专用 Vault 已验证打开/复用、公开事实投影、完整路径排除和关闭不影响中央会话 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
@@ -49,9 +49,96 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
     expect(readme).toContain('凡使用 `obsidian-trend-radar-evidence` 的 Obsidian 运行读回与截图均已撤回');
-    expect(readme).toContain('最终用户 UI 明确验收仍待用户完成');
-    expect(readme).toContain('在用户最终验收完成前仍不得进入 `supported`');
+    expect(readme).toContain('用户于 `2026-08-31` 明确确认第一批开发目标完成');
+    expect(readme).toContain('正式 bridge + 产品对话/任务组合推进到 `supported`');
+    expect(readme).toContain('跨重启恢复仍属于下一批');
     expect(readme).toContain('- 不采集客户端遥测。');
+  });
+
+  it('G0-1 统一第一批完成、当前 v1 支持与发布延期状态', async () => {
+    const [
+      design,
+      designQa,
+      requirements,
+      runtimeAdr,
+      ardotAdr,
+      hostAdr,
+      sessionAdr,
+      protocol,
+      matrix,
+      ciRoadmap,
+      codexAssessment,
+      releaseStatus,
+      implementationRoadmap,
+    ] = await Promise.all([
+      readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'design-qa.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs', 'requirements', 'new-task-v1.md'), 'utf8'),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'ADR-001-runtime-integration.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'ADR-003-ardot-ui-authority.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'ADR-005-new-task-v1-host-contract.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'ADR-010-formal-conversation-and-task-environment.md',
+        ),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'bridge-protocol-v1.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'architecture', 'runtime-compatibility-matrix.md'),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'design', 'codex-reference-ui-assessment.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(repositoryRoot, 'docs', 'release', 'name-and-community-claim-status.md'),
+        'utf8',
+      ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'implementation',
+          'unified-workbench-roadmap.md',
+        ),
+        'utf8',
+      ),
+    ]);
+
+    expect(design).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
+    expect(design).toContain('跨重启恢复和统一工作台后续能力尚未实现');
+    expect(designQa).toContain('final Obsidian UI user acceptance: passed');
+    expect(requirements).toContain('状态：已实现并验证');
+    expect(requirements).toContain('当前 v1 与 DSH `0.1.1-rc.2` 组合进入产品支持');
+    expect(runtimeAdr).toContain('当前 v1 与 rc.2 组合获得产品支持');
+    expect(ardotAdr).toContain('第一批用户验收闭环；Ardot 仍只读');
+    expect(hostAdr).toContain('当前 v1 组合推进到 `supported`');
+    expect(sessionAdr).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
+    expect(protocol).toContain('明确延期或未授权：跨重启恢复属于下一批');
+    expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `supported`（当前 v1） |');
+    expect(ciRoadmap).toContain('状态：当前 v1 范围已通过');
+    expect(ciRoadmap).toContain('发布资产验收、Release 与社区提交仍未完成或未授权');
+    expect(codexAssessment).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
+    expect(releaseStatus).toContain('GitHub Release、发布资产验收和 Obsidian 社区提交仍未批准或执行');
+    expect(implementationRoadmap).toContain('状态：G0-1 已完成；G0-2 及后续批次尚未获授权');
   });
 
   it('DESIGN 与 ADR 固定中央工作台、内部导航和可选任务环境边界', async () => {
@@ -647,7 +734,7 @@ describe('发布与治理契约', () => {
     expect(spike).toContain('CI run 32708553927');
     expect(spike).toContain('原始 annotations API 后数组长度也均为 `0`');
     expect(matrix).toContain('| `0.1.1-rc.2` | 健康检查 | 已实现并通过本地、双平台 CI 与专用 Vault 读回 |');
-    expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `isolated_vault_passed`；尚未 `supported` |');
+    expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `supported`（当前 v1） |');
     expect(matrix).toContain('新版本只产生“待验证候选”');
     expect(matrix).toContain('不得自动安装或更新用户 DSH');
     expect(matrix).toContain('不得自动合并、Release 或提交社区目录');
@@ -714,7 +801,7 @@ describe('发布与治理契约', () => {
     expect(protocol).toContain('CI run 32717711862');
     expect(protocol).toContain('Ubuntu check `97402381390`、Windows check `97402381253`');
     expect(protocol).toContain('两个原始 annotations 数组均为 `[]`');
-    expect(matrix).toContain('`isolated_vault_passed`；尚未 `supported`');
+    expect(matrix).toContain('`supported`（当前 v1）');
     expect(roadmap).toContain('环回模型请求后的 mid-turn cancel');
     expect(roadmap).toContain('CI `32717476733` 在干净检出中揭示进程单测依赖未跟踪构建产物');
     expect(roadmap).toContain('最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664`');

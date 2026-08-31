@@ -1,6 +1,6 @@
 # Workbench 壳层与 Ardot UI 真相设计验收
 
-状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回；Batch 10 专用 Vault 技术运行门已通过，最终 Obsidian UI 用户明确验收待完成
+状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回；Batch 10 专用 Vault 技术运行门已通过，用户已于 `2026-08-31` 明确确认第一批开发目标完成；Ardot 未修改、只读核对，Release 与社区提交仍未授权
 
 > `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据；`docs/assets/design-qa/workbench-shell/` 只保留为历史工件，不再支撑“已通过”结论。Ardot 设计审阅证据不受影响；`docs/assets/design-qa/new-task-host-ui/` 五张截图已全部由专用 `obsidian-dsh-workbench-evidence` Vault 覆盖，当前有效运行结论只以后文修正批次为准。
 
@@ -374,4 +374,4 @@ Batch 9 implementation and remote CI gate: passed; final Obsidian UI user accept
   - `docs/assets/design-qa/batch-10-final/11-error-recovered-narrow-dark.png` — `B1B8FC875AEEB78F8BB826B84E22537F61FADBC156E0A2CBB6CB8D42DA3D79A7`
   - `docs/assets/design-qa/batch-10-final/12-final-start-wide-light.png` — `1298075A563B48658AA3F69C5875E8A34292B04ACD72AD415683501688F696CF`
 
-Batch 10 dedicated Vault technical runtime and remote CI gate: passed; final Obsidian UI user acceptance: pending. Release and community submission: not authorized.
+Batch 10 dedicated Vault technical runtime and remote CI gate: passed; final Obsidian UI user acceptance: passed by the explicit first-batch completion confirmation on 2026-08-31. Cross-restart recovery: deferred to the next batch. Release and community submission: not authorized.
