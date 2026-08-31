@@ -19,7 +19,7 @@ Ardot 负责页面、布局、状态、图标、文案层级和响应式外观�
 
 `2026-08-28` 用户继续授权插件路线演进：整体 UI 后续评估 Codex 的会话导航、中央工作流与可选右侧栏；首条消息确认发送后，开启页在同一个 Workbench leaf 内切换为正式会话页；同时按 Obsidian 原生插件边界保留 DSH 能力。该反馈只进入插件、文字契约、测试和 CI，Ardot 未修改、只读核对。详细取舍与验收目标见 [`docs/design/codex-reference-ui-assessment.md`](./docs/design/codex-reference-ui-assessment.md)。
 
-`2026-08-31` 用户确认后续产品把“上下文”“工作环境”和“权限级别”拆为三层：当前 Obsidian Vault 自动成为可读写知识库，笔记/文件夹只表达本次上下文，外部工作区单独选择，权限选择器只保留“标准权限”和“完全权限”。两档都默认开放 Shell 与网络，共享相同的已安装、已启用 Skill、MCP Tools 及其他完整能力；权限只改变本地文件作用范围。标准权限可读写当前知识库和已选外部工作区，越界本地文件访问在运行中授权；完全权限允许当前 Windows 用户可访问范围内的全磁盘访问。该决策记录在 [ADR-011](./docs/architecture/ADR-011-context-environment-and-permission-levels.md)，目前仅为后续产品契约，尚未实现；Vault 高风险变更、stdio MCP 宿主边界和权限默认值仍待讨论。Ardot 未修改、只读核对，当前 v1 能力真相不变。
+`2026-08-31` 用户确认后续产品把“上下文”“工作环境”和“权限级别”拆为三层：当前 Obsidian Vault 自动成为可读写知识库，笔记/文件夹只表达本次上下文，外部工作区单独选择，权限选择器只保留“标准权限”和“完全权限”。两档都默认开放 Shell 与网络，共享相同的已安装、已启用 Skill、MCP Tools 及其他完整能力；权限只改变本地文件作用范围。标准权限可读写当前知识库和已选外部工作区，越界本地文件访问在运行中授权；完全权限允许当前 Windows 用户可访问范围内的全磁盘访问。该决策记录在 [ADR-011](./docs/architecture/ADR-011-context-environment-and-permission-levels.md)，项目/最近导航、统一新建任务、使用场景、项目编辑、手动排序/置顶、任务排序和“运行”规划集中记录在[统一工作台下一批未来实施契约](./docs/requirements/unified-workbench-next-batch.md)。上述内容目前仅为后续产品契约，尚未实现；Vault 高风险变更、stdio MCP 宿主边界、权限默认值、归档/删除和多源文件夹运行方式仍待实施评估。Ardot 未修改、只读核对，当前 v1 能力真相不变。
 
 ## 1. 产品定位
 

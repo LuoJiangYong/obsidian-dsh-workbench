@@ -94,6 +94,47 @@ describe('发布与治理契约', () => {
     expect(design).toContain('保留标签页名称、鲸鱼图标、标签栏、返回/前进、更多菜单');
   });
 
+  it('下一批契约固定统一运行、项目与最近、手动排序和运行规划', async () => {
+    const [requirements, design, readme, permissionAdr] = await Promise.all([
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'requirements',
+          'unified-workbench-next-batch.md',
+        ),
+        'utf8',
+      ),
+      readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'README.md'), 'utf8'),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'ADR-011-context-environment-and-permission-levels.md',
+        ),
+        'utf8',
+      ),
+    ]);
+
+    expect(requirements).toContain('状态：已确认的未来实施输入，尚未批准开始代码实施');
+    expect(requirements).toContain('上方产品功能导航');
+    expect(requirements).toContain('下方项目与任务导航');
+    expect(requirements).toContain('项目任务与“最近”互斥，不重复展示');
+    expect(requirements).toContain('搜索已有项目、选择已有项目、新建项目');
+    expect(requirements).toContain('项目不按活动时间自动排序');
+    expect(requirements).toContain('用户可以手动排序项目，并可以置顶或取消置顶');
+    expect(requirements).toContain('默认按最后活动时间倒序，最新活动任务在最前');
+    expect(requirements).toContain('用户首次执行手动排序后');
+    expect(requirements).toContain('`运行` 保留在上方产品功能导航');
+    expect(requirements).toContain('项目归档、移除与任务归档、删除的准确语义');
+    expect(requirements).toContain('当前批次不修改插件源码');
+    expect(design).toContain('统一工作台下一批未来实施契约');
+    expect(readme).toContain('统一工作台下一批未来实施契约');
+    expect(permissionAdr).toContain('后续综合实施契约');
+  });
+
   it('Codex 参考路线固定正式会话、原生右侧栏与 DSH 能力投影边界', async () => {
     const [assessment, design, roadmap, readme, adr] = await Promise.all([
       readFile(

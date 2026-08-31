@@ -3,6 +3,7 @@
 - 状态：已接受的后续产品决策，尚未实现
 - 日期：2026-08-31
 - 关联：[ADR-005](./ADR-005-new-task-v1-host-contract.md)、[ADR-010](./ADR-010-formal-conversation-and-task-environment.md)
+- 后续综合实施契约：[统一工作台下一批未来实施契约](../requirements/unified-workbench-next-batch.md)
 - UI 审阅真相：Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）；Ardot 未修改、只读核对
 
 ## 用户结果
