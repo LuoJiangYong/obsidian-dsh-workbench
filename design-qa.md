@@ -387,3 +387,15 @@ Batch 10 dedicated Vault technical runtime and remote CI gate: passed; final Obs
 - 停止边界：G0-2 本身只建立后续 F1、M1 可复用的验收前置入口；没有把既有 Batch 10 证据重新执行或扩写为新产品通过。后续单独获批的 R1 只新增候选运行时证据，没有修改产品 UI、Vault 或 Ardot；生产版本迁移、R2、Vault 写入、Release 和社区提交仍未授权。
 
 G0-2 dedicated Vault reproducible read-only preflight: passed; R1 alpha.2 candidate evidence: passed without production switch; R2 and product implementation: not authorized.
+
+## R1-M：DSH alpha.3 生产运行时迁移技术门
+
+- 日期：`2026-09-01`。本批只迁移运行时版本，不改变产品 UI；Ardot 文件 `718186366720195` 与页面 `UI 真相 v2`（`12:1`）保持用户审阅原状。Ardot 未修改、只读核对。
+- 用户在看到专用 `obsidian-dsh-workbench-evidence` Vault 的精确路径身份、插件 `0.1.0` 和资产 diff 后明确批准写入。实际只替换 `main.js` 与 `obsidian-bridge.mjs`；`data.json`、`manifest.json`、`styles.css` 未修改，也没有触碰真实 Vault 或用户 DSH。
+- 部署读回：`main.js` SHA-256 从 `92fe738b5f3818ab8dc8ab23ce4caafe356557bebad84c2e8832cb83a263bec7` 变为 `bb49043eb0729feed212f300731647865cd2dbfa8522f34f3a446f283a1228fa`；`obsidian-bridge.mjs` 从 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` 变为 `63d6ac6ddd35c74b14ae5d0f31e1ae4f70ee0bc4d7d605fef815cd6381e16e54`。`manifest.json`、`styles.css`、`data.json` 分别保持 `81bdf8f237fa070c3f0deccc9c09a21f4915196633072d892428e705060f25a6`、`ef979fa7aefcdf10ef99eec10db915446cc5c1e52b433fc1afbca31273afd0fe`、`c77bd6eae893bd371e3b17052518ce1bdbe15f3137dbbc8237163448c03cc301`。
+- Obsidian CLI 原生重载后插件保持 enabled/loaded，调试器读回无加载错误、无 error 级控制台消息。插件实例健康检查为 `available / 0.1.2-alpha.3`。
+- 真实最小只读对话被接受并进入 `completed/connected`，回复符合预期，工具数 `0`、无权限请求；显式“新建任务”处置后读回 `idle/disconnected`、消息数 `0`，目标 Node 进程为 `0`。DSH 原生 session 只写入 Vault 外 `$DSH_HOME`。
+- 候选提交 `b271c8f8dc6b28c53184f37db68c7d64bf29a14e` 已通过 CI `33467939672`：Ubuntu `99731576496`、Windows `99731576685` 均成功且原始 annotations 数组为 `[]`。生产迁移提交继续由同一双平台 workflow 执行完整门，失败即不完成 R1-M。
+- 停止边界：R1-M 只把当前 v1 生产组合推进到 alpha.3 `supported`；R2、Ardot 修改、真实 Vault、Release、发布资产和社区提交均未授权。
+
+R1-M alpha.3 production runtime and dedicated Vault technical gate: passed; R2 and release work: not authorized.

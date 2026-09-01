@@ -29,6 +29,9 @@ const taskEnvironmentTests = await readFile('tests/task-environment-view.test.ts
 const isolatedVaultTests = await readFile('tests/isolated-vault-entry.test.ts', 'utf8');
 const isolatedVaultVerifier = await readFile('scripts/verify-isolated-vault.mjs', 'utf8');
 const runtimeFixture = JSON.parse(await readFile('tests/runtime-fixture/package.json', 'utf8'));
+const runtimeLock = JSON.parse(
+  await readFile('tests/runtime-fixture/package-lock.json', 'utf8'),
+);
 const runtimeCandidateFixture = JSON.parse(
   await readFile('tests/runtime-candidate-fixture/package.json', 'utf8'),
 );
@@ -69,8 +72,8 @@ assert(
   'CI 必须在 Windows runner 显式执行 DSH 进程与 shim 专项测试',
 );
 assert(
-  /name: Windows DSH rc\.2 正式 bridge 运行验收\s+if: runner\.os == 'Windows'\s+run: npm run test:bridge:runtime/u.test(workflow),
-  'CI 必须在 Windows runner 显式执行 DSH rc.2 正式 bridge 运行验收',
+  /name: Windows DSH alpha\.3 正式 bridge 运行验收\s+if: runner\.os == 'Windows'\s+run: npm run test:bridge:runtime/u.test(workflow),
+  'CI 必须在 Windows runner 显式执行 DSH alpha.3 正式 bridge 运行验收',
 );
 assert(
   /name: 双平台 DSH alpha\.3 正式控制面候选验收\s+run: npm run test:runtime:candidate/u.test(workflow),
@@ -123,8 +126,15 @@ assert(
   'test:runtime 必须覆盖任务工作区变更账本',
 );
 assert(
-  runtimeFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.1-rc.2',
-  '运行夹具必须精确锁定 @deepseek-ai/dsh 0.1.1-rc.2',
+  runtimeFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.3',
+  '运行夹具必须精确锁定 @deepseek-ai/dsh 0.1.2-alpha.3',
+);
+const directRuntimeDshPackages = Object.entries(runtimeLock.packages ?? {})
+  .filter(([packagePath]) => /^node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(packagePath));
+assert(
+  directRuntimeDshPackages.length > 200
+    && directRuntimeDshPackages.every(([, metadata]) => metadata.version === '0.1.2-alpha.3'),
+  '生产 lockfile 禁止通过 semver 范围混入后续 DSH alpha 内部包',
 );
 assert(
   runtimeCandidateFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.3',
@@ -145,7 +155,7 @@ for (const evidenceContract of [
   assert(r1CandidateEvidence.includes(evidenceContract), `R1 候选证据缺少边界：${evidenceContract}`);
 }
 for (const candidateContract of [
-  '只在隔离夹具精确锁定候选版本和 npm integrity，不改生产 rc.2 夹具',
+  '在独立夹具精确锁定候选版本和 npm integrity，并与同版本生产夹具保持来源隔离',
   '真实 shim 读回精确版本',
   '真实 artifact 加载当前 bridge 并完成握手、session 创建/关闭和正常退出',
   '真实 artifact 跨两个进程创建、列举、恢复并投影标题、附件和一次性权限，关闭后零残留',
@@ -173,7 +183,8 @@ for (const migrationEvidenceContract of [
   '215 个直接 `@deepseek-ai/dsh*` 包全部精确为 `0.1.2-alpha.3`',
   'alpha.3 删除的是可选 SQLite session persistence 后端',
   'Claudian 公开 HEAD `e66f41c2674f03664788996851490512b3875744`',
-  '生产仍为 `0.1.1-rc.2`',
+  '当前状态：`supported`；生产健康检查与正式 bridge 均精确锁定 `0.1.2-alpha.3`',
+  '`data.json`、`manifest.json` 与 `styles.css` 未修改',
   '不进入 R2',
 ]) {
   assert(
@@ -278,7 +289,7 @@ for (const newTaskContract of [
   '发送动作建立不可变上下文快照',
   '整个 Vault 不得成为 DSH 默认可写 `cwd`',
   '每个 turn 只能产生一个终态',
-  '当前核验到的正式 bridge 目标是 `0.1.1-rc.2`',
+  '当前正式 bridge 目标是 `0.1.2-alpha.3`',
   '插件自动安装或更新 DSH',
   'Release 成功不自动授权社区提交',
 ]) {
@@ -406,7 +417,7 @@ for (const conversationUiContract of [
   );
 }
 for (const runtimeContract of [
-  'DSH 0.1.1-rc.2 正式 bridge 运行验收',
+  'DSH 0.1.2-alpha.3 正式 bridge 运行验收',
   '真实加载 artifact',
   '原生 DSH 会话落盘',
   'mid-turn cancel',
@@ -416,7 +427,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、纯 alpha.3 候选控制面、专用隔离 Vault dry-run guard、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、纯 alpha.3 候选控制面、专用隔离 Vault dry-run guard、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows alpha.3 运行门已接入。',
 );
 
 function assert(condition, message) {

@@ -10,7 +10,7 @@ const dshLock = runtimeLock.packages?.['node_modules/@deepseek-ai/dsh'];
 
 assert(manifest.bridgeVersion === '0.1.0', 'bridge manifest 版本必须为 0.1.0');
 assert(manifest.protocolVersion === '1', 'bridge manifest 协议必须为 1');
-assert(manifest.dshVersion === '0.1.1-rc.2', 'bridge manifest DSH 必须为 0.1.1-rc.2');
+assert(manifest.dshVersion === '0.1.2-alpha.3', 'bridge manifest DSH 必须为 0.1.2-alpha.3');
 assert(runtimePackage.dependencies?.['@deepseek-ai/dsh'] === manifest.dshVersion, '运行夹具未精确锁定目标 DSH');
 assert(runtimeLock.packages?.['']?.dependencies?.['@deepseek-ai/dsh'] === manifest.dshVersion, '运行夹具 lock 根规格漂移');
 assert(dshLock?.version === manifest.dshVersion, '运行夹具 lock DSH 解析版本漂移');

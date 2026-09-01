@@ -8,13 +8,12 @@
 
 | DSH | 消费路径 | 状态 | bridge/协议 | 证据边界 |
 | --- | --- | --- | --- | --- |
-| `0.1.1-rc.2` | 健康检查 | 已实现并通过本地、双平台 CI 与专用 Vault 读回 | 无；固定 `--version` | 只证明命令可执行与版本匹配，不证明 session 可用 |
-| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `supported`（当前 v1） | bridge `0.1.0` / protocol `1` / artifact SHA-256 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` | Batch 4–9 已完成真实加载、Agent session、取消、只读上下文、任务文件边界、逐轮账本、文件 UI 与正式会话；Batch 10 专用 Vault 已验证真实对话、Vault 外创建/修改、审核、原生菜单、原子撤销、错误恢复、深色 `700px` 和同步卸载零残留，实现 `ae37a7bf1c719ab871930a2b04d53ff5d7e6378f` 已通过 CI `33314880417` 双平台与原始零 annotations；用户于 `2026-08-31` 明确确认第一批开发目标完成。当前 DSH 工具集不含删除，删除请求明确失败；跨重启恢复属于下一批，Release、发布资产和社区提交未获授权 |
-| `0.1.2-alpha.2` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1 证据完成，不晋级生产） | 顶层 CLI 与 215 个直接 DSH 包全部锁定 alpha.2；现有 bridge artifact 仅作加载兼容探针 | 真实 shim、现有 bridge 握手/session 生命周期、两个独立进程的冷列举/显式 ID 恢复、标题、规范化附件、一次性权限、follow/control 投影与零 PID 残留通过；不修改 rc.2 生产夹具或握手。npm `alpha` 已前移到 alpha.3，且持久 session 删除/retention 与跨 Host job 恢复无公开能力，因此建议保留 rc.2 |
-| `0.1.2-alpha.3` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1-M 第一步；尚未晋级生产） | 顶层 CLI 与 215 个直接 DSH 包全部锁定 alpha.3；当前 rc.2 bridge artifact 仅作加载兼容探针 | 真实 shim、现有 bridge 加载/session 生命周期、两个独立进程的冷列举/显式 ID 恢复、标题、规范化附件、一次性权限、follow/control、JSONL artifact 与零 PID 残留通过；生产健康检查、握手与运行夹具仍保持 rc.2 |
+| `0.1.1-rc.2` | 历史健康检查与正式 bridge + v1 | `superseded`（历史证据保留） | bridge `0.1.0` / protocol `1` / artifact SHA-256 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` | Batch 4–10 与用户第一批确认曾使该组合进入支持；R1-M 后当前握手与健康检查不再接受 rc.2，不提供双版本 fallback，历史 CI/Vault 证据不被改写 |
+| `0.1.2-alpha.2` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1 证据完成，不晋级生产） | 顶层 CLI 与 215 个直接 DSH 包全部锁定 alpha.2；现有 bridge artifact 仅作加载兼容探针 | 真实 shim、现有 bridge 握手/session 生命周期、两个独立进程的冷列举/显式 ID 恢复、标题、规范化附件、一次性权限、follow/control 投影与零 PID 残留通过；未修改当时的 rc.2 生产夹具或握手。npm `alpha` 随后前移到 alpha.3，且持久 session 删除/retention 与跨 Host job 恢复无公开能力，因此 R1 当时建议保留 rc.2 |
+| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller | `supported`（当前生产 v1） | bridge `0.1.0` / protocol `1` / artifact SHA-256 `63d6ac6ddd35c74b14ae5d0f31e1ae4f70ee0bc4d7d605fef815cd6381e16e54`；两个独立 lockfile 的 215 个直接 DSH 包均为 alpha.3 | 真实 shim、控制面跨进程恢复、标题、附件、一次性权限、follow/control、正式回复、mid-turn cancel、JSONL session、Windows 清理与专用 Vault 健康/无工具对话/显式处置/零残留通过；不包含 R2 跨重启产品索引、Release 或社区提交 |
 | 其他版本 | 无 | 未验证，不支持 | 无 fallback | 不尝试、不中和、不静默降级 |
 
-健康检查与正式 bridge 仍是两个独立生产消费路径，当前都精确锁定 `rc.2`。Batch 10 已完成 `isolated_vault_passed` 与实现 SHA 的双平台 CI，用户随后明确确认第一批开发目标完成，因此当前 v1 组合进入 `supported`。历史 R1 alpha.2 证据保持不变；用户已批准单一 R1-M 生产迁移批次，第一步只把 alpha.3 推进到 `candidate_verified`，仍不是产品握手可接受状态。生产迁移、隔离 Vault 技术验收和远端 CI 完成前不改变 rc.2 的 `supported` 事实，也不授权 R2、统一工作台后续能力或发布。
+健康检查与正式 bridge 仍是两个独立生产消费路径，但现在共同精确锁定 alpha.3。R1-M 先以独立候选提交和双平台 CI 建立纯依赖图与公开控制面证据，再迁移生产常量、夹具和构建清单，并完成 Windows 与专用隔离 Vault 技术验收；用户对该具体迁移和资产 diff 均已批准。rc.2 只保留历史证据，当前产品不再接受。该 `supported` 状态仍不包含 R2、统一工作台后续能力、Release 或社区提交。
 
 ## 兼容晋级状态机
 

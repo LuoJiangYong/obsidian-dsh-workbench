@@ -54,7 +54,7 @@ describe('原生右侧任务环境', () => {
     const view = new QuickAssistantView(app.workspace.getRightLeaf(false) as never, {
       conversationHost: host,
       getContextSummary: () => '未选择笔记或工作范围',
-      getDshHealth: () => ({ status: 'available', version: '0.1.1-rc.2' }),
+      getDshHealth: () => ({ status: 'available', version: '0.1.2-alpha.3' }),
     });
     await view.onOpen();
 
@@ -62,7 +62,7 @@ describe('原生右侧任务环境', () => {
     expect(view.getDisplayText()).toBe('任务环境');
     expect(content.allText()).toEqual(expect.arrayContaining([
       '任务环境',
-      '已连接 DSH · 健康检查：DSH 可执行（0.1.1-rc.2）',
+      '已连接 DSH · 健康检查：DSH 可执行（0.1.2-alpha.3）',
       '1 项：Vault 文件 · 项目/说明.md',
       'external-project · 仅本次会话可写',
       '文件工具逐次确认 · 仅本次外部工作区可写',

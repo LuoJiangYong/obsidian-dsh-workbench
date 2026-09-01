@@ -1,6 +1,6 @@
 export const BRIDGE_PROTOCOL_VERSION = '1';
 export const TARGET_BRIDGE_VERSION = '0.1.0';
-export const TARGET_BRIDGE_DSH_VERSION = '0.1.1-rc.2';
+export const TARGET_BRIDGE_DSH_VERSION = '0.1.2-alpha.3';
 
 export const BRIDGE_CAPABILITIES = [
   'session',

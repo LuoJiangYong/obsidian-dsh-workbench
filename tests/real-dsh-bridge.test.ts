@@ -32,7 +32,7 @@ afterAll(async () => {
   vi.unstubAllGlobals();
 });
 
-describe.runIf(existsSync(dshCommand))('DSH 0.1.1-rc.2 正式 bridge 运行验收', () => {
+describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行验收', () => {
   it('真实加载 artifact，以 Vault 外 cwd 和只读系统提示边界完成回复、mid-turn cancel、原生 DSH 会话落盘与零残留', async () => {
     const model = await createModelServer();
     const dshHome = path.join(temporaryRoot, 'dsh-home');

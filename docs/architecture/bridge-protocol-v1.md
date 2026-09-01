@@ -2,8 +2,8 @@
 
 - 协议版本：`1`
 - 目标 bridge 版本：`0.1.0`
-- 目标 DSH：`0.1.1-rc.2`
-- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.1-rc.2` 真实运行已实现；“新建任务”的只读对话、Vault 外任务控制器、工作区选择、逐轮账本、文件审核/操作/撤销和正式会话均已接通，通过 Batch 10 专用 Vault 技术运行门与实现 SHA 双平台 CI，用户已于 `2026-08-31` 明确确认第一批开发目标完成
+- 目标 DSH：`0.1.2-alpha.3`
+- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.2-alpha.3` 真实运行已实现；R1-M 已重新验证精确握手、无工具对话、mid-turn cancel、JSONL session、专用隔离 Vault 与零残留，未改变既有产品协议
 - 明确延期或未授权：跨重启恢复属于下一批；Release、发布资产与社区提交未获授权
 
 ## 目标与边界
@@ -44,7 +44,7 @@ client 第一个请求固定为：
 {
   "protocolVersion": "1",
   "bridgeVersion": "0.1.0",
-  "dshVersion": "0.1.1-rc.2",
+  "dshVersion": "0.1.2-alpha.3",
   "capabilities": [
     "session",
     "events",
@@ -122,10 +122,10 @@ client 第一个请求固定为：
 ## Batch 8 任务模式文件边界
 
 - 任务 session 只枚举并允许 `edit`、`glob`、`grep`、`read`、`read_image`、`write` 六个 DSH 文件工具；Shell、PowerShell、网络、Skill、子代理和其他工具同时从工具列表与执行 guard 拒绝。
-- 受管 DSH 进程只有在任务模式下显式使用 rc.2 的 `workspace-write + ask` 组合；它不是全局设置，也没有 `allow-always`。
+- 受管 DSH 进程只有在任务模式下显式使用 alpha.3 的 `workspace-write + ask` 组合；它不是全局设置，也没有 `allow-always`。
 - 所有工具路径必须位于已校验的 Vault 外工作区。绝对越界、`..`、不存在祖先越界、符号链接越界和权限升级参数 fail closed。
 - `.git`、`node_modules`、`dist` 等依赖、缓存、构建产物与版本控制目录使用 [ADR-007](./ADR-007-task-workspace-ledger.md) 的共享排除表，不能由文件工具访问或进入变更基线。
-- bridge 只负责执行边界与窄事件投影；逐轮变更事实、审核材料和安全撤销由 Vault 外 `TaskWorkspaceLedger` 提供。详细文件、审核、原生菜单和撤销 UI 已接通并在专用 Vault 真实读回；当前 DSH rc.2 工具集中没有删除工具，因此删除请求明确失败，不得伪装为已执行。
+- bridge 只负责执行边界与窄事件投影；逐轮变更事实、审核材料和安全撤销由 Vault 外 `TaskWorkspaceLedger` 提供。详细文件、审核、原生菜单和撤销 UI 已接通；当前插件 v1 allow-list 仍只有 `edit/glob/grep/read/read_image/write`，不包含删除，因此删除请求明确失败，不得伪装为已执行。
 
 ## 关闭、EOF 与超时
 
@@ -143,7 +143,7 @@ client 第一个请求固定为：
 - `src/obsidian-bridge.ts`：正式 Cordis plugin、DSH 事件窄投影、Agent 所有权与一次性权限回路。
 - `src/bridge-ndjson-transport.ts` 与 `src/managed-bridge-process.ts`：1 MiB 封闭 framing、精确版本预检、用户原生 `$DSH_HOME`、Vault 外插件 overlay、隐藏启动、正常退出与强制清理。
 - `src/new-task-conversation.ts` 与 `src/workbench-view.ts`：插件级 session 所有权、确定性上下文信封、发送前确认、流式投影、取消超时与错误终态。
-- `tests/real-dsh-bridge.test.ts`：独立精确锁定 rc.2，真实加载 artifact、以 Vault 外 cwd 创建 Agent、读回模型请求中的只读系统提示且确认没有 `tools`、完成一次模型回复、DSH 原生 session 落盘、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
+- `tests/real-dsh-bridge.test.ts`：独立精确锁定 alpha.3，真实加载 artifact、以 Vault 外 cwd 创建 Agent、读回模型请求中的只读系统提示且确认没有 `tools`、完成一次模型回复、DSH 原生 JSONL session 落盘、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
 - 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 
 Batch 4 最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)：Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。本地及远端证据证明 rc.2 artifact 加载、环回模型请求、mid-turn cancel、Windows 隐藏进程、正常/强制关闭与清理；它不证明真实外部模型账号、Vault、Obsidian UI 或发布验收通过。

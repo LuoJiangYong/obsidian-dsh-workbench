@@ -8,7 +8,7 @@ import path from 'node:path';
 
 import { validateDshCommand } from './dsh-settings';
 
-export const TARGET_DSH_VERSION = '0.1.1-rc.2';
+export const TARGET_DSH_VERSION = '0.1.2-alpha.3';
 
 export type DshHealthResult =
   | { readonly status: 'unchecked' }

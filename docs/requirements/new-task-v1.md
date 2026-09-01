@@ -92,10 +92,10 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前核验到的正式 bridge 目标是 `0.1.1-rc.2`，GitHub tag 指向提交 `b150a551b8d465e31e418e1b2eaf5e79bbb7d28e`。Batch 4 已实现 bridge `0.1.0`，并通过本地与远端 Windows 的真实加载、握手、Agent session、mid-turn cancel 与清理；Batch 6/7 已把只读知识库与不可变快照接入产品发送链；Batch 8C/8D 已接通 Vault 外工作区任务、逐轮审核与撤销；Batch 9 正式会话与任务环境实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过 CI `33294157748` 的双平台 job 与原始零 annotations。Batch 10 专用 Vault 已完成真实对话、任务文件、审核/撤销、错误恢复与同步卸载零残留技术门；实现 `ae37a7bf1c719ab871930a2b04d53ff5d7e6378f` 已通过 CI `33314880417` 的双平台 job 与原始零 annotations。用户已明确确认第一批开发目标完成；当前 v1 与 DSH `0.1.1-rc.2` 组合进入产品支持，跨重启恢复仍属于下一批。
+- 当前正式 bridge 目标是 `0.1.2-alpha.3`，GitHub tag 指向提交 `dd6322d604e00eec1ba5e0c8541159906a21094a`。R1-M 以纯 215 包依赖图验证公开 session controller，再同步迁移健康检查、bridge、生产夹具、构建清单、Windows 运行门与专用隔离 Vault。既有 Batch 4–10 的对话、任务、取消、Vault 外账本与 UI 边界保持有效；跨重启恢复仍属于 R2，尚未实现。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
-- 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.1-rc.2`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。
+- 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.2-alpha.3`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。
 - 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；Batch 7 最终修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过 CI `33132970545` 的 Ubuntu/Windows job 与原始零 annotations。任务执行已接通；当前正式工具集固定为 `edit/glob/grep/read/read_image/write`，不含删除工具。
 
 ## 任务结束后的已编辑文件

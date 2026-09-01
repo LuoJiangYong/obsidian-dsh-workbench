@@ -46,7 +46,7 @@ Phase A 不创建 Release，不提交社区目录，也不批准 Phase B。
 - manifest/package/versions 一致性与构建资产检查。
 - 仓库边界、禁止文件、敏感路径和凭据模式检查。
 - workflow 命令与 package scripts 的覆盖自检。
-- R1-M 独立候选夹具在 Ubuntu 与 Windows 都按 lockfile 安装纯 `0.1.2-alpha.3` 依赖图，并执行同一无凭据 `npm run test:runtime:candidate`；生产 rc.2 运行门在迁移分步提交前保持独立。
+- R1-M 的候选与生产夹具在 Ubuntu 与 Windows 都按各自 lockfile 安装纯 `0.1.2-alpha.3` 依赖图；双平台执行无凭据 `npm run test:runtime:candidate`，Windows 另执行生产健康/进程与正式 bridge 运行门。
 - 中央 Workbench 标签页复用、内部导航、运行状态切换和按需右侧任务环境由插件基线测试覆盖；正式会话、显式新建任务与环境投影由独立 UI/控制器测试覆盖，`verify:ci-coverage` 明确校验这些用例仍属于双平台完整 `npm test`。
 - Ardot v2 文件与画板 ID、AI 默认只读边界、插件只显示“新建任务 / 运行”、未实现模块不渲染、左右半圆模式控件、产品 UI 不显示开发/发布文案、设计/实现差异和首个社区发布门由治理契约覆盖；`verify:ci-coverage` 明确校验该契约仍属于双平台完整 `npm test`。
 - 新建任务 v1 的模式、只读 Vault、外部工作区、单终态、真实取消、正式 bridge 最新预发布候选与自动演进边界由治理契约覆盖；这只证明需求基线一致，不证明运行实现通过。
@@ -69,7 +69,7 @@ Phase B 只证明治理与架构契约一致，不证明运行时已经可用。
 
 ## Phase C：运行时与 Vault 安全门
 
-状态：当前 v1 + rc.2 范围已通过；R1 历史 alpha.2 证据保持，R1-M 已把 alpha.3 独立控制面推进到 `candidate_verified`，但尚未晋级生产。产品跨重启恢复、真实 Vault 写入与下一批统一工作台能力仍未授权。
+状态：当前 v1 + alpha.3 生产范围已通过本地、Windows 与专用隔离 Vault 技术门；R1 历史 alpha.2 和 Batch 4–10 的 rc.2 证据保持，R1-M 已把 alpha.3 推进到 `supported`。产品跨重启恢复、真实 Vault 写入与下一批统一工作台能力仍未授权。
 
 进入运行时和 Vault Bridge 实现后逐项建立：
 
@@ -90,7 +90,7 @@ Batch 0B 已建立其中的只读健康检查子集：
 - Windows matrix 增加显式 `npm run test:runtime` 专项步骤；完整 `npm test` 仍在 Windows 与 Ubuntu 运行。
 - SDK、ACP 与薄 bridge 的 P0 评估已形成唯一 ADR；Batch 4 已实现生产 bridge，Batch 5A 已实现 Obsidian 宿主 UI，Batch 6 已实现只读上下文，Batch 7 已实现模型发送链并统一 rc.2 健康检查。
 
-正式 bridge 的版本演进门已冻结为：每个实现或兼容批次重新读取 GitHub 最新预发布与 npm dist-tag，以一致结果建立待验证候选并精确锁定；当前生产目标为 `0.1.1-rc.2`。计划中的上游监测只允许生成 issue、兼容提案或 draft PR，不得自动安装/更新 DSH、自动合并、自动发布或自动提交社区目录。监测 workflow 尚未实现。
+正式 bridge 的版本演进门已冻结为：每个实现或兼容批次重新读取 GitHub 最新预发布与 npm dist-tag，以一致结果建立待验证候选并精确锁定；当前生产目标为 `0.1.2-alpha.3`。计划中的上游监测只允许生成 issue、兼容提案或 draft PR，不得自动安装/更新 DSH、自动合并、自动发布或自动提交社区目录。监测 workflow 尚未实现。
 
 Batch 2 已建立 rc.2 固定 tag 的源码能力证据与兼容矩阵，确认 `ctx.agents.create`/owned dispose、完整 `session/event`、真实 Agent cancel、一次性 approval 和 fail-closed 默认结果可供后续薄 bridge 使用。治理契约由双平台完整 `npm test` 执行；这不证明 rc.2 Windows 真实运行、正式握手或进程清理通过，Phase C 整体仍未通过。
 
@@ -118,7 +118,9 @@ Batch 8D 已把逐轮账本投影为真实文件卡：默认显示三个、可�
 
 Batch 10 已在专用 `obsidian-dsh-workbench-evidence` Vault 完成技术运行门：真实只读选区冻结且原笔记哈希不变；真实模型对话与无工具边界成立；Vault 外任务真实创建和修改文件，文件卡、审核、Obsidian 原生菜单、复制相对路径与精确撤销均读回一致；`700px` 深色、宽屏浅色、键盘、启动失败和恢复均通过。运行中发现并修复“正式 turn 完成后新建任务仍禁用”和“Obsidian 同步卸载未立即终止进程树”两个真实缺陷；新实现的专用 Vault 复验在禁用插件后 `800ms` 内从两个目标进程降为零。当前 DSH `0.1.1-rc.2` 的任务工具 allow-list 不含删除，删除请求因此明确失败而未伪造成功。最终本地门为 `126 passed / 2 skipped`、runtime `28 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建与完整自检通过。实现 `ae37a7bf1c719ab871930a2b04d53ff5d7e6378f` 已通过 CI `33314880417`：Ubuntu `99266341200`、Windows `99266341269` 均成功且原始 annotations 为 `[]`。用户已明确确认第一批开发目标完成；当前 v1 + DSH rc.2 组合进入产品支持，跨重启恢复仍属于下一批。
 
-R1 历史证据新增独立 `tests/runtime-candidate-fixture`，并在当时用 registry 时间截面把顶层 CLI 与 215 个直接 DSH 包全部锁定 alpha.2。获批的 R1-M 复用同一个隔离候选门、从当日 registry 重新生成纯 `0.1.2-alpha.3` lockfile，并把候选测试和双平台 workflow 同步前移到 alpha.3。测试继续覆盖真实 shim、当前 bridge artifact 加载/session 生命周期，以及两个独立 DSH 进程的冷列举、显式 ID 恢复、标题、规范化附件、一次性权限、follow/control、JSONL artifact 和零 PID 残留；只使用临时 `DSH_HOME`/工作区，不读取凭据、不调用模型服务。第一分步不修改生产 rc.2 fixture、bridge manifest/握手、Vault 或 Ardot；生产迁移仍由同一 R1-M 的第二分步承担，R2 不在范围内。
+R1 历史证据新增独立 `tests/runtime-candidate-fixture`，并在当时用 registry 时间截面把顶层 CLI 与 215 个直接 DSH 包全部锁定 alpha.2。获批的 R1-M 复用同一个隔离候选门、从当日 registry 重新生成纯 `0.1.2-alpha.3` lockfile，并把候选测试和双平台 workflow 同步前移到 alpha.3。测试继续覆盖真实 shim、当前 bridge artifact 加载/session 生命周期，以及两个独立 DSH 进程的冷列举、显式 ID 恢复、标题、规范化附件、一次性权限、follow/control、JSONL artifact 和零 PID 残留；只使用临时 `DSH_HOME`/工作区，不读取凭据、不调用模型服务。候选分步提交 `b271c8f8dc6b28c53184f37db68c7d64bf29a14e` 已通过 CI `33467939672`：Ubuntu `99731576496`、Windows `99731576685` 均成功且原始 annotations 为 `[]`。
+
+R1-M 生产分步随后把健康检查、正式 bridge、生产 fixture/lockfile、构建清单、Windows job 与治理契约统一迁移到 alpha.3。bridge `0.1.0` / protocol `1` 不变，artifact SHA-256 为 `63d6ac6ddd35c74b14ae5d0f31e1ae4f70ee0bc4d7d605fef815cd6381e16e54`。专用隔离 Vault 经具体资产 diff 确认后只替换 `main.js` 与 `obsidian-bridge.mjs`；Obsidian 原生重载、插件健康读回、真实无工具对话、显式新建任务处置和零目标 Node 进程通过。Ardot、真实 Vault、用户 DSH、R2、Release 与社区目录均未修改。
 
 ## Phase D：隔离 Vault 与发布门
 
@@ -175,4 +177,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10、G0-1、G0-2 与 R1 的既有门保持有效。用户已批准单一 R1-M 生产迁移批次；当前候选分步已把 alpha.3 控制面接入双平台 CI，生产仍保持 rc.2，后续只可继续同一批次的生产切换。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 默认只读。写入专用隔离 Vault 仍需具体 diff 和确认；当前授权不包括 R2、真实 Vault、Release、发布资产、社区提交、任意 Shell、自动安装/更新用户 DSH 或上游监测 workflow。
+用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10、G0-1、G0-2 与 R1 的既有门保持有效。单一 R1-M 已完成候选核验、alpha.3 生产迁移及经具体 diff 确认的专用隔离 Vault 技术验收；当前必须停止并等待 R2 的新批准。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 保持只读。当前授权不包括 R2、真实 Vault、Release、发布资产、社区提交、任意 Shell、自动安装/更新用户 DSH 或上游监测 workflow。

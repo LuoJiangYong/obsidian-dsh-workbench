@@ -9,7 +9,7 @@
 
 ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实现前仍需消除四类歧义：v1 究竟开放哪些模式、Vault 上下文与外部工作区如何分界、取消何时可以称为成功，以及正式 bridge 如何跟随仍处于预发布阶段的 DSH 演进。
 
-本 ADR 接受时，代码只实现 DSH `0.1.1-rc.1` 的只读 `--version` 健康检查。后续 Batch 3–4 已实现协议 v1、正式 bridge、事件、权限、取消和 Windows `0.1.1-rc.2` 运行验收；Batch 5 已接入宿主 UI 与确定性状态骨架；Batch 6 已实现显式只读上下文、发送时重读与不可变快照；Batch 7 已实现插件级只读对话发送链；Batch 8A–8D 已接通 Vault 外任务、逐请求权限、逐轮账本、文件审核与撤销；Batch 9 已完成正式会话和任务环境；Batch 10 已通过专用 Vault 技术运行门。健康检查与正式 bridge 统一精确支持 `0.1.1-rc.2`。
+本 ADR 接受时，代码只实现 DSH `0.1.1-rc.1` 的只读 `--version` 健康检查。后续 Batch 3–10 在 rc.2 上完成协议、bridge、宿主 UI、只读上下文、对话、Vault 外任务和专用 Vault 产品闭环；R1-M 又把健康检查与正式 bridge 统一迁移并精确支持 `0.1.2-alpha.3`，未改变本 ADR 的宿主边界。
 
 ## 决定
 
@@ -34,16 +34,16 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 ## 后果与边界
 
 - [新建任务 v1 需求基线](../requirements/new-task-v1.md) 是本 ADR 的详细验收契约。
-- 当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.1-rc.2`。Batch 7 的只读对话与 Batch 8A–10 的 Vault 外任务、逐轮审核/撤销、正式会话、任务环境、专用 Vault 技术运行门和实现 SHA 双平台 CI 均已通过；用户于 `2026-08-31` 明确确认第一批开发目标完成后，兼容矩阵已把当前 v1 组合推进到 `supported`。跨重启恢复、下一批统一运行与发布动作不包含在该支持声明中。
+- 当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.2-alpha.3`。R1-M 已重新执行公开控制面、Windows 真实 bridge、专用 Vault 健康检查/真实无工具对话和零残留门；跨重启恢复、下一批统一运行与发布动作不包含在该支持声明中。
 - [Batch 2 能力尖峰](./batch-2-bridge-capability-spike.md)与[运行时兼容矩阵](./runtime-compatibility-matrix.md)记录了上游 seam、证据指纹和自动演进门。
-- [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭和 fail-closed 行为；当前已通过假 bridge、正式 artifact 与 Windows rc.2 运行验收。
+- [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭和 fail-closed 行为；当前已通过假 bridge、正式 artifact 与 Windows alpha.3 运行验收。
 - Batch 6 以现有 `1 MiB` NDJSON frame 和最坏 JSON 双重转义实测冻结上下文上限：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。文件夹展开同样受这些限制并采用原子加入；任务字符上限由真实发送批次冻结。
 - `DESIGN.md`、ADR-003 和 ADR-004 已检查：`2026-08-27` 用户直接反馈只演进插件中的知识库入口文案、扁平选择项和文件夹来源；Ardot 未修改，导航、图标与响应式总规则不变。
 - 后续 bridge 打包、自动监测 workflow、实现源码、运行验收、Release 与社区提交仍受各自边界约束；当前连续目标只授权 Batch 3–10，不授权 Release 或社区提交。
 
 ## 验证
 
-- `tests/contracts.test.ts` 固定模式、只读 Vault、外部工作区、单终态、真实取消、精确 `rc.2` 版本、协议状态和只读自动演进边界。
+- `tests/contracts.test.ts` 固定模式、只读 Vault、外部工作区、单终态、真实取消、精确 alpha.3 版本、协议状态和只读自动演进边界。
 - `tests/bridge-protocol.test.ts` 固定精确握手、session/turn/seq、一次性权限、cancel 确认、唯一终态、shutdown/EOF 和超时。
 - `scripts/verify-ci-coverage.mjs` 确认上述治理契约由双平台完整 `npm test` 执行。
 - Batch 5 宿主 UI 的状态与禁用行为由 `tests/new-task-state.test.ts` 和 `tests/plugin-baseline.test.ts` 固定。

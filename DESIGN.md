@@ -117,7 +117,7 @@ Ardot 设计通过、CI 成功或 GitHub Release 单独成立时，都不能越�
 ## 5. 视觉语言
 
 - 使用 Obsidian 语义变量：`--background-primary`、`--background-secondary`、`--background-modifier-border`、`--background-modifier-hover`、`--interactive-accent`、`--text-normal`、`--text-muted` 和 `--text-faint`。
-- 插件身份图标使用 DeepSeek Harness Web 前端 `@deepseek-ai/dsh-web-frontend@0.1.1-rc.1/dist/favicon.svg` 的鲸鱼矢量，源文件 SHA-256 为 `C61A62A9D47D8660F9CFE08AAC6775FF0476F7D6C5053F7659C1F8493FD6D814`；rc.2 运行夹具中的同名资产哈希一致。Ardot v2 中用于 Obsidian ribbon、活动标签页、Workbench 左上角和原“快速助手”，插件 Batch 9 对应位置已改为“任务环境”；深色模式以白色承载底保证黑色原始矢量的对比度，不重绘品牌图形。
+- 插件身份图标使用 DeepSeek Harness Web 前端的鲸鱼矢量；`@deepseek-ai/dsh-web-frontend@0.1.2-alpha.3/dist/favicon.svg` 的 path 与当前实现逐字符一致。Ardot v2 中用于 Obsidian ribbon、活动标签页、Workbench 左上角和原“快速助手”，插件 Batch 9 对应位置已改为“任务环境”；深色模式以白色承载底保证黑色原始矢量的对比度，不重绘品牌图形。
 - Workbench 左上角品牌名称固定为三行：第一行 `DeepSeek`、第二行 `Harness`、第三行 `Workbench`；不得合并成两行或增加副标题。
 - 其他功能图标使用 Obsidian 内置或官方 Lucide 图标；图标辅助识别但不替代文字标签。“新建任务”使用 Lucide `circle-plus.svg`，来源 SHA-256 为 `6FA978530075DF975AD05E2742896A1950B74C2B133A0D208891B038A4A41C17`。
 - 鲸鱼图标只表示与 DeepSeek Harness 的兼容关系，不构成官方产品或官方背书。当前实现已注册同一鲸鱼 path 几何，并用于 ribbon、活动标签页、Workbench 左上角和任务环境；图标在 Obsidian 宿主表面使用 `currentColor`，品牌承载底保持黑色原图与白色底的对比关系。
@@ -156,7 +156,7 @@ Ardot 设计通过、CI 成功或 GitHub Release 单独成立时，都不能越�
 | 中央 Workbench 壳层 | 用户反馈差异已实现并通过专用隔离 Vault 验收 | 只显示新建任务与运行 | 真实 DSH 已连接 |
 | 新建任务 | Batch 6–10 的实现、专用 Vault 技术运行门、双平台 CI 与原始零 annotations 已通过；用户已明确确认第一批开发目标完成 | 模式、内存草稿、显式只读知识库、单一 Vault 外工作区、逐次权限、真实流式回复、停止、文件卡、审核、撤销、正式会话与错误终态 | 跨重启恢复、最近会话、Vault 写入或统一工作台后续能力已通过 |
 | 运行 | 合并页面已实现；会话连接状态由插件级控制器真实投影 | 概览真值、只读健康检查、已连接/未连接和权限边界 | 健康检查成功等于会话已连接 |
-| DSH 健康检查 | `0.1.1-rc.2` 目标、正式 bridge、远端 CI 与专用隔离 Vault 读回已通过 | 固定 `--version` 结果 | 已建立会话或协议连接 |
+| DSH 健康检查 | `0.1.2-alpha.3` 目标、正式 bridge、本地/远端 CI 门与专用隔离 Vault 读回纳入同一生产迁移闭环 | 固定 `--version` 结果 | 已建立会话或协议连接 |
 | 任务环境 | Batch 9 已通过本地门与双平台 CI；Batch 10 已通过专用 Vault 的右侧 leaf、真实投影与窄屏技术运行门 | 健康/连接、已选笔记、工作区名称、权限、DSH 配置边界、已观察工具与最近变更 | 主对话、完整路径、私有推理、具体模型/预设或必需确认 |
 | 会话 | Batch 7 插件级只读对话与 Batch 10 完整技术运行门已通过；第一批用户验收已确认 | 当前插件生命周期内的用户/助手文本、流式状态、停止和明确终态；完整历史由 DSH 原生 session 保存 | 已恢复跨重启历史、已开放未授权工具或 Vault 写入 |
 | 正式会话页与右侧环境栏 | Batch 9–10 已通过实现、本地门、专用 Vault 技术运行门、双平台 CI 与原始零 annotations；第一批用户验收已确认 | 同 leaf 切换、显式新建任务、插件生命周期内恢复与公开环境投影 | 跨重启恢复、最近会话、第二套 DSH 配置或下一批 UI 已完成 |

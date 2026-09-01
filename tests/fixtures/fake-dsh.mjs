@@ -4,7 +4,7 @@ import { writeFileSync } from 'node:fs';
 const managedScenario = process.env.FAKE_DSH_SCENARIO?.startsWith('managed-') === true;
 
 if (managedScenario && process.argv[2] === '--version') {
-  process.stdout.write('0.1.1-rc.2\n');
+  process.stdout.write('0.1.2-alpha.3\n');
   process.exit(0);
 }
 
@@ -15,7 +15,7 @@ if (managedScenario) {
   process.exit(64);
 } else switch (process.env.FAKE_DSH_SCENARIO) {
   case 'success':
-    process.stdout.write('0.1.1-rc.2\n');
+    process.stdout.write('0.1.2-alpha.3\n');
     break;
   case 'unsupported':
     process.stdout.write('0.1.0-rc.6\n');
@@ -78,7 +78,7 @@ function runManagedBridge(scenario) {
         respond(request.id, {
           protocolVersion: '1',
           bridgeVersion: '0.1.0',
-          dshVersion: '0.1.1-rc.2',
+          dshVersion: '0.1.2-alpha.3',
           capabilities: ['session', 'events', 'cancel', 'permission', 'shutdown'],
         });
       } else if (request.method === 'shutdown') {

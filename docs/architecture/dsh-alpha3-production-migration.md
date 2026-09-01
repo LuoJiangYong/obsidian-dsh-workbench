@@ -2,7 +2,7 @@
 
 - 批次：`R1-M`（一个生产迁移批次；候选核验与生产切换只是批次内分步提交）
 - 更新时间：`2026-09-01`
-- 当前状态：`candidate_verified`；生产仍为 `0.1.1-rc.2`
+- 当前状态：`supported`；生产健康检查与正式 bridge 均精确锁定 `0.1.2-alpha.3`
 - 唯一结果：把健康检查、正式 bridge、运行夹具和兼容矩阵精确迁移到已验证的 `0.1.2-alpha.3`，且 v1 对话/任务、Windows 进程、Vault 外数据和失败语义不回归
 - 停止边界：完成迁移、隔离 Vault 技术验收和远端双平台 CI 后停止，不进入 R2
 
@@ -50,16 +50,24 @@ alpha.3 删除的是可选 SQLite session persistence 后端；现有插件没�
 3. 真实 alpha.3 artifact 加载当前 rc.2 bridge，完成握手、session 创建/关闭、正常退出和零 PID 残留；这只是加载兼容，不表示生产握手已经迁移。
 4. 两个独立 DSH 进程在临时 `DSH_HOME` 中完成 session 创建、冷列举、显式 ID 恢复、标题、规范化附件、一次性权限、follow/control 投影和 JSONL artifact 读回。
 
-本阶段没有调用真实模型、读取用户凭据、修改用户 DSH、写入 Vault 或 Ardot。生产健康检查、正式 bridge 和运行夹具仍精确拒绝 alpha.3；下一分步才允许迁移这些消费者。
+候选分步没有调用真实模型、读取用户凭据、修改用户 DSH、写入 Vault 或 Ardot；当时生产健康检查、正式 bridge 和运行夹具仍精确拒绝 alpha.3。随后同一 R1-M 的生产分步才迁移这些消费者，候选通过本身没有被冒充为生产支持。
 
-## 5. 生产迁移与回退门
+## 5. 生产迁移结果
 
-后续同一批次只允许：
+1. `TARGET_DSH_VERSION`、`TARGET_BRIDGE_DSH_VERSION`、生产夹具、bridge 构建清单、直接测试和 Windows CI job 已同步锁定 alpha.3；生产 lockfile 的 215 个直接 DSH 包全部为 alpha.3，根插件仍不依赖 DSH。
+2. bridge `0.1.0` / protocol `1` 保持不变；正式 artifact 为 `17,460` bytes，SHA-256 `63d6ac6ddd35c74b14ae5d0f31e1ae4f70ee0bc4d7d605fef815cd6381e16e54`，DSH npm integrity 与候选读回一致。
+3. Windows 本地重新通过健康/进程专项、真实 alpha.3 bridge、环回模型回复、无 `tools` 请求、mid-turn cancel、JSONL session、正常退出和独立候选控制面；没有增加兼容 fallback。
+4. 候选分步提交 `b271c8f8dc6b28c53184f37db68c7d64bf29a14e` 已通过 CI `33467939672`：Ubuntu `99731576496`、Windows `99731576685` 成功，两个原始 annotations 数组均为 `[]`。
 
-1. 将生产健康检查、bridge 握手/构建清单和运行夹具同步锁定 alpha.3；
-2. 更新直接测试、CI job 名称、兼容矩阵、README/DESIGN/需求/ADR 中的生产版本事实；
-3. 复跑 typecheck、lint、完整 test、build、verify、候选控制面、Windows runtime/bridge 和进程零残留；
-4. 先输出专用隔离 Vault 的脱敏路径身份、当前/拟部署版本与三项资产 hash diff，经用户确认后才写入并读回；
-5. 精确提交、push，确认 Ubuntu/Windows CI 和原始零 annotations。
+## 6. 专用隔离 Vault 技术验收
 
-任一 v1 行为、JSONL 读回、Windows 进程清理、隔离 Vault 或 CI 失败时，回退整个生产迁移提交并继续支持 rc.2；不得增加宽松 fallback、双版本静默接受或自动修改用户环境。
+用户在看到专用 Vault 路径身份、插件版本与四项资产 diff 后明确批准写入。实际只替换：
+
+- `main.js`：SHA-256 从 `92fe738b5f3818ab8dc8ab23ce4caafe356557bebad84c2e8832cb83a263bec7` 变为 `bb49043eb0729feed212f300731647865cd2dbfa8522f34f3a446f283a1228fa`；
+- `obsidian-bridge.mjs`：SHA-256 从 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` 变为 `63d6ac6ddd35c74b14ae5d0f31e1ae4f70ee0bc4d7d605fef815cd6381e16e54`。
+
+`data.json`、`manifest.json` 与 `styles.css` 未修改，插件版本保持 `0.1.0`。Obsidian CLI 原生重载后插件保持 enabled/loaded，无加载错误或 error 级控制台消息；插件实例自身的健康检查读回 alpha.3。空上下文真实对话完成并匹配预期短回复，工具数 `0`、无权限请求；显式“新建任务”后为 `idle/disconnected`、消息数 `0`，目标 Node 进程读回为 `0`。没有写入真实 Vault、修改用户 DSH 或 Ardot。
+
+## 7. 回退与停止
+
+旧资产在验收期间保存在 Vault 外，任一运行或 CI 门失败即可恢复 rc.2 的两个部署资产并回退生产提交。迁移成功后 rc.2 仅保留历史矩阵证据，不提供双版本静默接受。R1-M 到此只关闭运行时迁移；R2 仍需新的明确批准。

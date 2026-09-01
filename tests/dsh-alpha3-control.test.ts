@@ -29,7 +29,7 @@ const bridgePath = path.join(process.cwd(), 'obsidian-bridge.mjs');
 let temporaryRoot = '';
 
 describe('DSH 0.1.2-alpha.3 独立候选身份契约', () => {
-  it('只在隔离夹具精确锁定候选版本和 npm integrity，不改生产 rc.2 夹具', async () => {
+  it('在独立夹具精确锁定候选版本和 npm integrity，并与同版本生产夹具保持来源隔离', async () => {
     const [candidatePackage, candidateLock, productionFixture, rootPackage] = await Promise.all([
       readJson(candidatePackagePath),
       readJson(candidateLockPath),
@@ -61,7 +61,7 @@ describe('DSH 0.1.2-alpha.3 独立候选身份契约', () => {
     });
     expect(directDshPackages.length).toBeGreaterThan(200);
     expect(directDshPackages.every(entry => entry.version === CANDIDATE_VERSION)).toBe(true);
-    expect(asRecord(production['dependencies'])['@deepseek-ai/dsh']).toBe('0.1.1-rc.2');
+    expect(asRecord(production['dependencies'])['@deepseek-ai/dsh']).toBe(CANDIDATE_VERSION);
     expect(asRecord(root['dependencies'])['@deepseek-ai/dsh']).toBeUndefined();
     expect(asRecord(root['devDependencies'])['@deepseek-ai/dsh']).toBeUndefined();
   });

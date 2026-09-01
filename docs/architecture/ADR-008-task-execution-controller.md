@@ -51,5 +51,5 @@
 - 控制器测试证明：任务 session 与工作区绑定、缺少工作区不启动、基线与 DSH 使用同一 `turnId`、真实文件变化进入终态摘要。
 - 故障测试证明：变更捕获失败不会伪装完成，意外断开仍先核对已发生的实际变化。
 - UI 测试证明：选择工作区前发送禁用，发送前显示边界，完成后只显示真实摘要。
-- `npm test` 由 Ubuntu/Windows CI 双平台执行；任务账本与正式 rc.2 bridge 继续进入既有 runtime jobs。
+- `npm test` 由 Ubuntu/Windows CI 双平台执行；任务账本与当前正式 alpha.3 bridge 继续进入既有 runtime jobs。
 - 实现提交 `91b21345a52657520633475dfc9e86db7b720e65` 已通过远端 [CI run 33188573187](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33188573187)：Ubuntu check `98907874384` 与 Windows check `98907874519` 均成功，两个原始 annotations 数组均为 `[]`。
