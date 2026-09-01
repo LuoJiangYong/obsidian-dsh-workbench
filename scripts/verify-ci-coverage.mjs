@@ -11,9 +11,9 @@ const formalBridgeTests = await readFile('tests/obsidian-bridge.test.ts', 'utf8'
 const ndjsonTests = await readFile('tests/bridge-ndjson-transport.test.ts', 'utf8');
 const managedBridgeTests = await readFile('tests/managed-bridge-process.test.ts', 'utf8');
 const realDshBridgeTests = await readFile('tests/real-dsh-bridge.test.ts', 'utf8');
-const alpha2CandidateTests = await readFile('tests/dsh-alpha2-control.test.ts', 'utf8');
-const alpha2CandidateProbe = await readFile(
-  'tests/fixtures/dsh-alpha2-control-probe.mjs',
+const alpha3CandidateTests = await readFile('tests/dsh-alpha3-control.test.ts', 'utf8');
+const alpha3CandidateProbe = await readFile(
+  'tests/fixtures/dsh-alpha3-control-probe.mjs',
   'utf8',
 );
 const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf8');
@@ -37,6 +37,10 @@ const runtimeCandidateLock = JSON.parse(
 );
 const r1CandidateEvidence = await readFile(
   'docs/architecture/r1-dsh-alpha2-control-capability.md',
+  'utf8',
+);
+const alpha3MigrationEvidence = await readFile(
+  'docs/architecture/dsh-alpha3-production-migration.md',
   'utf8',
 );
 
@@ -69,8 +73,8 @@ assert(
   'CI 必须在 Windows runner 显式执行 DSH rc.2 正式 bridge 运行验收',
 );
 assert(
-  /name: 双平台 DSH alpha\.2 正式控制面候选验收\s+run: npm run test:runtime:candidate/u.test(workflow),
-  'CI 必须在 Ubuntu 与 Windows runner 执行 DSH alpha.2 正式控制面候选验收',
+  /name: 双平台 DSH alpha\.3 正式控制面候选验收\s+run: npm run test:runtime:candidate/u.test(workflow),
+  'CI 必须在 Ubuntu 与 Windows runner 执行 DSH alpha.3 正式控制面候选验收',
 );
 assert(workflow.includes("node-version: '24'"), 'CI 必须固定 Node 24');
 assert(
@@ -123,14 +127,14 @@ assert(
   '运行夹具必须精确锁定 @deepseek-ai/dsh 0.1.1-rc.2',
 );
 assert(
-  runtimeCandidateFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.2',
-  '候选夹具必须独立精确锁定 @deepseek-ai/dsh 0.1.2-alpha.2',
+  runtimeCandidateFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.3',
+  '候选夹具必须独立精确锁定 @deepseek-ai/dsh 0.1.2-alpha.3',
 );
 const directCandidateDshPackages = Object.entries(runtimeCandidateLock.packages ?? {})
   .filter(([packagePath]) => /^node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(packagePath));
 assert(
   directCandidateDshPackages.length > 200
-    && directCandidateDshPackages.every(([, metadata]) => metadata.version === '0.1.2-alpha.2'),
+    && directCandidateDshPackages.every(([, metadata]) => metadata.version === '0.1.2-alpha.3'),
   '候选 lockfile 禁止通过 semver 范围混入后续 DSH alpha 内部包',
 );
 for (const evidenceContract of [
@@ -147,8 +151,8 @@ for (const candidateContract of [
   '真实 artifact 跨两个进程创建、列举、恢复并投影标题、附件和一次性权限，关闭后零残留',
 ]) {
   assert(
-    alpha2CandidateTests.includes(candidateContract),
-    `alpha.2 候选测试缺少契约：${candidateContract}`,
+    alpha3CandidateTests.includes(candidateContract),
+    `alpha.3 候选测试缺少契约：${candidateContract}`,
   );
 }
 for (const candidateProbeContract of [
@@ -161,8 +165,20 @@ for (const candidateProbeContract of [
   'context.sessions.flush',
 ]) {
   assert(
-    alpha2CandidateProbe.includes(candidateProbeContract),
-    `alpha.2 候选探针缺少公开能力证据：${candidateProbeContract}`,
+    alpha3CandidateProbe.includes(candidateProbeContract),
+    `alpha.3 候选探针缺少公开能力证据：${candidateProbeContract}`,
+  );
+}
+for (const migrationEvidenceContract of [
+  '215 个直接 `@deepseek-ai/dsh*` 包全部精确为 `0.1.2-alpha.3`',
+  'alpha.3 删除的是可选 SQLite session persistence 后端',
+  'Claudian 公开 HEAD `e66f41c2674f03664788996851490512b3875744`',
+  '生产仍为 `0.1.1-rc.2`',
+  '不进入 R2',
+]) {
+  assert(
+    alpha3MigrationEvidence.includes(migrationEvidenceContract),
+    `alpha.3 生产迁移证据缺少边界：${migrationEvidenceContract}`,
   );
 }
 assert(
@@ -400,7 +416,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、纯 alpha.2 候选控制面、专用隔离 Vault dry-run guard、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、纯 alpha.3 候选控制面、专用隔离 Vault dry-run guard、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

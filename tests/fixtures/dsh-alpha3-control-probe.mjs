@@ -11,7 +11,7 @@ export const inject = [
   'sessions',
 ];
 
-const EXPECTED_SESSION_ID = 'obsidian-dsh-workbench-r1-alpha2';
+const EXPECTED_SESSION_ID = 'obsidian-dsh-workbench-runtime-migration-alpha3';
 const PNG_1X1 = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   'base64',
@@ -70,26 +70,26 @@ async function seed(context) {
     const agent = requireAgent(context);
     const renamed = await context.sessionController.rename({
       sessionId: EXPECTED_SESSION_ID,
-      title: 'R1 alpha2 candidate',
+      title: 'Runtime migration alpha3 candidate',
     });
     const attachment = await context.attachments.saveImage({
       data: PNG_1X1,
       mediaType: 'image/png',
-      name: 'r1-alpha2.png',
+      name: 'runtime-migration-alpha3.png',
     });
     agent.session.append('turn/start', { turn: 1 });
     agent.session.append('user/message', {
       id: randomUUID(),
       role: 'user',
       content: [
-        { type: 'text', text: 'R1 alpha2 public control probe' },
+        { type: 'text', text: 'Runtime migration alpha3 public control probe' },
         { type: 'image', attachment },
       ],
       source: { kind: 'user' },
     }, { surfaceOp: 'append' });
     const approvalOutcome = await context.approval.request({
       agent,
-      callId: 'r1-alpha2-call',
+      callId: 'runtime-migration-alpha3-call',
       reason: 'R1 candidate one-shot permission probe',
       toolName: 'read',
     });
@@ -147,7 +147,7 @@ async function restore(context) {
   const agent = requireAgent(context);
   const renamed = await context.sessionController.rename({
     sessionId: EXPECTED_SESSION_ID,
-    title: 'R1 alpha2 restored',
+    title: 'Runtime migration alpha3 restored',
   });
   await context.sessions.flush(agent.session);
 

@@ -11,9 +11,9 @@ import { NdjsonBridgeTransport } from '../src/bridge-ndjson-transport';
 import { BridgeProtocolClient } from '../src/bridge-protocol-client';
 import { createBridgeOverlay, createDshLaunchSpec } from '../src/managed-bridge-process';
 
-const CANDIDATE_VERSION = '0.1.2-alpha.2';
-const CANDIDATE_INTEGRITY = 'sha512-4TvTC5kRKlgtSU2UTBv+cID9a2Z+6+m6mpvjXWJfVzuTkflCff6s4MsQpFJTCmwFh/k7zNWe7qFXcLYMV/5VvA==';
-const SESSION_CONTROLLER_INTEGRITY = 'sha512-X2YSKLSlD8ncitlzSdqzeBV92V4Sa7wEkOB65u32Xy04rovR+vKlqm4TpSGjHUT7Q0U8vOQ6eVlrMmOuJ+nkbw==';
+const CANDIDATE_VERSION = '0.1.2-alpha.3';
+const CANDIDATE_INTEGRITY = 'sha512-VvATzYmQ4LMJREJ9e2POKksSHRfqP3y9pghplLBaQBuw2BqfbC0mQUVsaPwxe4wlcpj+riEgn8OJB01YnpF+3A==';
+const SESSION_CONTROLLER_INTEGRITY = 'sha512-uMkeiIXaK49KF8ddU4nWMBVikOxEc8uG5jsRDpCsU9VwXflbsILWxWs7/v3t+jPxDwwbDQIo038YHULvJU4BlQ==';
 const fixtureRoot = path.join(process.cwd(), 'tests', 'runtime-candidate-fixture');
 const candidatePackagePath = path.join(fixtureRoot, 'package.json');
 const candidateLockPath = path.join(fixtureRoot, 'package-lock.json');
@@ -24,11 +24,11 @@ const dshShimPath = path.join(
   '.bin',
   process.platform === 'win32' ? 'dsh.cmd' : 'dsh',
 );
-const probePath = path.join(process.cwd(), 'tests', 'fixtures', 'dsh-alpha2-control-probe.mjs');
+const probePath = path.join(process.cwd(), 'tests', 'fixtures', 'dsh-alpha3-control-probe.mjs');
 const bridgePath = path.join(process.cwd(), 'obsidian-bridge.mjs');
 let temporaryRoot = '';
 
-describe('DSH 0.1.2-alpha.2 独立候选身份契约', () => {
+describe('DSH 0.1.2-alpha.3 独立候选身份契约', () => {
   it('只在隔离夹具精确锁定候选版本和 npm integrity，不改生产 rc.2 夹具', async () => {
     const [candidatePackage, candidateLock, productionFixture, rootPackage] = await Promise.all([
       readJson(candidatePackagePath),
@@ -67,13 +67,13 @@ describe('DSH 0.1.2-alpha.2 独立候选身份契约', () => {
   });
 });
 
-describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.2 正式控制面候选运行验收', () => {
+describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.3 正式控制面候选运行验收', () => {
   beforeAll(async () => {
     vi.stubGlobal('window', {
       clearTimeout: globalThis.clearTimeout,
       setTimeout: globalThis.setTimeout,
     });
-    temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'dsh-alpha2-control-'));
+    temporaryRoot = await mkdtemp(path.join(os.tmpdir(), 'dsh-alpha3-control-'));
     await mkdir(path.join(temporaryRoot, 'workspace'), { recursive: true });
   });
 
@@ -127,8 +127,8 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.2 正式控制面候选�
     let closed = false;
     try {
       await client.initialize();
-      await client.createSession({ sessionId: 'r1-alpha2-bridge', mode: 'chat' });
-      await client.closeSession('r1-alpha2-bridge');
+      await client.createSession({ sessionId: 'runtime-migration-alpha3-bridge', mode: 'chat' });
+      await client.closeSession('runtime-migration-alpha3-bridge');
       await client.shutdown();
       expect(await exitPromise).toBe(0);
       closed = true;
@@ -146,15 +146,15 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.2 正式控制面候选�
     expect(seed.report).toMatchObject({
       phase: 'seed',
       status: 'passed',
-      sessionId: 'obsidian-dsh-workbench-r1-alpha2',
+      sessionId: 'obsidian-dsh-workbench-runtime-migration-alpha3',
       listed: {
         blank: false,
-        sessionId: 'obsidian-dsh-workbench-r1-alpha2',
+        sessionId: 'obsidian-dsh-workbench-runtime-migration-alpha3',
       },
       attachment: { bytesMatched: true, mediaType: 'image/webp', sourceMediaType: 'image/png' },
       approval: {
         outcome: 'allowed-once',
-        request: { callId: 'r1-alpha2-call', toolName: 'read' },
+        request: { callId: 'runtime-migration-alpha3-call', toolName: 'read' },
       },
       follow: { type: 'snapshot' },
       control: { type: 'baseline', sessionPresent: true },
@@ -176,11 +176,11 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.2 正式控制面候选�
     expect(restored.report).toMatchObject({
       phase: 'restore',
       status: 'passed',
-      sessionId: 'obsidian-dsh-workbench-r1-alpha2',
+      sessionId: 'obsidian-dsh-workbench-runtime-migration-alpha3',
       coldListed: {
         blank: false,
         running: false,
-        sessionId: 'obsidian-dsh-workbench-r1-alpha2',
+        sessionId: 'obsidian-dsh-workbench-runtime-migration-alpha3',
       },
       liveAgentRestored: true,
       attachment: { bytesMatched: true, mediaType: 'image/webp', sourceMediaType: 'image/png' },
@@ -188,8 +188,8 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.2 正式控制面候选�
       control: { type: 'baseline', sessionPresent: true },
     });
     expect(asRecord(restored.report['history'])['titleEvents']).toEqual([
-      'R1 alpha2 candidate',
-      'R1 alpha2 restored',
+      'Runtime migration alpha3 candidate',
+      'Runtime migration alpha3 restored',
     ]);
     expect(asRecord(restored.report['follow'])['recordTypes']).toEqual(expect.arrayContaining([
       'approval/decided',
@@ -242,7 +242,7 @@ async function runProbe(phase: 'seed' | 'restore'): Promise<{
   const report = asRecord(await readJson(reportPath));
   if (exit !== 0 || report['status'] !== 'passed') {
     throw new Error([
-      `DSH alpha.2 ${phase} probe failed: exit=${String(exit)}`,
+      `DSH alpha.3 ${phase} probe failed: exit=${String(exit)}`,
       `report=${JSON.stringify(report)}`,
       `stderr=${output.stderr.slice(-2_048)}`,
     ].join('\n'));
@@ -288,7 +288,7 @@ function waitForExit(child: ChildProcess, timeoutMs: number): Promise<number | n
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       child.kill('SIGKILL');
-      reject(new Error('DSH alpha.2 candidate process did not exit in time'));
+      reject(new Error('DSH alpha.3 candidate process did not exit in time'));
     }, timeoutMs);
     child.once('error', (error) => {
       clearTimeout(timer);

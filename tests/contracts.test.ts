@@ -55,7 +55,7 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('- 不采集客户端遥测。');
   });
 
-  it('G0-1、G0-2 与 R1 完成状态保持一致且不越过生产迁移边界', async () => {
+  it('G0-1、G0-2、R1 与 R1-M 候选状态一致且不越过生产迁移边界', async () => {
     const [
       design,
       designQa,
@@ -67,6 +67,7 @@ describe('发布与治理契约', () => {
       protocol,
       matrix,
       r1Evidence,
+      alpha3MigrationEvidence,
       ciRoadmap,
       codexAssessment,
       releaseStatus,
@@ -113,6 +114,15 @@ describe('发布与治理契约', () => {
         ),
         'utf8',
       ),
+      readFile(
+        path.join(
+          repositoryRoot,
+          'docs',
+          'architecture',
+          'dsh-alpha3-production-migration.md',
+        ),
+        'utf8',
+      ),
       readFile(path.join(repositoryRoot, 'docs', 'ci-cd-roadmap.md'), 'utf8'),
       readFile(
         path.join(repositoryRoot, 'docs', 'design', 'codex-reference-ui-assessment.md'),
@@ -145,17 +155,20 @@ describe('发布与治理契约', () => {
     expect(protocol).toContain('明确延期或未授权：跨重启恢复属于下一批');
     expect(matrix).toContain('| `0.1.1-rc.2` | 正式 bridge + 产品对话/任务 | `supported`（当前 v1） |');
     expect(matrix).toContain('| `0.1.2-alpha.2` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1 证据完成，不晋级生产） |');
+    expect(matrix).toContain('| `0.1.2-alpha.3` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1-M 第一步；尚未晋级生产） |');
     expect(r1Evidence).toContain('所有 215 个顶层 `@deepseek-ai/dsh*` 包都精确为 `0.1.2-alpha.2`');
     expect(r1Evidence).toContain('建议继续保留生产 `0.1.1-rc.2`');
     expect(r1Evidence).toContain('R2 也仍需新的明确批准');
-    expect(ciRoadmap).toContain('状态：当前 v1 范围已通过');
+    expect(alpha3MigrationEvidence).toContain('当前状态：`candidate_verified`；生产仍为 `0.1.1-rc.2`');
+    expect(alpha3MigrationEvidence).toContain('alpha.3 删除的是可选 SQLite session persistence 后端');
+    expect(ciRoadmap).toContain('状态：当前 v1 + rc.2 范围已通过');
     expect(ciRoadmap).toContain('发布资产验收、Release 与社区提交仍未完成或未授权');
     expect(ciRoadmap).toContain('npm run verify:isolated-vault');
     expect(ciRoadmap).toContain('入口默认且仅执行 dry-run');
     expect(ciRoadmap).toContain('npm run test:runtime:candidate');
     expect(codexAssessment).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
     expect(releaseStatus).toContain('GitHub Release、发布资产验收和 Obsidian 社区提交仍未批准或执行');
-    expect(implementationRoadmap).toContain('状态：G0-1、G0-2、R1 已完成；生产版本迁移、R2 及后续批次尚未获授权');
+    expect(implementationRoadmap).toContain('状态：G0-1、G0-2、R1 已完成；R1-M 已获批准并完成候选分步，生产仍为 rc.2；R2 及后续批次尚未获授权');
     expect(implementationRoadmap).toContain('权威配置来源固定为 Obsidian 桌面 Vault 注册表');
     expect(designQa).toContain('G0-2 dedicated Vault reproducible read-only preflight: passed');
     expect(designQa).toContain('R1 alpha.2 candidate evidence: passed without production switch');
@@ -251,8 +264,9 @@ describe('发布与治理契约', () => {
     expect(implementationRoadmap).toContain('G0-1：第一批状态真相闭环');
     expect(implementationRoadmap).toContain('G0-2：隔离 Vault 可复现验收入口');
     expect(implementationRoadmap).toContain('R1：DSH 正式控制面兼容候选');
+    expect(implementationRoadmap).toContain('R1-M：DSH alpha.3 生产运行时迁移门');
     expect(implementationRoadmap).toContain('任务归档、删除和恢复语义');
-    expect(implementationRoadmap).toContain('后续产品批次均需逐批明确批准');
+    expect(implementationRoadmap).toContain('R2 及后续产品批次仍需新的明确批准');
     expect(implementationRoadmap).toContain('Ardot 未修改、只读核对');
     expect(design).toContain('统一工作台下一批未来实施契约');
     expect(readme).toContain('统一工作台下一批未来实施契约');
