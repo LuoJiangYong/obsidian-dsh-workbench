@@ -25,6 +25,7 @@ export default defineConfig(
             'scripts/*.mjs',
             'tests/fixtures/*.mjs',
           ],
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 9,
         },
         tsconfigRootDir: import.meta.dirname,
       },

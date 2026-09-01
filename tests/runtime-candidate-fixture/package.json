@@ -1,0 +1,13 @@
+{
+  "name": "obsidian-dsh-workbench-runtime-candidate-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CI-only exact DeepSeek Harness candidate fixture; never shipped or installed into the user environment.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24 <26"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh": "0.1.2-alpha.2"
+  }
+}

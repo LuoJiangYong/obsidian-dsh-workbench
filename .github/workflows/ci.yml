@@ -43,6 +43,12 @@ jobs:
       - name: 生产构建
         run: npm run build
 
+      - name: 安装精确锁定的 DSH alpha.2 候选夹具
+        run: npm run prepare:runtime-candidate-fixture
+
+      - name: 双平台 DSH alpha.2 正式控制面候选验收
+        run: npm run test:runtime:candidate
+
       - name: 安装精确锁定的 DSH rc.2 运行夹具
         if: runner.os == 'Windows'
         run: npm run prepare:runtime-fixture

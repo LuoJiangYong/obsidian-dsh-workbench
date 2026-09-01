@@ -11,6 +11,11 @@ const formalBridgeTests = await readFile('tests/obsidian-bridge.test.ts', 'utf8'
 const ndjsonTests = await readFile('tests/bridge-ndjson-transport.test.ts', 'utf8');
 const managedBridgeTests = await readFile('tests/managed-bridge-process.test.ts', 'utf8');
 const realDshBridgeTests = await readFile('tests/real-dsh-bridge.test.ts', 'utf8');
+const alpha2CandidateTests = await readFile('tests/dsh-alpha2-control.test.ts', 'utf8');
+const alpha2CandidateProbe = await readFile(
+  'tests/fixtures/dsh-alpha2-control-probe.mjs',
+  'utf8',
+);
 const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf8');
 const taskWorkspaceTests = await readFile('tests/task-workspace.test.ts', 'utf8');
 const taskWorkspaceHostTests = await readFile('tests/task-workspace-host.test.ts', 'utf8');
@@ -24,6 +29,16 @@ const taskEnvironmentTests = await readFile('tests/task-environment-view.test.ts
 const isolatedVaultTests = await readFile('tests/isolated-vault-entry.test.ts', 'utf8');
 const isolatedVaultVerifier = await readFile('scripts/verify-isolated-vault.mjs', 'utf8');
 const runtimeFixture = JSON.parse(await readFile('tests/runtime-fixture/package.json', 'utf8'));
+const runtimeCandidateFixture = JSON.parse(
+  await readFile('tests/runtime-candidate-fixture/package.json', 'utf8'),
+);
+const runtimeCandidateLock = JSON.parse(
+  await readFile('tests/runtime-candidate-fixture/package-lock.json', 'utf8'),
+);
+const r1CandidateEvidence = await readFile(
+  'docs/architecture/r1-dsh-alpha2-control-capability.md',
+  'utf8',
+);
 
 const requiredCommands = [
   'npm ci',
@@ -32,7 +47,9 @@ const requiredCommands = [
   'npm test',
   'npm run test:runtime',
   'npm run prepare:runtime-fixture',
+  'npm run prepare:runtime-candidate-fixture',
   'npm run test:bridge:runtime',
+  'npm run test:runtime:candidate',
   'npm run build',
   'npm run verify',
 ];
@@ -50,6 +67,10 @@ assert(
 assert(
   /name: Windows DSH rc\.2 正式 bridge 运行验收\s+if: runner\.os == 'Windows'\s+run: npm run test:bridge:runtime/u.test(workflow),
   'CI 必须在 Windows runner 显式执行 DSH rc.2 正式 bridge 运行验收',
+);
+assert(
+  /name: 双平台 DSH alpha\.2 正式控制面候选验收\s+run: npm run test:runtime:candidate/u.test(workflow),
+  'CI 必须在 Ubuntu 与 Windows runner 执行 DSH alpha.2 正式控制面候选验收',
 );
 assert(workflow.includes("node-version: '24'"), 'CI 必须固定 Node 24');
 assert(
@@ -69,7 +90,9 @@ for (const script of [
   'test',
   'test:runtime',
   'test:bridge:runtime',
+  'test:runtime:candidate',
   'prepare:runtime-fixture',
+  'prepare:runtime-candidate-fixture',
   'build',
   'verify:bridge-artifact',
   'verify:isolated-vault',
@@ -99,6 +122,49 @@ assert(
   runtimeFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.1-rc.2',
   '运行夹具必须精确锁定 @deepseek-ai/dsh 0.1.1-rc.2',
 );
+assert(
+  runtimeCandidateFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.2',
+  '候选夹具必须独立精确锁定 @deepseek-ai/dsh 0.1.2-alpha.2',
+);
+const directCandidateDshPackages = Object.entries(runtimeCandidateLock.packages ?? {})
+  .filter(([packagePath]) => /^node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(packagePath));
+assert(
+  directCandidateDshPackages.length > 200
+    && directCandidateDshPackages.every(([, metadata]) => metadata.version === '0.1.2-alpha.2'),
+  '候选 lockfile 禁止通过 semver 范围混入后续 DSH alpha 内部包',
+);
+for (const evidenceContract of [
+  '所有 215 个顶层 `@deepseek-ai/dsh*` 包都精确为 `0.1.2-alpha.2`',
+  '建议继续保留生产 `0.1.1-rc.2`',
+  'R2 也仍需新的明确批准',
+]) {
+  assert(r1CandidateEvidence.includes(evidenceContract), `R1 候选证据缺少边界：${evidenceContract}`);
+}
+for (const candidateContract of [
+  '只在隔离夹具精确锁定候选版本和 npm integrity，不改生产 rc.2 夹具',
+  '真实 shim 读回精确版本',
+  '真实 artifact 加载当前 bridge 并完成握手、session 创建/关闭和正常退出',
+  '真实 artifact 跨两个进程创建、列举、恢复并投影标题、附件和一次性权限，关闭后零残留',
+]) {
+  assert(
+    alpha2CandidateTests.includes(candidateContract),
+    `alpha.2 候选测试缺少契约：${candidateContract}`,
+  );
+}
+for (const candidateProbeContract of [
+  "context.on('approval/request'",
+  'context.sessionController.create',
+  'context.sessionController.list',
+  'context.sessionController.follow',
+  'context.sessionController.control',
+  'context.sessionController.attachment',
+  'context.sessions.flush',
+]) {
+  assert(
+    alpha2CandidateProbe.includes(candidateProbeContract),
+    `alpha.2 候选探针缺少公开能力证据：${candidateProbeContract}`,
+  );
+}
 assert(
   packageJson.scripts.test === 'vitest run',
   'test 必须执行完整 Vitest 集，不能把 UI 契约排除在双平台 CI 外',
@@ -334,7 +400,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、专用隔离 Vault dry-run guard、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、纯 alpha.2 候选控制面、专用隔离 Vault dry-run guard、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows rc.2 运行门已接入。',
 );
 
 function assert(condition, message) {

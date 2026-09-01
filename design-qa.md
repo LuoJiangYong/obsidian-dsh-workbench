@@ -1,6 +1,6 @@
 # Workbench 壳层与 Ardot UI 真相设计验收
 
-状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回；Batch 10 专用 Vault 技术运行门与 G0-2 可复现只读预检入口已通过，用户已于 `2026-08-31` 明确确认第一批开发目标完成；Ardot 未修改、只读核对，R1、Release 与社区提交仍未授权
+状态：Ardot 设计证据有效；误用测试 Vault 的 Obsidian 运行证据已撤回；Batch 10 专用 Vault 技术运行门与 G0-2 可复现只读预检入口已通过，用户已于 `2026-08-31` 明确确认第一批开发目标完成；R1 alpha.2 候选控制面证据已于 `2026-09-01` 完成且未切换生产版本；Ardot 未修改、只读核对，生产版本迁移、R2、Release 与社区提交仍未授权
 
 > `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据；`docs/assets/design-qa/workbench-shell/` 只保留为历史工件，不再支撑“已通过”结论。Ardot 设计审阅证据不受影响；`docs/assets/design-qa/new-task-host-ui/` 五张截图已全部由专用 `obsidian-dsh-workbench-evidence` Vault 覆盖，当前有效运行结论只以后文修正批次为准。
 
@@ -384,6 +384,6 @@ Batch 10 dedicated Vault technical runtime and remote CI gate: passed; final Obs
 - 脱敏输出：成功只报告固定 Vault 名、插件 ID、`[redacted]` 路径、只读 guard 和五项清单；失败只报告稳定错误码，不回显注册表路径、Vault 路径或底层文件系统错误。
 - 自动验证：黑盒测试直接启动生产 CLI，覆盖默认 dry-run、文件前后哈希与修改时间不变、专用 Vault 缺失、Trend Radar Vault、错误插件 ID、符号链接或 junction 越界、重复注册项和写入参数拒绝。现有 Ubuntu/Windows `npm test` 实际执行这些测试，`verify:ci-coverage` 固定 npm 入口与 guard，因此 workflow 无需增加新的机器相关 Vault job。
 - Windows 真实读回：当前机器从真实 Obsidian 注册表解析成功，结果为 `ready`，插件清单 ID 为 `deepseek-harness-workbench`，输出没有本机绝对路径。预检没有打开 Obsidian、没有自动点击、没有部署、写入、删除或移动真实及隔离 Vault 内容，也没有运行产品功能。
-- 停止边界：本批只建立后续 F1、M1 可复用的验收前置入口；没有把既有 Batch 10 证据重新执行或扩写为新产品通过。R1、Vault 写入、产品 UI、Ardot、Release 和社区提交均未授权。
+- 停止边界：G0-2 本身只建立后续 F1、M1 可复用的验收前置入口；没有把既有 Batch 10 证据重新执行或扩写为新产品通过。后续单独获批的 R1 只新增候选运行时证据，没有修改产品 UI、Vault 或 Ardot；生产版本迁移、R2、Vault 写入、Release 和社区提交仍未授权。
 
-G0-2 dedicated Vault reproducible read-only preflight: passed; R1 and product implementation: not authorized.
+G0-2 dedicated Vault reproducible read-only preflight: passed; R1 alpha.2 candidate evidence: passed without production switch; R2 and product implementation: not authorized.

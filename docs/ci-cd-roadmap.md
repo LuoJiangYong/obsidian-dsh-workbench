@@ -1,6 +1,6 @@
 # CI/CD 路线图
 
-更新时间：2026-08-31
+更新时间：2026-09-01
 
 ## 定位
 
@@ -46,6 +46,7 @@ Phase A 不创建 Release，不提交社区目录，也不批准 Phase B。
 - manifest/package/versions 一致性与构建资产检查。
 - 仓库边界、禁止文件、敏感路径和凭据模式检查。
 - workflow 命令与 package scripts 的覆盖自检。
+- R1 独立候选夹具在 Ubuntu 与 Windows 都按 lockfile 安装纯 `0.1.2-alpha.2` 依赖图，并执行同一无凭据 `npm run test:runtime:candidate`；生产 rc.2 运行门保持独立。
 - 中央 Workbench 标签页复用、内部导航、运行状态切换和按需右侧任务环境由插件基线测试覆盖；正式会话、显式新建任务与环境投影由独立 UI/控制器测试覆盖，`verify:ci-coverage` 明确校验这些用例仍属于双平台完整 `npm test`。
 - Ardot v2 文件与画板 ID、AI 默认只读边界、插件只显示“新建任务 / 运行”、未实现模块不渲染、左右半圆模式控件、产品 UI 不显示开发/发布文案、设计/实现差异和首个社区发布门由治理契约覆盖；`verify:ci-coverage` 明确校验该契约仍属于双平台完整 `npm test`。
 - 新建任务 v1 的模式、只读 Vault、外部工作区、单终态、真实取消、正式 bridge 最新预发布候选与自动演进边界由治理契约覆盖；这只证明需求基线一致，不证明运行实现通过。
@@ -68,7 +69,7 @@ Phase B 只证明治理与架构契约一致，不证明运行时已经可用。
 
 ## Phase C：运行时与 Vault 安全门
 
-状态：当前 v1 范围已通过；跨重启恢复、Vault 写入与下一批统一工作台能力明确延期，不属于第一批完成门。
+状态：当前 v1 范围已通过；R1 alpha.2 独立控制面候选证据已建立但未晋级生产。产品跨重启恢复、Vault 写入与下一批统一工作台能力仍未授权。
 
 进入运行时和 Vault Bridge 实现后逐项建立：
 
@@ -89,7 +90,7 @@ Batch 0B 已建立其中的只读健康检查子集：
 - Windows matrix 增加显式 `npm run test:runtime` 专项步骤；完整 `npm test` 仍在 Windows 与 Ubuntu 运行。
 - SDK、ACP 与薄 bridge 的 P0 评估已形成唯一 ADR；Batch 4 已实现生产 bridge，Batch 5A 已实现 Obsidian 宿主 UI，Batch 6 已实现只读上下文，Batch 7 已实现模型发送链并统一 rc.2 健康检查。
 
-正式 bridge 的版本演进门已冻结为：每个实现或兼容批次重新读取 GitHub 最新预发布与 npm dist-tag，以一致结果建立待验证候选并精确锁定；当前目标为 `0.1.1-rc.2`。计划中的上游监测只允许生成 issue、兼容提案或 draft PR，不得自动安装/更新 DSH、自动合并、自动发布或自动提交社区目录。监测 workflow 尚未实现。
+正式 bridge 的版本演进门已冻结为：每个实现或兼容批次重新读取 GitHub 最新预发布与 npm dist-tag，以一致结果建立待验证候选并精确锁定；当前生产目标为 `0.1.1-rc.2`。计划中的上游监测只允许生成 issue、兼容提案或 draft PR，不得自动安装/更新 DSH、自动合并、自动发布或自动提交社区目录。监测 workflow 尚未实现。
 
 Batch 2 已建立 rc.2 固定 tag 的源码能力证据与兼容矩阵，确认 `ctx.agents.create`/owned dispose、完整 `session/event`、真实 Agent cancel、一次性 approval 和 fail-closed 默认结果可供后续薄 bridge 使用。治理契约由双平台完整 `npm test` 执行；这不证明 rc.2 Windows 真实运行、正式握手或进程清理通过，Phase C 整体仍未通过。
 
@@ -116,6 +117,8 @@ Batch 8D 已把逐轮账本投影为真实文件卡：默认显示三个、可�
 这些证据证明正式 bridge、Obsidian 宿主 UI、只读上下文和产品对话发送链已形成代码与技术运行闭环，任务文件工具、逐轮变更账本、产品任务控制器和详细文件 UI 也已接通并通过双平台 CI。Batch 9 已接通同 leaf 正式会话、显式新建任务、插件生命周期内恢复边界与原生任务环境；完整测试为 `123 passed / 2 skipped`、runtime 为 `27 passed / 1 skipped`、真实 rc.2 bridge 为 `1 passed`，构建与完整自检通过。实现 `cf13ca7e87b51a927fadaaa092a2ca5af51587fd` 已通过 CI `33294157748`；Windows `99210845045` 与 Ubuntu `99210845119` 均成功且原始 annotations 为 `[]`。跨重启恢复明确延期，不属于第一批 v1 支持门；用户于 `2026-08-31` 明确确认第一批开发目标完成后，Phase C 的当前 v1 范围闭环。
 
 Batch 10 已在专用 `obsidian-dsh-workbench-evidence` Vault 完成技术运行门：真实只读选区冻结且原笔记哈希不变；真实模型对话与无工具边界成立；Vault 外任务真实创建和修改文件，文件卡、审核、Obsidian 原生菜单、复制相对路径与精确撤销均读回一致；`700px` 深色、宽屏浅色、键盘、启动失败和恢复均通过。运行中发现并修复“正式 turn 完成后新建任务仍禁用”和“Obsidian 同步卸载未立即终止进程树”两个真实缺陷；新实现的专用 Vault 复验在禁用插件后 `800ms` 内从两个目标进程降为零。当前 DSH `0.1.1-rc.2` 的任务工具 allow-list 不含删除，删除请求因此明确失败而未伪造成功。最终本地门为 `126 passed / 2 skipped`、runtime `28 passed / 1 skipped`、真实 rc.2 bridge `1 passed`，构建与完整自检通过。实现 `ae37a7bf1c719ab871930a2b04d53ff5d7e6378f` 已通过 CI `33314880417`：Ubuntu `99266341200`、Windows `99266341269` 均成功且原始 annotations 为 `[]`。用户已明确确认第一批开发目标完成；当前 v1 + DSH rc.2 组合进入产品支持，跨重启恢复仍属于下一批。
+
+R1 新增独立 `tests/runtime-candidate-fixture`，用 registry 时间截面生成的 lockfile 将顶层 CLI 与 215 个直接 DSH 包全部精确锁定到 `0.1.2-alpha.2`，防止 caret 范围混入 alpha.3。候选门覆盖真实 shim 版本、现有 bridge artifact 加载/握手/session 生命周期，以及两个独立 DSH 进程的冷列举、显式 ID 恢复、标题、规范化附件、一次性权限、follow/control 投影和零 PID 残留。测试只使用临时 `DSH_HOME`/工作区，不读取凭据、不调用模型或网络服务，并由 Ubuntu/Windows workflow 显式执行。该证据不修改生产 rc.2 fixture、bridge manifest/握手、Vault 或 Ardot；npm `alpha` 已前移到未验证的 alpha.3，因此 R1 结论是继续保留 rc.2，生产版本迁移和 R2 均需另行批准。
 
 ## Phase D：隔离 Vault 与发布门
 
@@ -172,4 +175,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10 的精确范围已通过本地门、专用 Vault 技术运行门、双平台 CI、原始零 annotations 与用户确认。G0-1 状态真相与 G0-2 专用隔离 Vault 只读预检入口均已完成；现在必须停止，R1 及统一工作台产品批次需要另行逐批批准。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 默认只读，除非用户明确要求不得修改。当前授权不包括 Release、发布资产、社区提交、真实或隔离 Vault 写入、任意 Shell、自动安装/更新 DSH 或上游监测 workflow 的实现。
+用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10、G0-1 与 G0-2 的既有门保持有效。R1 alpha.2 候选控制面证据与双平台 CI 门已建立，版本建议是继续保留生产 rc.2；现在必须停止，生产版本迁移、R2 及统一工作台产品批次需要另行逐批批准。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只投影公开且实际启用的能力。Ardot 默认只读，除非用户明确要求不得修改。当前授权不包括 Release、发布资产、社区提交、真实或隔离 Vault 写入、任意 Shell、自动安装/更新用户 DSH 或上游监测 workflow 的实现。
