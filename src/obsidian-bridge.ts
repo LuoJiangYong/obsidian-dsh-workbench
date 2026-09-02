@@ -13,12 +13,13 @@ import {
   TARGET_BRIDGE_VERSION,
   type BridgeRemoteErrorCode,
   type BridgeRequest,
+  type BridgeSessionReadItem,
   type BridgeSessionMode,
   type BridgeTurnErrorCode,
 } from './bridge-protocol';
 
 export const name = 'obsidian-bridge';
-export const inject = ['agents', 'agentDefaultModel', 'tools'] as const;
+export const inject = ['agents', 'agentDefaultModel', 'sessionController', 'tools'] as const;
 export const MAX_BRIDGE_FRAME_BYTES = 1024 * 1024;
 
 const CHAT_BOUNDARY_SECTION = 'obsidian:chat-boundary';
@@ -58,6 +59,7 @@ export interface DshSession {
 
 export interface DshAgent {
   readonly session: DshSession;
+  readonly ctx: DshScopedContext;
   cancel(cause: { readonly kind: 'user' }): void;
   followup(message: DshMessage): void;
 }
@@ -108,10 +110,12 @@ export interface DshContext {
       readonly agentOptions: { readonly provider: string; readonly model: string };
       readonly setup: (agentContext: DshScopedContext) => void;
     }): Promise<DshAgentHandle>;
+    get(sessionId: string): DshAgent | undefined;
   };
   readonly agentDefaultModel: {
     currentSelection(): DshModelSelection;
   };
+  readonly sessionController: DshSessionController;
   effect(effect: () => () => void | Promise<void>, label?: string): unknown;
   get(service: 'appExit'): ((code: number) => void) | undefined;
   get(service: 'loader'): { await(): Promise<void> } | undefined;
@@ -126,6 +130,34 @@ export interface DshContext {
       next: () => Promise<ApprovalOutcome>,
     ) => Promise<ApprovalOutcome>,
   ): () => void;
+}
+
+export interface DshSessionSummary {
+  readonly sessionId: string;
+  readonly running: boolean;
+  readonly blank: boolean;
+  readonly origin?: 'subagent';
+  readonly cwd?: string;
+  readonly projections?: {
+    readonly values: Readonly<Record<string, unknown>>;
+  };
+}
+
+export interface DshSessionController {
+  list(request: Record<string, never>, signal: AbortSignal): Promise<{
+    readonly items: readonly DshSessionSummary[];
+  }>;
+  inspect(sessionId: string, signal?: AbortSignal): Promise<{
+    readonly meta: { readonly id: string; readonly cwd?: string };
+    readonly events: readonly unknown[];
+  }>;
+  create(request: { readonly sessionId: string; readonly cwd: string }): Promise<{
+    readonly sessionId: string;
+  }>;
+  rename(request: { readonly sessionId: string; readonly title: string }): Promise<{
+    readonly title: string;
+    readonly seq: number;
+  }>;
 }
 
 export interface DshApprovalRequest {
@@ -160,7 +192,8 @@ interface ActiveTurn {
 interface SessionRecord {
   readonly sessionId: string;
   readonly mode: BridgeSessionMode;
-  readonly handle: DshAgentHandle;
+  readonly agent: DshAgent;
+  readonly handle?: DshAgentHandle;
   nextSeq: number;
   activeTurn: ActiveTurn | undefined;
 }
@@ -241,7 +274,7 @@ export class ObsidianBridgeServer {
     this.sessions.clear();
     for (const record of records) {
       settlePendingApproval(record, 'cancelled');
-      await record.handle.dispose();
+      await record.handle?.dispose();
     }
     await this.outputTail.catch(() => undefined);
     this.wire.close();
@@ -261,6 +294,12 @@ export class ObsidianBridgeServer {
         return;
       case 'session/create':
         await this.createSession(request);
+        return;
+      case 'session/read':
+        await this.readSessions(request);
+        return;
+      case 'session/restore':
+        await this.restoreSession(request);
         return;
       case 'turn/start':
         await this.startTurn(request);
@@ -302,7 +341,7 @@ export class ObsidianBridgeServer {
   private async createSession(
     request: Extract<BridgeRequest, { method: 'session/create' }>,
   ): Promise<void> {
-    const { sessionId, mode } = request.params;
+    const { sessionId, mode, title } = request.params;
     if (this.sessions.has(sessionId)) {
       throw new BridgeRequestError('session_busy', 'sessionId 已存在');
     }
@@ -322,10 +361,112 @@ export class ObsidianBridgeServer {
       await handle.dispose();
       throw new BridgeRequestError('session_busy', 'sessionId 在创建期间被占用');
     }
+    try {
+      await this.context.sessionController.rename({ sessionId, title });
+    } catch {
+      await handle.dispose();
+      throw new BridgeRequestError('session_unrecoverable', 'DSH 未能持久化 session 标题');
+    }
     this.sessions.set(sessionId, {
       sessionId,
       mode,
+      agent: handle.agent,
       handle,
+      nextSeq: 0,
+      activeTurn: undefined,
+    });
+    await this.writeSuccess(request.id, { sessionId });
+  }
+
+  private async readSessions(
+    request: Extract<BridgeRequest, { method: 'session/read' }>,
+  ): Promise<void> {
+    await this.context.get('loader')?.await();
+    const controller = new AbortController();
+    const listed = await this.context.sessionController.list({}, controller.signal);
+    const summaries = new Map(listed.items.map(summary => [summary.sessionId, summary]));
+    const items: BridgeSessionReadItem[] = [];
+    for (const sessionId of request.params.sessionIds) {
+      const summary = summaries.get(sessionId);
+      if (!summary) {
+        items.push({ sessionId, status: 'missing' as const });
+        continue;
+      }
+      if (summary.origin === 'subagent') {
+        items.push({ sessionId, status: 'subagent' as const });
+        continue;
+      }
+      try {
+        const inspection = await this.context.sessionController.inspect(sessionId, controller.signal);
+        const cwd = inspection.meta.cwd ?? summary.cwd;
+        if (!cwd || inspection.meta.id !== sessionId) {
+          items.push({ sessionId, status: 'unreadable' as const });
+          continue;
+        }
+        const title = summary.projections?.values['title'];
+        items.push({
+          sessionId,
+          status: 'available' as const,
+          blank: summary.blank,
+          cwd,
+          running: summary.running,
+          ...(typeof title === 'string' && title.length > 0 ? { title } : {}),
+        });
+      } catch {
+        items.push({ sessionId, status: 'unreadable' as const });
+      }
+    }
+    await this.writeSuccess(request.id, { items });
+  }
+
+  private async restoreSession(
+    request: Extract<BridgeRequest, { method: 'session/restore' }>,
+  ): Promise<void> {
+    const { sessionId, mode } = request.params;
+    if (this.sessions.has(sessionId)) {
+      throw new BridgeRequestError('session_busy', 'sessionId 已在当前 bridge 中加载');
+    }
+    await this.context.get('loader')?.await();
+    const controller = new AbortController();
+    const listed = await this.context.sessionController.list({}, controller.signal);
+    const summary = listed.items.find(item => item.sessionId === sessionId);
+    if (!summary) throw new BridgeRequestError('session_not_found', 'DSH session 不存在');
+    if (summary.origin === 'subagent') {
+      throw new BridgeRequestError('session_unrecoverable', '不能把 DSH subagent 作为工作台任务恢复');
+    }
+    if (summary.running) {
+      throw new BridgeRequestError('session_busy', 'DSH session 仍标记为运行中');
+    }
+    let inspection: Awaited<ReturnType<DshSessionController['inspect']>>;
+    try {
+      inspection = await this.context.sessionController.inspect(sessionId, controller.signal);
+    } catch {
+      throw new BridgeRequestError('session_unrecoverable', 'DSH session 无法读取');
+    }
+    const sessionCwd = inspection.meta.cwd ?? summary.cwd;
+    if (!sessionCwd || inspection.meta.id !== sessionId
+      || !sameCanonicalPath(sessionCwd, process.cwd())) {
+      throw new BridgeRequestError('session_conflict', 'DSH session 工作目录与当前任务边界不一致');
+    }
+    try {
+      const result = await this.context.sessionController.create({ sessionId, cwd: process.cwd() });
+      if (result.sessionId !== sessionId) {
+        throw new Error('DSH 返回错误 sessionId');
+      }
+    } catch {
+      throw new BridgeRequestError('session_conflict', 'DSH session 无法按原身份恢复');
+    }
+    const agent = this.context.agents.get(sessionId);
+    if (!agent) throw new BridgeRequestError('session_unrecoverable', 'DSH 恢复后未提供 Agent');
+    if (mode === 'chat') installChatToolBoundary(agent.ctx);
+    else installTaskToolBoundary(agent.ctx, process.cwd());
+    if (this.sessions.has(sessionId)) {
+      throw new BridgeRequestError('session_busy', 'sessionId 在恢复期间被占用');
+    }
+    this.sessions.set(sessionId, {
+      sessionId,
+      mode,
+      agent,
       nextSeq: 0,
       activeTurn: undefined,
     });
@@ -345,7 +486,7 @@ export class ObsidianBridgeServer {
     };
     record.activeTurn = active;
     try {
-      record.handle.agent.followup(createUserMessage(request.params.text));
+      record.agent.followup(createUserMessage(request.params.text));
     } catch (error) {
       record.activeTurn = undefined;
       throw new BridgeRequestError(
@@ -365,7 +506,7 @@ export class ObsidianBridgeServer {
     active.cancelRequested = true;
     await this.writeSuccess(request.id, { accepted: true });
     settlePendingApproval(record, 'cancelled');
-    record.handle.agent.cancel({ kind: 'user' });
+    record.agent.cancel({ kind: 'user' });
   }
 
   private async resolvePermission(
@@ -387,7 +528,7 @@ export class ObsidianBridgeServer {
     const record = this.requireSession(request.params.sessionId);
     if (record.activeTurn) throw new BridgeRequestError('session_busy', '活动 turn 结束前不能关闭 session');
     this.sessions.delete(record.sessionId);
-    await record.handle.dispose();
+    await record.handle?.dispose();
     await this.writeSuccess(request.id, { closed: true });
   }
 
@@ -400,7 +541,7 @@ export class ObsidianBridgeServer {
     this.shuttingDown = true;
     const records = [...this.sessions.values()];
     this.sessions.clear();
-    for (const record of records) await record.handle.dispose();
+    for (const record of records) await record.handle?.dispose();
     await this.writeSuccess(request.id, { accepted: true });
     this.closed = true;
     this.wire.close();
@@ -535,7 +676,7 @@ export class ObsidianBridgeServer {
   }
 
   private findOwnedSession(agent: DshAgent): SessionRecord | undefined {
-    return [...this.sessions.values()].find(record => record.handle.agent === agent);
+    return [...this.sessions.values()].find(record => record.agent === agent);
   }
 
   private requireSession(sessionId: string): SessionRecord {
@@ -771,6 +912,18 @@ function isPathInsideWorkspace(candidate: string, workspaceRoot: string): boolea
   return isPathContained(canonicalRoot, realpathSync(existing));
 }
 
+function sameCanonicalPath(left: string, right: string): boolean {
+  try {
+    const canonicalLeft = realpathSync(left);
+    const canonicalRight = realpathSync(right);
+    return process.platform === 'win32'
+      ? canonicalLeft.toLowerCase() === canonicalRight.toLowerCase()
+      : canonicalLeft === canonicalRight;
+  } catch {
+    return false;
+  }
+}
+
 function hasParentTraversal(value: string): boolean {
   return value.split(/[\\/]+/u).includes('..');
 }
@@ -862,10 +1015,38 @@ function parseBridgeRequest(value: unknown): BridgeRequest {
       };
     }
     case 'session/create': {
-      requireExactKeys(params, ['sessionId', 'mode'], 'session/create params');
+      requireExactKeys(params, ['sessionId', 'mode', 'title'], 'session/create params');
       const mode = params['mode'];
       if (mode !== 'chat' && mode !== 'task') throw new Error('session mode 无效');
-      return { type: 'request', id, method, params: { sessionId: requireIdentifier(params['sessionId'], 'sessionId'), mode } };
+      const title = requireNonEmptyString(params['title'], 'session title');
+      if (Array.from(title).length > 49 || title.trim() !== title) throw new Error('session title 无效');
+      return {
+        type: 'request',
+        id,
+        method,
+        params: { sessionId: requireIdentifier(params['sessionId'], 'sessionId'), mode, title },
+      };
+    }
+    case 'session/read': {
+      requireExactKeys(params, ['sessionIds'], 'session/read params');
+      const sessionIds = params['sessionIds'];
+      if (!Array.isArray(sessionIds) || sessionIds.length > 5_000) {
+        throw new Error('session/read sessionIds 无效');
+      }
+      const parsed = sessionIds.map(sessionId => requireIdentifier(sessionId, 'sessionId'));
+      if (new Set(parsed).size !== parsed.length) throw new Error('session/read sessionId 重复');
+      return { type: 'request', id, method, params: { sessionIds: parsed } };
+    }
+    case 'session/restore': {
+      requireExactKeys(params, ['sessionId', 'mode'], 'session/restore params');
+      const mode = params['mode'];
+      if (mode !== 'chat' && mode !== 'task') throw new Error('session mode 无效');
+      return {
+        type: 'request',
+        id,
+        method,
+        params: { sessionId: requireIdentifier(params['sessionId'], 'sessionId'), mode },
+      };
     }
     case 'turn/start':
       requireExactKeys(params, ['sessionId', 'turnId', 'text'], 'turn/start params');

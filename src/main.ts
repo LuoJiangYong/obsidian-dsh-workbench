@@ -21,6 +21,8 @@ import { resolveWorkbenchRuntimeStorage } from './runtime-storage';
 import { ElectronTaskWorkspaceHost } from './task-workspace-host';
 import { ElectronTaskWorkspaceFileActions } from './task-workspace-file-actions';
 import { TaskWorkspaceLedger } from './task-workspace';
+import { TaskIndexStore } from './task-index';
+import { TaskRecoveryController } from './task-recovery';
 import {
   QuickAssistantView,
   VIEW_TYPE_QUICK_ASSISTANT,
@@ -33,6 +35,8 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
   private readonly healthProbe = new DshHealthProbe();
   private readonly contextHost = new ObsidianNewTaskContextHost(this.app);
   private taskWorkspaceLedger: TaskWorkspaceLedger | undefined;
+  private taskIndexStore: TaskIndexStore | undefined;
+  private taskRecoveryController: TaskRecoveryController | undefined;
   private readonly taskWorkspaceHost = new ElectronTaskWorkspaceHost({
     validateWorkspace: async (workspacePath) => (
       await this.getTaskWorkspaceLedger().validateWorkspace(workspacePath)
@@ -45,6 +49,12 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
   });
   private readonly conversationHost = new NewTaskConversationController({
     createProcess: (input) => Promise.resolve(this.createConversationProcess(input)),
+    taskIndex: {
+      createTask: async (input) => await this.getTaskIndexStore().createTask(input),
+      updateTask: async (taskId, lifecycle) => (
+        await this.getTaskIndexStore().updateTask(taskId, lifecycle)
+      ),
+    },
     taskLedger: {
       beginTurn: async (turnId, workspacePath) => (
         await this.getTaskWorkspaceLedger().beginTurn(turnId, workspacePath)
@@ -64,6 +74,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
 
   async onload(): Promise<void> {
     this.settings = loadDshSettings(await this.loadData());
+    await this.initializeTaskRecovery();
     addIcon(
       DEEPSEEK_WHALE_ICON,
       `<g transform="scale(2)">${DEEPSEEK_WHALE_SVG}</g>`,
@@ -128,6 +139,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     this.contextHost.dispose();
     this.healthProbe.dispose();
     this.conversationHost.disposeImmediately();
+    this.taskRecoveryController?.disposeImmediately();
   }
 
   async updateDshCommand(rawCommand: string): Promise<void> {
@@ -226,6 +238,49 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
       vaultPath,
       workingDirectory,
     });
+  }
+
+  private async initializeTaskRecovery(): Promise<void> {
+    const adapter = this.app.vault.adapter;
+    if (!(adapter instanceof FileSystemAdapter)) return;
+    const vaultPath = adapter.getBasePath();
+    const pluginDirectory = this.manifest.dir;
+    if (!pluginDirectory) return;
+    const storage = resolveWorkbenchRuntimeStorage({ vaultPath });
+    const taskIndexStore = new TaskIndexStore({
+      stateDirectory: storage.stateDirectory,
+      vaultPath,
+    });
+    this.taskIndexStore = taskIndexStore;
+    const controller = new TaskRecoveryController({
+      store: taskIndexStore,
+      stateDirectory: storage.stateDirectory,
+      createProcess: () => new ManagedBridgeProcess({
+        bridgePath: path.join(vaultPath, pluginDirectory, 'obsidian-bridge.mjs'),
+        command: this.settings.dshCommand,
+        permissionMode: 'read-only',
+        stateDirectory: storage.stateDirectory,
+        vaultPath,
+        workingDirectory: storage.stateDirectory,
+      }),
+    });
+    this.taskRecoveryController = controller;
+    await controller.refresh();
+  }
+
+  private getTaskIndexStore(): TaskIndexStore {
+    if (this.taskIndexStore) return this.taskIndexStore;
+    const adapter = this.app.vault.adapter;
+    if (!(adapter instanceof FileSystemAdapter)) {
+      throw new Error('最小任务索引仅支持本地文件系统 Vault。');
+    }
+    const vaultPath = adapter.getBasePath();
+    const storage = resolveWorkbenchRuntimeStorage({ vaultPath });
+    this.taskIndexStore = new TaskIndexStore({
+      stateDirectory: storage.stateDirectory,
+      vaultPath,
+    });
+    return this.taskIndexStore;
   }
 
   private getTaskWorkspaceLedger(): TaskWorkspaceLedger {

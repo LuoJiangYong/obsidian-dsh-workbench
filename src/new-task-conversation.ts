@@ -5,6 +5,7 @@ import type {
   BridgePermissionDecision,
   BridgeSessionCreatedResult,
   BridgeSessionMode,
+  BridgeSessionReadResult,
   BridgeTurnErrorCode,
   KnownBridgeEvent,
 } from './bridge-protocol';
@@ -25,6 +26,11 @@ import type {
   TaskWorkspaceSelection,
   TaskWorkspaceTurnResult,
 } from './task-workspace';
+import {
+  createTaskInputSummary,
+  type TaskIndexCreateInput,
+  type TaskIndexLifecycle,
+} from './task-index';
 
 export const MAX_NEW_TASK_DRAFT_BYTES = 64 * 1024;
 export const DEFAULT_NEW_TASK_CANCEL_TIMEOUT_MS = 10_000;
@@ -100,6 +106,12 @@ export interface NewTaskBridgeClient {
   createSession(input: {
     readonly sessionId: string;
     readonly mode: BridgeSessionMode;
+    readonly title: string;
+  }): Promise<BridgeSessionCreatedResult>;
+  readSessions(sessionIds: readonly string[]): Promise<BridgeSessionReadResult>;
+  restoreSession(input: {
+    readonly sessionId: string;
+    readonly mode: BridgeSessionMode;
   }): Promise<BridgeSessionCreatedResult>;
   onConnectionStateChange(listener: () => void): () => void;
   onEvent(listener: (event: KnownBridgeEvent) => void): () => void;
@@ -129,9 +141,15 @@ export interface NewTaskTaskLedger {
   validateWorkspace(workspacePath: string): Promise<TaskWorkspaceSelection>;
 }
 
+export interface NewTaskTaskIndex {
+  createTask(input: TaskIndexCreateInput): Promise<unknown>;
+  updateTask(taskId: string, lifecycle: TaskIndexLifecycle): Promise<unknown>;
+}
+
 interface NewTaskConversationControllerOptions {
   readonly cancelTimeoutMs?: number;
   readonly createProcess: (input: NewTaskProcessInput) => Promise<NewTaskBridgeProcess>;
+  readonly taskIndex?: NewTaskTaskIndex;
   readonly taskLedger?: NewTaskTaskLedger;
 }
 
@@ -168,6 +186,10 @@ export class NewTaskConversationController implements NewTaskConversationHost {
   private readonly listeners = new Set<() => void>();
   private readonly undoingTaskTurnIds = new Set<string>();
   private process: NewTaskBridgeProcess | undefined;
+  private taskId: string | undefined;
+  private taskIndexCreateInput: TaskIndexCreateInput | undefined;
+  private taskIndexReady = false;
+  private indexWriteTail: Promise<void> = Promise.resolve();
   private sessionId: string | undefined;
   private sessionMode: BridgeSessionMode | undefined;
   private sessionWorkspacePath: string | undefined;
@@ -210,6 +232,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       return this.failWithoutChangingPhase('turn_busy', '当前运行尚未结束，不能新建任务。');
     }
     try {
+      await this.indexWriteTail;
       await this.invalidateRuntime();
     } catch (error) {
       const failure = normalizeConversationError(error, 'runtime_dispose_failed');
@@ -217,6 +240,12 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     }
     this.activeTaskTurnId = undefined;
     this.activeTurnId = undefined;
+    this.taskId = undefined;
+    this.taskIndexCreateInput = undefined;
+    this.taskIndexReady = false;
+    this.sessionId = undefined;
+    this.sessionMode = undefined;
+    this.sessionWorkspacePath = undefined;
     this.taskLedgerCompletion = undefined;
     this.undoingTaskTurnIds.clear();
     this.snapshot = freezeSnapshot({
@@ -284,12 +313,43 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       return this.fail(failure.code, failure.message);
     }
 
+    if (!this.taskId) {
+      const taskId = `task-${randomUUID()}`;
+      const sessionId = `session-${randomUUID()}`;
+      this.taskId = taskId;
+      this.sessionId = sessionId;
+      this.sessionMode = input.mode;
+      this.sessionWorkspacePath = workspace?.path;
+      this.taskIndexCreateInput = {
+        taskId,
+        sessionId,
+        mode: input.mode,
+        inputSummary: createTaskInputSummary(task),
+        workspace: workspace === null
+          ? null
+          : { name: workspace.name, path: workspace.path },
+      };
+      this.taskIndexReady = this.options.taskIndex === undefined;
+    }
+    if (!this.taskIndexReady) {
+      try {
+        await requireValue(this.options.taskIndex, 'taskIndex').createTask(
+          requireValue(this.taskIndexCreateInput, 'taskIndexCreateInput'),
+        );
+        this.taskIndexReady = true;
+      } catch (error) {
+        const failure = normalizeConversationError(error, 'task_index_write_failed');
+        return this.fail(failure.code, failure.message);
+      }
+    }
+
     this.update({ phase: 'starting' });
     let taskLedgerStarted = false;
     let turnId: string | undefined;
     try {
       const client = await this.ensureSession(input.mode, workspace);
       const sessionId = requireValue(this.sessionId, 'sessionId');
+      await this.writeTaskLifecycle({ state: 'ready' });
       turnId = `turn-${randomUUID()}`;
       if (input.mode === 'task') {
         const taskLedger = requireTaskLedger(this.options.taskLedger);
@@ -315,6 +375,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
         turnId,
       });
       this.update({ messages: [...this.snapshot.messages, pendingMessage] });
+      await this.writeTaskLifecycle({ state: 'running' });
       await client.startTurn({ sessionId, turnId, text: turnText });
       this.replaceMessage(pendingMessage.id, { ...pendingMessage, delivery: 'sent' });
       return true;
@@ -326,6 +387,10 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       }
       this.activeTurnId = undefined;
       const failure = captureFailure ?? normalizeConversationError(error, 'runtime_start_failed');
+      await this.writeTaskLifecycle({
+        state: 'failed',
+        reason: persistentFailureReason('runtime_start_failed'),
+      }).catch(() => undefined);
       await this.invalidateRuntime();
       return this.fail(failure.code, failure.message);
     }
@@ -422,6 +487,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     this.clearCancelTimer();
     this.detachClient();
     const process = this.process;
+    const hadActiveTurn = this.activeTurnId !== undefined;
     this.process = undefined;
     this.client = undefined;
     this.sessionId = undefined;
@@ -430,10 +496,17 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     this.activeTurnId = undefined;
     const activeTaskTurnId = this.activeTaskTurnId;
     let captureError: NewTaskConversationFailure | null = null;
+    if (hadActiveTurn) {
+      this.queueTaskLifecycle({
+        state: 'interrupted',
+        reason: persistentFailureReason('plugin_unloaded'),
+      });
+    }
     if (process) await process.dispose();
     if (activeTaskTurnId) {
       captureError = await this.completeTaskLedger(activeTaskTurnId);
     }
+    await this.indexWriteTail;
     if (captureError) throw new NewTaskConversationError(captureError.code, captureError.message);
   }
 
@@ -477,11 +550,32 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       this.detachEvents = client.onEvent((event) => this.handleEvent(event));
       this.detachConnection = client.onConnectionStateChange(() => this.handleConnectionState());
       this.update({ runtimeStatus: 'connected' });
-      const sessionId = `session-${randomUUID()}`;
-      await client.createSession({ sessionId, mode });
-      this.sessionId = sessionId;
-      this.sessionMode = mode;
-      this.sessionWorkspacePath = workspacePath;
+      const sessionId = requireValue(this.sessionId, 'sessionId');
+      if (this.sessionMode !== mode || this.sessionWorkspacePath !== workspacePath) {
+        throw new NewTaskConversationError(
+          'session_boundary_changed',
+          '任务身份与当前模式或工作区边界不一致。',
+        );
+      }
+      const read = await client.readSessions([sessionId]);
+      const item = read.items[0];
+      if (!item || item.sessionId !== sessionId) {
+        throw new NewTaskConversationError('session_read_invalid', 'DSH 未返回请求的 session 状态。');
+      }
+      if (item.status === 'missing') {
+        const title = this.snapshot.session?.title;
+        if (!title) throw new NewTaskConversationError('session_title_missing', '任务标题尚未建立。');
+        await client.createSession({ sessionId, mode, title });
+      } else if (item.status === 'available') {
+        await client.restoreSession({ sessionId, mode });
+      } else {
+        throw new NewTaskConversationError(
+          item.status === 'subagent' ? 'session_subagent' : 'session_unreadable',
+          item.status === 'subagent'
+            ? 'DSH subagent 不能作为工作台任务继续。'
+            : 'DSH session 无法安全读取。',
+        );
+      }
       return client;
     } catch (error) {
       await this.invalidateRuntime();
@@ -543,9 +637,10 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       && this.snapshot.phase === 'finalizing';
     this.clearCancelTimer();
     this.activeTurnId = undefined;
-    this.sessionId = undefined;
-    this.sessionMode = undefined;
-    this.sessionWorkspacePath = undefined;
+    this.queueTaskLifecycle({
+      state: 'interrupted',
+      reason: persistentFailureReason('connection_failed'),
+    });
     if (taskTerminalIsFinalizing) {
       this.update({ runtimeStatus: 'disconnected' });
       return;
@@ -618,6 +713,10 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     this.clearCancelTimer();
     this.activeTurnId = undefined;
     if (payload.outcome === 'failed') {
+      this.queueTaskLifecycle({
+        state: 'failed',
+        reason: persistentFailureReason(payload.errorCode),
+      });
       this.update({
         error: terminalFailure(payload.errorCode),
         permission: null,
@@ -625,6 +724,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       });
       return;
     }
+    this.queueTaskLifecycle({ state: 'ready' });
     this.update({
       error: null,
       permission: null,
@@ -641,6 +741,10 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     const captureFailure = await this.completeTaskLedger(turnId);
     this.activeTurnId = undefined;
     if (captureFailure) {
+      this.queueTaskLifecycle({
+        state: 'failed',
+        reason: persistentFailureReason('task_change_capture_failed'),
+      });
       await this.invalidateRuntime();
       this.update({
         error: captureFailure,
@@ -650,6 +754,10 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       return;
     }
     if (payload.outcome === 'failed') {
+      this.queueTaskLifecycle({
+        state: 'failed',
+        reason: persistentFailureReason(payload.errorCode),
+      });
       this.update({
         error: terminalFailure(payload.errorCode),
         permission: null,
@@ -657,6 +765,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       });
       return;
     }
+    this.queueTaskLifecycle({ state: 'ready' });
     this.update({
       error: null,
       permission: null,
@@ -671,9 +780,10 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     const captureFailure = await this.completeTaskLedger(turnId);
     this.clearCancelTimer();
     this.activeTurnId = undefined;
-    this.sessionId = undefined;
-    this.sessionMode = undefined;
-    this.sessionWorkspacePath = undefined;
+    this.queueTaskLifecycle({
+      state: 'interrupted',
+      reason: persistentFailureReason(connectionFailure.code),
+    });
     this.update({
       error: captureFailure ?? connectionFailure,
       permission: null,
@@ -720,6 +830,10 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     const activeTaskTurnId = this.activeTaskTurnId;
     if (activeTaskTurnId) this.update({ phase: 'finalizing' });
     await this.invalidateRuntime();
+    this.queueTaskLifecycle({
+      state: 'interrupted',
+      reason: persistentFailureReason('runtime_terminated'),
+    });
     const captureFailure = activeTaskTurnId
       ? await this.completeTaskLedger(activeTaskTurnId)
       : null;
@@ -746,15 +860,36 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     });
   }
 
+  private writeTaskLifecycle(lifecycle: TaskIndexLifecycle): Promise<void> {
+    const taskId = this.taskId;
+    const taskIndex = this.options.taskIndex;
+    if (!taskId || !taskIndex) return Promise.resolve();
+    const pending = this.indexWriteTail.then(async () => {
+      await taskIndex.updateTask(taskId, lifecycle);
+    });
+    this.indexWriteTail = pending.then(() => undefined, () => undefined);
+    return pending;
+  }
+
+  private queueTaskLifecycle(lifecycle: TaskIndexLifecycle): void {
+    void this.writeTaskLifecycle(lifecycle).catch(() => {
+      if (this.disposed) return;
+      this.update({
+        error: Object.freeze({
+          code: 'task_index_write_failed',
+          message: '任务状态无法安全保存。',
+        }),
+        phase: 'failed',
+      });
+    });
+  }
+
   private async invalidateRuntime(): Promise<void> {
     this.clearCancelTimer();
     this.detachClient();
     const process = this.process;
     this.process = undefined;
     this.client = undefined;
-    this.sessionId = undefined;
-    this.sessionMode = undefined;
-    this.sessionWorkspacePath = undefined;
     if (process) await process.dispose();
     this.update({ runtimeStatus: 'disconnected' });
   }
@@ -928,6 +1063,25 @@ function normalizeConversationError(
   return Object.freeze({ code, message });
 }
 
+function persistentFailureReason(code: string): { readonly code: string; readonly message: string } {
+  const safeCode = /^[a-z0-9_]+$/u.test(code) && code.length <= 80 ? code : 'task_failed';
+  const messages: Readonly<Record<string, string>> = {
+    connection_failed: 'DSH 连接已中断',
+    context_invalid: '任务上下文无效',
+    network_error: 'DSH 网络请求失败',
+    permission_rejected: '任务权限请求被拒绝',
+    plugin_unloaded: '插件在任务运行时关闭',
+    runtime_error: 'DSH 任务运行失败',
+    runtime_start_failed: 'DSH session 启动失败',
+    runtime_terminated: 'DSH 进程被终止',
+    task_change_capture_failed: '任务文件变更核对失败',
+  };
+  return Object.freeze({
+    code: safeCode,
+    message: messages[safeCode] ?? '任务运行失败',
+  });
+}
+
 function terminalFailure(code: BridgeTurnErrorCode): NewTaskConversationFailure {
   const messages: Readonly<Record<BridgeTurnErrorCode, string>> = {
     context_invalid: 'DSH 拒绝了本次只读上下文。',
@@ -939,7 +1093,7 @@ function terminalFailure(code: BridgeTurnErrorCode): NewTaskConversationFailure 
   return Object.freeze({ code, message: messages[code] });
 }
 
-function requireValue(value: string | undefined, label: string): string {
+function requireValue<T>(value: T | undefined, label: string): T {
   if (!value) throw new NewTaskConversationError('invalid_state', `${label} 尚未建立。`);
   return value;
 }

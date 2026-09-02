@@ -20,7 +20,9 @@ import {
   type NewTaskBridgeProcess,
   type NewTaskProcessInput,
   type NewTaskTaskLedger,
+  type NewTaskTaskIndex,
 } from '../src/new-task-conversation';
+import type { TaskIndexCreateInput, TaskIndexLifecycle } from '../src/task-index';
 import {
   createCurrentSelectionContext,
   createNewTaskContextSnapshot,
@@ -153,6 +155,79 @@ describe('新建任务真实对话控制器', () => {
       'awaiting_permission',
       'completed',
     ]));
+  });
+
+  it('把 taskId 与 DSH session 身份写入最小索引，并按真实 turn 状态推进生命周期', async () => {
+    const client = new FakeBridgeClient();
+    const taskIndex = new FakeTaskIndex();
+    const controller = new NewTaskConversationController({
+      createProcess: async () => new FakeBridgeProcess(client),
+      taskIndex,
+    });
+    await expect(controller.submit({
+      contexts: [],
+      draft: '甲'.repeat(60),
+      mode: 'chat',
+      reader: readerReturning(''),
+    })).resolves.toBe(true);
+
+    expect(taskIndex.created).toHaveLength(1);
+    expect(taskIndex.created[0]).toMatchObject({
+      inputSummary: `${'甲'.repeat(48)}…`,
+      mode: 'chat',
+      workspace: null,
+    });
+    expect(client.createdSessionIds).toEqual([taskIndex.created[0]?.sessionId]);
+    expect(taskIndex.updates.map(update => update.lifecycle.state)).toEqual(['ready', 'running']);
+
+    client.emit(event('turn.started', 0, {}));
+    client.emit(event('turn.ended', 1, { outcome: 'completed' }));
+    await vi.waitFor(() => {
+      expect(taskIndex.updates[taskIndex.updates.length - 1]?.lifecycle).toEqual({ state: 'ready' });
+    });
+    await expect(controller.startNewTask()).resolves.toBe(true);
+    expect(taskIndex.created).toHaveLength(1);
+  });
+
+  it('索引身份已存在于 DSH 时走公开恢复接缝，不创建第二个 session', async () => {
+    const client = new FakeBridgeClient();
+    client.sessionReadStatus = 'available';
+    const taskIndex = new FakeTaskIndex();
+    const controller = new NewTaskConversationController({
+      createProcess: async () => new FakeBridgeProcess(client),
+      taskIndex,
+    });
+    await expect(controller.submit({
+      contexts: [],
+      draft: '继续已有 session',
+      mode: 'chat',
+      reader: readerReturning(''),
+    })).resolves.toBe(true);
+    expect(client.createdSessionIds).toEqual([]);
+    expect(client.restoredSessionIds).toEqual([taskIndex.created[0]?.sessionId]);
+  });
+
+  it('首次索引写入结果不确定时以同一 task/session 身份显式重试', async () => {
+    const client = new FakeBridgeClient();
+    const taskIndex = new FakeTaskIndex();
+    taskIndex.createFailure = new Error('写入结果不确定');
+    const controller = new NewTaskConversationController({
+      createProcess: async () => new FakeBridgeProcess(client),
+      taskIndex,
+    });
+    const input = {
+      contexts: [],
+      draft: '保留同一任务身份',
+      mode: 'chat' as const,
+      reader: readerReturning(''),
+    };
+
+    await expect(controller.submit(input)).resolves.toBe(false);
+    taskIndex.createFailure = undefined;
+    await expect(controller.submit(input)).resolves.toBe(true);
+    expect(taskIndex.created).toHaveLength(2);
+    expect(taskIndex.created[1]).toEqual(taskIndex.created[0]);
+    expect(client.createdSessionIds).toEqual([taskIndex.created[0]?.sessionId]);
   });
 
   it('输入或上下文校验失败时不启动 DSH，并以可定位错误结束', async () => {
@@ -694,6 +769,9 @@ class FakeBridgeClient implements NewTaskBridgeClient {
   connectionState: BridgeConnectionState = 'ready';
   failure: BridgeProtocolError | undefined;
   readonly createdModes: string[] = [];
+  readonly createdSessionIds: string[] = [];
+  readonly restoredSessionIds: string[] = [];
+  sessionReadStatus: 'available' | 'missing' = 'missing';
   cancelCount = 0;
   readonly permissionDecisions: BridgePermissionDecision[] = [];
   readonly startedTexts: string[] = [];
@@ -706,9 +784,36 @@ class FakeBridgeClient implements NewTaskBridgeClient {
     return { accepted: true };
   }
 
-  async createSession(input: { readonly mode: 'chat' | 'task' }): Promise<{ readonly sessionId: string }> {
+  async createSession(input: {
+    readonly sessionId: string;
+    readonly mode: 'chat' | 'task';
+    readonly title: string;
+  }): Promise<{ readonly sessionId: string }> {
     this.createdModes.push(input.mode);
-    return { sessionId: 'fake-session' };
+    this.createdSessionIds.push(input.sessionId);
+    return { sessionId: input.sessionId };
+  }
+
+  async readSessions(sessionIds: readonly string[]) {
+    return {
+      items: sessionIds.map(sessionId => this.sessionReadStatus === 'missing'
+        ? { sessionId, status: 'missing' as const }
+        : {
+            sessionId,
+            status: 'available' as const,
+            blank: false,
+            cwd: process.cwd(),
+            running: false,
+          }),
+    };
+  }
+
+  async restoreSession(input: {
+    readonly sessionId: string;
+    readonly mode: 'chat' | 'task';
+  }): Promise<{ readonly sessionId: string }> {
+    this.restoredSessionIds.push(input.sessionId);
+    return { sessionId: input.sessionId };
   }
 
   emit(value: KnownBridgeEvent): void {
@@ -746,6 +851,24 @@ class FakeBridgeClient implements NewTaskBridgeClient {
     this.startedTexts.push(input.text);
     this.startedTurnIds.push(input.turnId);
     return { accepted: true };
+  }
+}
+
+class FakeTaskIndex implements NewTaskTaskIndex {
+  createFailure: Error | undefined;
+  readonly created: TaskIndexCreateInput[] = [];
+  readonly updates: Array<{
+    readonly taskId: string;
+    readonly lifecycle: TaskIndexLifecycle;
+  }> = [];
+
+  async createTask(input: TaskIndexCreateInput): Promise<void> {
+    this.created.push(input);
+    if (this.createFailure) throw this.createFailure;
+  }
+
+  async updateTask(taskId: string, lifecycle: TaskIndexLifecycle): Promise<void> {
+    this.updates.push({ taskId, lifecycle });
   }
 }
 

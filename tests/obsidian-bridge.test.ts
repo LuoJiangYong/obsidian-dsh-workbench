@@ -24,6 +24,7 @@ import {
   type DshMessage,
   type DshScopedContext,
   type DshSession,
+  type DshSessionSummary,
   type DshToolExecution,
 } from '../src/obsidian-bridge';
 
@@ -91,6 +92,89 @@ describe('正式 obsidian-bridge', () => {
       eventFrame('assistant.message', 2, { text: '你好' }, 7),
       eventFrame('turn.ended', 3, { outcome: 'completed' }, 8),
     ]);
+  });
+
+  it('只读列举精确 session 引用，并以 DSH 公开控制器恢复 ordinary session', async () => {
+    const context = new FakeContext();
+    context.sessionSummaries.push(
+      {
+        sessionId: SESSION_ID,
+        blank: false,
+        cwd: process.cwd(),
+        running: false,
+        projections: { values: { title: '持久化标题' } },
+      },
+      {
+        sessionId: 'session-subagent',
+        blank: false,
+        cwd: process.cwd(),
+        running: false,
+        origin: 'subagent',
+      },
+    );
+    const wire = new FakeWire();
+    const server = new ObsidianBridgeServer(context as unknown as DshContext, wire);
+    await server.receive(initializeRequest('request-1'));
+    await server.receive({
+      type: 'request',
+      id: 'request-2',
+      method: 'session/read',
+      params: { sessionIds: [SESSION_ID, 'session-missing', 'session-subagent'] },
+    });
+    expect(lastFrame(wire.frames)).toEqual({
+      type: 'response',
+      id: 'request-2',
+      ok: true,
+      result: { items: [
+        {
+          sessionId: SESSION_ID,
+          status: 'available',
+          blank: false,
+          cwd: process.cwd(),
+          running: false,
+          title: '持久化标题',
+        },
+        { sessionId: 'session-missing', status: 'missing' },
+        { sessionId: 'session-subagent', status: 'subagent' },
+      ] },
+    });
+
+    await server.receive({
+      type: 'request',
+      id: 'request-3',
+      method: 'session/restore',
+      params: { sessionId: SESSION_ID, mode: 'chat' },
+    });
+    expect(context.adoptedSessionIds).toEqual([SESSION_ID]);
+    expect(context.scoped.restrictions).toEqual([{ allow: [] }]);
+    expect(lastFrame(wire.frames)).toEqual({
+      type: 'response',
+      id: 'request-3',
+      ok: true,
+      result: { sessionId: SESSION_ID },
+    });
+  });
+
+  it('恢复时拒绝仍在运行的 session', async () => {
+    const context = new FakeContext();
+    context.sessionSummaries.push({
+      sessionId: SESSION_ID,
+      blank: false,
+      cwd: process.cwd(),
+      running: true,
+    });
+    const wire = new FakeWire();
+    const server = new ObsidianBridgeServer(context as unknown as DshContext, wire);
+    await server.receive(initializeRequest('request-1'));
+    await server.receive({
+      type: 'request', id: 'request-2', method: 'session/restore',
+      params: { sessionId: SESSION_ID, mode: 'chat' },
+    });
+    expect(lastFrame(wire.frames)).toMatchObject({
+      ok: false,
+      error: { code: 'session_busy' },
+    });
+    expect(context.adoptedSessionIds).toEqual([]);
   });
 
   it('turn/cancel 响应后调用 Agent.cancel，且只把上游 user-abort 映射为 cancelled', async () => {
@@ -332,11 +416,13 @@ class FakeScopedContext {
 
 class FakeAgent implements DshAgent {
   readonly session: DshSession;
+  readonly ctx: DshScopedContext;
   readonly messages: DshMessage[] = [];
   readonly cancelCauses: Array<{ readonly kind: 'user' }> = [];
 
-  constructor(sessionId: string) {
+  constructor(sessionId: string, context: DshScopedContext = new FakeScopedContext()) {
     this.session = { id: sessionId };
+    this.ctx = context;
   }
 
   cancel(cause: { readonly kind: 'user' }): void {
@@ -360,10 +446,12 @@ class FakeHandle implements DshAgentHandle {
 }
 
 class FakeContext {
-  readonly agent = new FakeAgent(SESSION_ID);
-  readonly handle = new FakeHandle(this.agent);
   readonly scoped = new FakeScopedContext();
+  readonly agent = new FakeAgent(SESSION_ID, this.scoped);
+  readonly handle = new FakeHandle(this.agent);
   readonly exitCodes: number[] = [];
+  readonly adoptedSessionIds: string[] = [];
+  readonly sessionSummaries: DshSessionSummary[] = [];
   createdOptions: {
     readonly agentOptions: { readonly provider: string; readonly model: string };
     readonly meta?: { readonly cwd?: string };
@@ -387,10 +475,29 @@ class FakeContext {
       options.setup(this.scoped);
       return this.handle;
     },
+    get: (sessionId: string): DshAgent | undefined => (
+      sessionId === this.agent.session.id ? this.agent : undefined
+    ),
   };
 
   readonly agentDefaultModel = {
     currentSelection: () => ({ provider: 'deepseek', model: 'deepseek-chat' }),
+  };
+
+  readonly sessionController = {
+    list: () => Promise.resolve({ items: this.sessionSummaries }),
+    inspect: (sessionId: string) => Promise.resolve({
+      meta: { id: sessionId, cwd: process.cwd() },
+      events: [],
+    }),
+    create: (request: { readonly sessionId: string }) => {
+      this.adoptedSessionIds.push(request.sessionId);
+      return Promise.resolve({ sessionId: request.sessionId });
+    },
+    rename: (request: { readonly title: string }) => Promise.resolve({
+      title: request.title,
+      seq: 0,
+    }),
   };
 
   effect(_effect: () => () => void | Promise<void>, _label?: string): unknown {
@@ -460,7 +567,7 @@ async function createReadySession(mode: 'chat' | 'task' = 'chat'): Promise<{
   await server.receive(initializeRequest('request-1'));
   await server.receive({
     type: 'request', id: 'request-2', method: 'session/create',
-    params: { sessionId: SESSION_ID, mode },
+    params: { sessionId: SESSION_ID, mode, title: '测试任务' },
   });
   return { agent: context.agent, context, handle: context.handle, server, wire };
 }

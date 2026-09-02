@@ -10,10 +10,10 @@
 | --- | --- | --- | --- | --- |
 | `0.1.1-rc.2` | 历史健康检查与正式 bridge + v1 | `superseded`（历史证据保留） | bridge `0.1.0` / protocol `1` / artifact SHA-256 `3342ef13d3f68b65f3336e97257f63fc585ca2a8708bd85759100d28ac9c945c` | Batch 4–10 与用户第一批确认曾使该组合进入支持；R1-M 后当前握手与健康检查不再接受 rc.2，不提供双版本 fallback，历史 CI/Vault 证据不被改写 |
 | `0.1.2-alpha.2` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1 证据完成，不晋级生产） | 顶层 CLI 与 215 个直接 DSH 包全部锁定 alpha.2；现有 bridge artifact 仅作加载兼容探针 | 真实 shim、现有 bridge 握手/session 生命周期、两个独立进程的冷列举/显式 ID 恢复、标题、规范化附件、一次性权限、follow/control 投影与零 PID 残留通过；未修改当时的 rc.2 生产夹具或握手。npm `alpha` 随后前移到 alpha.3，且持久 session 删除/retention 与跨 Host job 恢复无公开能力，因此 R1 当时建议保留 rc.2 |
-| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller | `supported`（当前生产 v1） | bridge `0.1.0` / protocol `1` / artifact SHA-256 `63d6ac6ddd35c74b14ae5d0f31e1ae4f70ee0bc4d7d605fef815cd6381e16e54`；两个独立 lockfile 的 215 个直接 DSH 包均为 alpha.3 | 真实 shim、控制面跨进程恢复、标题、附件、一次性权限、follow/control、正式回复、mid-turn cancel、JSONL session、Windows 清理与专用 Vault 健康/无工具对话/显式处置/零残留通过；不包含 R2 跨重启产品索引、Release 或社区提交 |
+| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller、R2 精确读取/恢复 | `supported`（当前生产 v1；R2 远端闭环进行中） | bridge `0.2.0` / protocol `1` / artifact `21,107` bytes / SHA-256 `e11fbc559a276912eae7832a7f44b39ee5e4ef8a6814e22fc87c27acd86165c1`；两个独立 lockfile 的 215 个直接 DSH 包均为 alpha.3 | 既有真实 shim、标题、附件、一次性权限、follow/control、回复、mid-turn cancel、JSONL、Windows 清理与 R1-M 专用 Vault 门保持；R2 已在本地用两个独立 bridge 进程验证精确读取、缺失项和同 ID 恢复，并由最小索引投影可继续/不可恢复。本批精确 SHA 的双平台 CI 与隔离 Vault 部署尚未通过或授权；不包含项目/最近 UI、Release 或社区提交 |
 | 其他版本 | 无 | 未验证，不支持 | 无 fallback | 不尝试、不中和、不静默降级 |
 
-健康检查与正式 bridge 仍是两个独立生产消费路径，但现在共同精确锁定 alpha.3。R1-M 先以独立候选提交和双平台 CI 建立纯依赖图与公开控制面证据，再迁移生产常量、夹具和构建清单，并完成 Windows 与专用隔离 Vault 技术验收；用户对该具体迁移和资产 diff 均已批准。rc.2 只保留历史证据，当前产品不再接受。该 `supported` 状态仍不包含 R2、统一工作台后续能力、Release 或社区提交。
+健康检查与正式 bridge 仍是两个独立生产消费路径，并共同精确锁定 alpha.3。R1-M 先以独立候选提交和双平台 CI 建立纯依赖图与公开控制面证据，再迁移生产常量、夹具和构建清单，并完成 Windows 与专用隔离 Vault 技术验收；用户对该具体迁移和资产 diff 均已批准。R2 在此生产基线上只增加公开 session 读取/恢复接缝与 Vault 外最小索引，不改变 DSH 版本，也不提供 rc.2 双版本 fallback。当前 `supported` 状态不代表 R2 的远端 CI 或隔离 Vault 已通过，更不包含统一工作台后续能力、Release 或社区提交。
 
 ## 兼容晋级状态机
 

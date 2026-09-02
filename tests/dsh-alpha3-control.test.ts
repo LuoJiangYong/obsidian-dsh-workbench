@@ -127,7 +127,11 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.3 正式控制面候选�
     let closed = false;
     try {
       await client.initialize();
-      await client.createSession({ sessionId: 'runtime-migration-alpha3-bridge', mode: 'chat' });
+      await client.createSession({
+        sessionId: 'runtime-migration-alpha3-bridge',
+        mode: 'chat',
+        title: 'R2 Windows 接缝验收',
+      });
       await client.closeSession('runtime-migration-alpha3-bridge');
       await client.shutdown();
       expect(await exitPromise).toBe(0);

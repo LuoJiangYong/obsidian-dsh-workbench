@@ -1,9 +1,10 @@
 export const BRIDGE_PROTOCOL_VERSION = '1';
-export const TARGET_BRIDGE_VERSION = '0.1.0';
+export const TARGET_BRIDGE_VERSION = '0.2.0';
 export const TARGET_BRIDGE_DSH_VERSION = '0.1.2-alpha.3';
 
 export const BRIDGE_CAPABILITIES = [
   'session',
+  'session-read',
   'events',
   'cancel',
   'permission',
@@ -30,7 +31,9 @@ export type BridgeRemoteErrorCode =
   | 'permission_not_found'
   | 'protocol_mismatch'
   | 'session_busy'
+  | 'session_conflict'
   | 'session_not_found'
+  | 'session_unrecoverable'
   | 'turn_not_found'
   | 'unsupported_dsh';
 
@@ -53,6 +56,22 @@ export interface InitializeRequest extends BridgeRequestBase {
 
 export interface SessionCreateRequest extends BridgeRequestBase {
   readonly method: 'session/create';
+  readonly params: {
+    readonly sessionId: string;
+    readonly mode: BridgeSessionMode;
+    readonly title: string;
+  };
+}
+
+export interface SessionReadRequest extends BridgeRequestBase {
+  readonly method: 'session/read';
+  readonly params: {
+    readonly sessionIds: readonly string[];
+  };
+}
+
+export interface SessionRestoreRequest extends BridgeRequestBase {
+  readonly method: 'session/restore';
   readonly params: {
     readonly sessionId: string;
     readonly mode: BridgeSessionMode;
@@ -103,6 +122,8 @@ export type BridgeRequest =
   | PermissionResolveRequest
   | SessionCloseRequest
   | SessionCreateRequest
+  | SessionReadRequest
+  | SessionRestoreRequest
   | ShutdownRequest
   | TurnCancelRequest
   | TurnStartRequest;
@@ -211,6 +232,28 @@ export interface BridgeSessionCreatedResult {
   readonly sessionId: string;
 }
 
+export interface BridgeSessionAvailableReadItem {
+  readonly sessionId: string;
+  readonly status: 'available';
+  readonly blank: boolean;
+  readonly cwd: string;
+  readonly running: boolean;
+  readonly title?: string;
+}
+
+export interface BridgeSessionUnavailableReadItem {
+  readonly sessionId: string;
+  readonly status: 'missing' | 'subagent' | 'unreadable';
+}
+
+export type BridgeSessionReadItem =
+  | BridgeSessionAvailableReadItem
+  | BridgeSessionUnavailableReadItem;
+
+export interface BridgeSessionReadResult {
+  readonly items: readonly BridgeSessionReadItem[];
+}
+
 export interface BridgeSessionClosedResult {
   readonly closed: true;
 }
@@ -277,6 +320,49 @@ export function parseSessionClosedResult(value: unknown): BridgeSessionClosedRes
   assertExactKeys(record, ['closed'], [], 'session close result');
   if (record['closed'] !== true) throw new Error('session close result 必须为 true');
   return { closed: true };
+}
+
+export function parseSessionReadResult(value: unknown): BridgeSessionReadResult {
+  const record = expectRecord(value, 'session read result');
+  assertExactKeys(record, ['items'], [], 'session read result');
+  const rawItems = record['items'];
+  if (!Array.isArray(rawItems)) throw new Error('session read items 必须是数组');
+  const sessionIds = new Set<string>();
+  const items = rawItems.map((rawItem, index): BridgeSessionReadItem => {
+    const label = `session read items[${String(index)}]`;
+    const item = expectRecord(rawItem, label);
+    const status = expectString(item, 'status', label);
+    const sessionId = expectIdentifier(item, 'sessionId', label);
+    if (sessionIds.has(sessionId)) throw new Error('session read sessionId 重复');
+    sessionIds.add(sessionId);
+    if (status === 'available') {
+      assertExactKeys(item, ['sessionId', 'status', 'blank', 'cwd', 'running'], ['title'], label);
+      if (typeof item['blank'] !== 'boolean' || typeof item['running'] !== 'boolean') {
+        throw new Error(`${label} blank 和 running 必须是 boolean`);
+      }
+      const title = item['title'];
+      if (title !== undefined && (typeof title !== 'string'
+        || title.trim() !== title
+        || Array.from(title).length === 0
+        || Array.from(title).length > 160)) {
+        throw new Error(`${label}.title 必须是非空字符串`);
+      }
+      return {
+        sessionId,
+        status,
+        blank: item['blank'],
+        cwd: expectNonEmptyString(item, 'cwd', label),
+        running: item['running'],
+        ...(title === undefined ? {} : { title }),
+      };
+    }
+    if (status === 'missing' || status === 'subagent' || status === 'unreadable') {
+      assertExactKeys(item, ['sessionId', 'status'], [], label);
+      return { sessionId, status };
+    }
+    throw new Error(`${label}.status 未知`);
+  });
+  return { items };
 }
 
 function parseResponse(record: Record<string, unknown>): BridgeResponse {
@@ -528,7 +614,9 @@ function isBridgeRemoteErrorCode(value: string): value is BridgeRemoteErrorCode 
     'permission_not_found',
     'protocol_mismatch',
     'session_busy',
+    'session_conflict',
     'session_not_found',
+    'session_unrecoverable',
     'turn_not_found',
     'unsupported_dsh',
   ].includes(value);

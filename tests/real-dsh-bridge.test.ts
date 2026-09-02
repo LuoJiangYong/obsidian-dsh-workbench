@@ -33,7 +33,7 @@ afterAll(async () => {
 });
 
 describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行验收', () => {
-  it('真实加载 artifact，以 Vault 外 cwd 和只读系统提示边界完成回复、mid-turn cancel、原生 DSH 会话落盘与零残留', async () => {
+  it('真实加载 artifact，以 Vault 外 cwd 完成回复、原生 DSH 会话落盘、mid-turn cancel、跨进程 session 恢复与零残留', async () => {
     const model = await createModelServer();
     const dshHome = path.join(temporaryRoot, 'dsh-home');
     const stateDirectory = path.join(temporaryRoot, 'plugin-state');
@@ -61,7 +61,7 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行�
     ]);
     try {
       const client = await manager.start();
-      await client.createSession({ sessionId: 'real-session-1', mode: 'chat' });
+      await client.createSession({ sessionId: 'real-session-1', mode: 'chat', title: '正式 bridge 验收' });
       const firstReply = waitForEvent(client, event => event.event === 'assistant.message');
       const firstTerminal = waitForEvent(client, event => event.event === 'turn.ended');
       await client.startTurn({
@@ -98,6 +98,40 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行�
         shutdown: { outcome: 'graceful' },
         failure: undefined,
       });
+      const restartManager = new ManagedBridgeProcess({
+        bridgePath,
+        command: dshCommand,
+        dshHome,
+        environment: {
+          ...process.env,
+          DEEPSEEK_API_KEY: 'fixture-key-never-logged',
+          DEEPSEEK_BASE_URL: model.url,
+        },
+        requestTimeoutMs: 10_000,
+        stateDirectory,
+        shutdownTimeoutMs: 5_000,
+        startTimeoutMs: 15_000,
+        vaultPath: path.join(temporaryRoot, 'vault'),
+        workingDirectory,
+      });
+      try {
+        const restoredClient = await restartManager.start();
+        await expect(restoredClient.readSessions(['real-session-1', 'missing-session']))
+          .resolves.toEqual({ items: [
+            expect.objectContaining({
+              sessionId: 'real-session-1',
+              status: 'available',
+              title: '正式 bridge 验收',
+            }),
+            { sessionId: 'missing-session', status: 'missing' },
+          ] });
+        await restoredClient.restoreSession({ sessionId: 'real-session-1', mode: 'chat' });
+        await restoredClient.closeSession('real-session-1');
+        await expect(restartManager.shutdown()).resolves.toEqual({ outcome: 'graceful' });
+        expect(restoredClient.failure).toBeUndefined();
+      } finally {
+        await restartManager.dispose();
+      }
       const sessionArtifacts = await readdir(path.join(dshHome, 'sessions'), { recursive: true });
       expect(sessionArtifacts.some((entry) => /session\.jsonl(?:\.zstd)?$/u.test(entry))).toBe(true);
       expect(existsSync(path.join(stateDirectory, 'obsidian-bridge.cordis.patch.yml'))).toBe(true);

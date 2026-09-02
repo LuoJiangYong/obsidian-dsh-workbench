@@ -17,6 +17,8 @@ const alpha3CandidateProbe = await readFile(
   'utf8',
 );
 const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf8');
+const taskIndexTests = await readFile('tests/task-index.test.ts', 'utf8');
+const taskRecoveryTests = await readFile('tests/task-recovery.test.ts', 'utf8');
 const taskWorkspaceTests = await readFile('tests/task-workspace.test.ts', 'utf8');
 const taskWorkspaceHostTests = await readFile('tests/task-workspace-host.test.ts', 'utf8');
 const taskWorkspaceFileActionTests = await readFile(
@@ -120,6 +122,11 @@ assert(
 assert(
   packageJson.scripts['test:runtime'].includes('tests/runtime-storage.test.ts'),
   'test:runtime 必须覆盖 Vault 外运行数据边界',
+);
+assert(
+  packageJson.scripts['test:runtime'].includes('tests/task-index.test.ts')
+    && packageJson.scripts['test:runtime'].includes('tests/task-recovery.test.ts'),
+  'test:runtime 必须覆盖最小任务索引与跨重启恢复投影',
 );
 assert(
   packageJson.scripts['test:runtime'].includes('tests/task-workspace.test.ts'),
@@ -298,6 +305,8 @@ for (const newTaskContract of [
 for (const bridgeProtocolContract of [
   'bridge 协议 v1 与假 bridge',
   '完成精确握手并固定 initialize 请求',
+  '只读取指定 session，并把公开 session 原身份恢复为可用客户端记录',
+  'session/read 返回未请求或缺失的身份时 fail closed',
   '拒绝事件 seq 缺口、重复和未知 required 事件',
   '未知 ignorable 事件只推进 seq',
   '权限请求只允许当前 session/turn/request 的一次性决定',
@@ -313,6 +322,8 @@ for (const bridgeProtocolContract of [
 
 for (const formalBridgeContract of [
   '正式 obsidian-bridge',
+  '只读列举精确 session 引用，并以 DSH 公开控制器恢复 ordinary session',
+  '恢复时拒绝仍在运行的 session',
   '禁止对话模式全部 DSH 工具',
   '依赖、缓存、构建产物与版本控制目录不属于可编辑工作区',
   '窄投影 DSH session 事件',
@@ -343,6 +354,26 @@ for (const storageContract of [
   '拒绝 Vault 内的状态目录或 DSH_HOME',
 ]) {
   assert(runtimeStorageTests.includes(storageContract), `运行数据测试缺少契约：${storageContract}`);
+}
+for (const taskIndexContract of [
+  'Vault 外最小任务索引',
+  '以版本化双槽快照跨实例读回任务身份、摘要和启动状态',
+  '拒绝重复 taskId、重复 sessionId 和不在 Vault 外的状态目录',
+  '最新槽损坏时只读回退到上一个有效版本并保留损坏证据',
+  '没有任何有效槽时 fail closed，不静默创建空索引',
+  '活动写锁导致显式并发失败，死亡进程锁被隔离后可恢复',
+]) {
+  assert(taskIndexTests.includes(taskIndexContract), `最小任务索引测试缺少契约：${taskIndexContract}`);
+}
+for (const taskRecoveryContract of [
+  'R2 跨重启任务恢复投影',
+  '只查询索引引用，重建可继续、不可恢复、启动失败和已中断状态',
+  '拒绝 cwd 冲突和 subagent，不自动接管未索引 session',
+  'DSH 读取失败时保留索引并显示检查失败，不伪造不可恢复',
+  '单槽损坏回退时保留可读任务并显式标记索引降级',
+  '空索引不启动 DSH，控制器释放时同步终止在途进程',
+]) {
+  assert(taskRecoveryTests.includes(taskRecoveryContract), `任务恢复投影测试缺少契约：${taskRecoveryContract}`);
 }
 for (const taskWorkspaceContract of [
   '任务工作区变更账本',
@@ -385,6 +416,9 @@ for (const taskWorkspaceFileActionContract of [
 for (const conversationContract of [
   '新建任务真实对话控制器',
   '发送前重读上下文，复用同一 session，并投影流式回复、工具、权限和完成终态',
+  '把 taskId 与 DSH session 身份写入最小索引，并按真实 turn 状态推进生命周期',
+  '索引身份已存在于 DSH 时走公开恢复接缝，不创建第二个 session',
+  '首次索引写入结果不确定时以同一 task/session 身份显式重试',
   '显式新建任务只在终态清空插件内投影并处置运行时，活动 turn 拒绝重置',
   '正式会话锁定模式与规范工作区，禁止静默开启第二个 DSH session',
   '任务模式在已校验 Vault 外工作区建立基线，以 task session 执行并在终态生成变更事实',
@@ -420,6 +454,7 @@ for (const runtimeContract of [
   'DSH 0.1.2-alpha.3 正式 bridge 运行验收',
   '真实加载 artifact',
   '原生 DSH 会话落盘',
+  '跨进程 session 恢复',
   'mid-turn cancel',
   '零残留',
 ]) {

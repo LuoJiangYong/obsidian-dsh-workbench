@@ -55,7 +55,7 @@ describe('bridge 协议 v1 与假 bridge', () => {
 
   it.each([
     ['protocolVersion', { protocolVersion: '2' }],
-    ['bridgeVersion', { bridgeVersion: '0.2.0' }],
+    ['bridgeVersion', { bridgeVersion: '0.1.0' }],
     ['dshVersion', { dshVersion: '0.1.1-rc.1' }],
     ['capabilities', { capabilities: ['session', 'events', 'cancel', 'shutdown'] }],
   ] as const)('握手 %s 不匹配时 fail closed', async (_field, override) => {
@@ -65,6 +65,67 @@ describe('bridge 协议 v1 与假 bridge', () => {
 
     await expect(initialize).rejects.toMatchObject({ code: 'handshake_mismatch' });
     expect(client.connectionState).toBe('failed');
+  });
+
+  it('只读取指定 session，并把公开 session 原身份恢复为可用客户端记录', async () => {
+    const ready = await createReadyClient();
+    const read = ready.client.readSessions([SESSION_ID, 'session-missing']);
+    const readRequest = ready.transport.takeRequest();
+    expect(readRequest).toMatchObject({
+      method: 'session/read',
+      params: { sessionIds: [SESSION_ID, 'session-missing'] },
+    });
+    ready.transport.deliver(okResponse(readRequest, { items: [
+      {
+        sessionId: SESSION_ID,
+        status: 'available',
+        blank: false,
+        cwd: process.cwd(),
+        running: false,
+        title: '持久化标题',
+      },
+      { sessionId: 'session-missing', status: 'missing' },
+    ] }));
+    await expect(read).resolves.toMatchObject({
+      items: [{ sessionId: SESSION_ID, status: 'available' }, { status: 'missing' }],
+    });
+
+    const restore = ready.client.restoreSession({ sessionId: SESSION_ID, mode: 'chat' });
+    const restoreRequest = ready.transport.takeRequest();
+    expect(restoreRequest).toMatchObject({
+      method: 'session/restore',
+      params: { sessionId: SESSION_ID, mode: 'chat' },
+    });
+    ready.transport.deliver(okResponse(restoreRequest, { sessionId: SESSION_ID }));
+    await expect(restore).resolves.toEqual({ sessionId: SESSION_ID });
+    expect(ready.client.getSession(SESSION_ID)).toMatchObject({ state: 'idle', mode: 'chat' });
+  });
+
+  it('session/read 返回未请求或缺失的身份时 fail closed', async () => {
+    const ready = await createReadyClient();
+    const read = ready.client.readSessions([SESSION_ID]);
+    const request = ready.transport.takeRequest();
+    ready.transport.deliver(okResponse(request, {
+      items: [{ sessionId: 'unrequested', status: 'missing' }],
+    }));
+    await expect(read).rejects.toMatchObject({ code: 'invalid_result' });
+    expect(ready.client.connectionState).toBe('failed');
+  });
+
+  it('session/read 拒绝超长原生标题，不把未界定文本带入任务投影', async () => {
+    const ready = await createReadyClient();
+    const read = ready.client.readSessions([SESSION_ID]);
+    const request = ready.transport.takeRequest();
+    ready.transport.deliver(okResponse(request, { items: [{
+      sessionId: SESSION_ID,
+      status: 'available',
+      blank: false,
+      cwd: process.cwd(),
+      running: false,
+      title: '甲'.repeat(161),
+    }] }));
+    await expect(read).rejects.toMatchObject({ code: 'invalid_result' });
+    expect(ready.client.connectionState).toBe('failed');
   });
 
   it('按 session/turn/seq 接收流式事件并建立唯一完成终态', async () => {
@@ -135,7 +196,7 @@ describe('bridge 协议 v1 与假 bridge', () => {
     expect(unknown.client.failure).toMatchObject({ code: 'unknown_response' });
 
     const duplicate = await createReadyClient();
-    const create = duplicate.client.createSession({ sessionId: SESSION_ID, mode: 'chat' });
+    const create = duplicate.client.createSession({ sessionId: SESSION_ID, mode: 'chat', title: '测试任务' });
     const request = duplicate.transport.takeRequest();
     const response = okResponse(request, { sessionId: SESSION_ID });
     duplicate.transport.deliver(response);
@@ -245,7 +306,7 @@ describe('bridge 协议 v1 与假 bridge', () => {
 
   it('远端业务错误拒绝单个请求，但不伪造 session 成功', async () => {
     const { client, transport } = await createReadyClient();
-    const create = client.createSession({ sessionId: SESSION_ID, mode: 'chat' });
+    const create = client.createSession({ sessionId: SESSION_ID, mode: 'chat', title: '测试任务' });
     const request = transport.takeRequest();
     transport.deliver(errorResponse(request, 'session_busy', 'session 已占用'));
 
@@ -270,7 +331,7 @@ describe('bridge 协议 v1 与假 bridge', () => {
     const ready = await createReadyClient();
     ready.transport.close();
     expect(ready.client.failure).toMatchObject({ code: 'unexpected_eof' });
-    await expect(ready.client.createSession({ sessionId: SESSION_ID, mode: 'chat' }))
+    await expect(ready.client.createSession({ sessionId: SESSION_ID, mode: 'chat', title: '测试任务' }))
       .rejects.toMatchObject({ code: 'connection_unavailable' });
 
     const timeoutTransport = new FakeBridgeTransport();
@@ -306,7 +367,7 @@ async function createReadySession(): Promise<{
   transport: FakeBridgeTransport;
 }> {
   const ready = await createReadyClient();
-  const create = ready.client.createSession({ sessionId: SESSION_ID, mode: 'chat' });
+  const create = ready.client.createSession({ sessionId: SESSION_ID, mode: 'chat', title: '测试任务' });
   const request = ready.transport.takeRequest();
   ready.transport.deliver(okResponse(request, { sessionId: SESSION_ID }));
   await create;

@@ -13,7 +13,7 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 
 [Batch 2 能力证据尖峰](./batch-2-bridge-capability-spike.md)针对 `dsh-v0.1.1-rc.2` 固定 tag 读取公开 Agent、session、approval seam；Batch 4 已在这些 seam 上实现正式 bridge，并通过本地及 Windows CI 的真实运行与进程清理。
 
-[bridge 协议 v1](./bridge-protocol-v1.md)已固定精确握手、session/turn/seq、一次性权限、取消确认、shutdown、EOF 与单终态；Batch 4–10 已完成 rc.2 下的产品闭环。R1-M 在不改变项目协议和产品边界的前提下把生产目标迁移到 alpha.3，并重新验证公开控制面、真实 bridge、Windows 生命周期与专用隔离 Vault。
+[bridge 协议 v1](./bridge-protocol-v1.md)已固定精确握手、session/turn/seq、一次性权限、取消确认、shutdown、EOF 与单终态；Batch 4–10 已完成 rc.2 下的产品闭环。R1-M 在不改变项目协议和产品边界的前提下把生产目标迁移到 alpha.3，并重新验证公开控制面、真实 bridge、Windows 生命周期与专用隔离 Vault。R2 随后在同一薄 bridge 上增加公开 session 精确读取与显式恢复，不建立第二条传输路线。
 
 ## 决定
 
@@ -44,7 +44,7 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 成本与约束：
 
 - 项目必须维护 bridge/DSH 精确版本矩阵、协议契约测试和上游漂移审计。
-- 协议、假 bridge、正式 bridge 与真实 alpha.3 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭、JSONL session 和 Windows 进程树清理；专用隔离 Vault 已读回健康检查、真实无工具对话、显式运行时处置与零残留。当前生产目标为 alpha.3；跨重启最近会话恢复继续明确延期，Release 与社区提交仍未授权。
+- 当前生产目标为 alpha.3。协议、假 bridge、正式 bridge 与真实 alpha.3 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭、JSONL session 和 Windows 进程树清理；R1-M 专用隔离 Vault 已读回健康检查、真实无工具对话、显式运行时处置与零残留。R2 的精确 session 读取、同 ID 恢复和 Vault 外最小索引已实现并通过本地真实跨进程测试；本批远端 CI 与另行审批的隔离 Vault 部署仍未完成。项目/最近 UI、Release 与社区提交未授权。
 - 需要单独的批准批次选择 bridge 的部署与打包方式；本 ADR 不授权自动安装或修改用户 DSH profile。
 - 当前连续目标已授权 Batch 3/4 在保持“不自动安装、不修改用户 DSH profile”的前提下完成协议、部署与 Windows 验证；Release 和社区提交仍未授权。
 
@@ -54,7 +54,8 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 2. ACP 作为唯一生产路线：缺少实时事件、完整交互状态与可恢复会话能力。
 3. SDK 与 ACP 双路线并存：会制造双状态源和不可等价的取消/输出语义。
 4. 由 Obsidian 插件解析 DSH CLI 文本输出：没有稳定协议，且会把诊断 stdout 与产品事件混为一谈。
+5. 由插件解析 DSH 私有 JSONL 或复制完整消息数据库：会产生第二事实源，并把插件写死在供应商私有存储结构上。
 
 ## 后续激活门
 
-Batch 4 已把本 ADR 推进到“生产 bridge 已实现并完成本地与远端 Windows rc.2 运行验收”。最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 的 CI run `32717711862`、Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。这不等于“新建任务”已交付，也不授权 Release、社区提交或 Vault 写入。
+Batch 4 已把本 ADR 推进到“生产 bridge 已实现并完成本地与远端 Windows rc.2 运行验收”。最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 的 CI run `32717711862`、Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。R1-M 的 alpha.3 证据见兼容矩阵；R2 的读取、恢复和最小索引边界见 [ADR-012](./ADR-012-session-read-and-minimal-task-index.md)。这些证据不授权 Release、社区提交或 Vault 写入。

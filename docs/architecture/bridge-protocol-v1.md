@@ -1,16 +1,16 @@
 # `obsidian-bridge` 协议 v1
 
 - 协议版本：`1`
-- 目标 bridge 版本：`0.1.0`
+- 目标 bridge 版本：`0.2.0`
 - 目标 DSH：`0.1.2-alpha.3`
-- 当前状态：协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.2-alpha.3` 真实运行已实现；R1-M 已重新验证精确握手、无工具对话、mid-turn cancel、JSONL session、专用隔离 Vault 与零残留，未改变既有产品协议
-- 明确延期或未授权：跨重启恢复属于下一批；Release、发布资产与社区提交未获授权
+- 当前状态：既有协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.2-alpha.3` 真实运行保持；R2 已增加精确 session 读取/恢复和原生标题接缝，本地真实 DSH 跨进程验证通过，远端 CI 尚待本批精确 SHA 完成
+- 明确延期或未授权：项目/最近 UI、完整历史复制、隔离 Vault 部署、Release、发布资产与社区提交未获授权
 
 ## 目标与边界
 
 协议 v1 只服务首发“新建任务”的对话与任务执行共同运行时需求。它不是通用 DSH API，不复制 DSH session 日志，不提供 SDK/ACP/CLI fallback，也不读取 Vault、接受任意 Shell 或保存凭据。
 
-Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文；Batch 7 由插件级控制器把发送时快照交给真实 bridge，投影流式文本、一次性权限、取消和明确终态；Batch 8/9 已接通 Vault 外任务、文件结果和正式会话。对话模式在 DSH scoped context 中隐藏并拒绝全部工具，并在最终系统提示中要求只消费信封内的 `contexts[].content`、不输出 DSML 或其他工具调用标记。Batch 10 专用 Vault 已验证真实对话与任务链，用户随后明确确认第一批开发目标完成；该产品支持结论不包含跨重启恢复，也不批准发布动作。
+Batch 3 的假 bridge 直接交付已解析对象，用于验证协议和状态。Batch 4 已补 Windows 受管进程与换行分隔 JSON（NDJSON）stdio framing，并由独立锁定的 rc.2 运行夹具真实加载 artifact；Batch 5/6 已实现宿主入口与只读上下文；Batch 7 由插件级控制器把发送时快照交给真实 bridge，投影流式文本、一次性权限、取消和明确终态；Batch 8/9 已接通 Vault 外任务、文件结果和正式会话。对话模式在 DSH scoped context 中隐藏并拒绝全部工具，并在最终系统提示中要求只消费信封内的 `contexts[].content`、不输出 DSML 或其他工具调用标记。Batch 10 专用 Vault 已验证真实对话与任务链，用户随后明确确认第一批开发目标完成。R2 只增加任务身份与可恢复性接缝：完整消息仍由 DSH 原生 session 管理，插件不复制历史，也不把本批扩大为导航或发布动作。
 
 ## 精确握手
 
@@ -32,6 +32,7 @@ client 第一个请求固定为：
       "events",
       "cancel",
       "permission",
+      "session-read",
       "shutdown"
     ]
   }
@@ -43,13 +44,14 @@ client 第一个请求固定为：
 ```json
 {
   "protocolVersion": "1",
-  "bridgeVersion": "0.1.0",
+  "bridgeVersion": "0.2.0",
   "dshVersion": "0.1.2-alpha.3",
   "capabilities": [
     "session",
     "events",
     "cancel",
     "permission",
+    "session-read",
     "shutdown"
   ]
 }
@@ -64,14 +66,24 @@ client 第一个请求固定为：
 | method | 最小 params | 成功 result | 前置状态 |
 | --- | --- | --- | --- |
 | `initialize` | 协议、client 身份、required capabilities | 精确身份与 capability | 新连接 |
-| `session/create` | `sessionId`、`mode: chat|task` | `{ sessionId }` | ready、ID 未占用 |
+| `session/create` | `sessionId`、`mode: chat|task`、非空限长 `title` | `{ sessionId }` | ready、ID 未占用 |
+| `session/read` | 精确、非重复的 `sessionIds[]` | 与请求一一对应的 `available | missing | subagent | unreadable` | ready、无本地活动 session |
+| `session/restore` | `sessionId`、`mode: chat|task` | `{ sessionId }` | 已读回为普通、非运行、可读取且 cwd 一致 |
 | `turn/start` | `sessionId`、`turnId`、非空 `text` | `{ accepted: true }` | idle session |
 | `turn/cancel` | `sessionId`、`turnId` | `{ accepted: true }` | 当前活动 turn |
 | `permission/resolve` | session/turn/request 三重身份、`allow-once|reject` | `{ accepted: true }` | 当前一次性权限请求 |
 | `session/close` | `sessionId` | `{ closed: true }` | 无活动 turn |
 | `shutdown` | 空对象 | `{ accepted: true }` | 无活动 turn |
 
-远端业务错误使用 `{ type: "response", id, ok: false, error: { code, message } }`。已知业务错误只拒绝对应请求；解析错误、未知 code 或状态矛盾属于协议失败。`session/create` 失败不得留下 session 成功事实。
+远端业务错误使用 `{ type: "response", id, ok: false, error: { code, message } }`。已知业务错误只拒绝对应请求；解析错误、未知 code 或状态矛盾属于协议失败。`session/create` 失败不得留下 session 成功事实。读取结果多出、遗漏或重复 session 身份属于 `invalid_result`；恢复遇到运行中、子代理、缺失、不可读或 cwd 不一致返回 `session_unrecoverable`，本地 ID 冲突返回 `session_conflict`，不得静默创建新 session。
+
+## R2 精确读取与恢复边界
+
+- `session/read` 只列举调用方索引中给出的精确 ID。bridge 可以调用 DSH 公开 `list()`/`inspect()`，但不得把全部原生 session、私有 JSONL 路径或消息内容投影给插件。
+- `available` 只包含规范 `cwd`、`running`、`blank` 与可选原生 `title`。完整历史继续由 DSH 保存。
+- `session/restore` 使用公开 `sessionController.create({ sessionId, cwd })` 采用既有 ID，再安装现有模式边界；它不恢复进程内 job、follow/control 或 mid-turn handle。
+- headless 启动只在 Vault 外临时 overlay 中装配 DSH 公开 `workspace` 与 `session-controller` 服务，不修改用户 profile 或 DSH 安装。
+- 详细数据所有权、索引与失败状态见 [ADR-012](./ADR-012-session-read-and-minimal-task-index.md)。
 
 ## 事件信封与顺序
 
@@ -142,8 +154,9 @@ client 第一个请求固定为：
 - `tests/bridge-protocol.test.ts`：假 bridge 行为矩阵，由 Windows/Ubuntu 的完整 `npm test` 执行。
 - `src/obsidian-bridge.ts`：正式 Cordis plugin、DSH 事件窄投影、Agent 所有权与一次性权限回路。
 - `src/bridge-ndjson-transport.ts` 与 `src/managed-bridge-process.ts`：1 MiB 封闭 framing、精确版本预检、用户原生 `$DSH_HOME`、Vault 外插件 overlay、隐藏启动、正常退出与强制清理。
-- `src/new-task-conversation.ts` 与 `src/workbench-view.ts`：插件级 session 所有权、确定性上下文信封、发送前确认、流式投影、取消超时与错误终态。
-- `tests/real-dsh-bridge.test.ts`：独立精确锁定 alpha.3，真实加载 artifact、以 Vault 外 cwd 创建 Agent、读回模型请求中的只读系统提示且确认没有 `tools`、完成一次模型回复、DSH 原生 JSONL session 落盘、mid-turn cancel、关闭与进程退出；由 Windows CI 专项脚本执行。
+- `src/new-task-conversation.ts`、`src/task-index.ts`、`src/task-recovery.ts` 与 `src/workbench-view.ts`：插件级 session 所有权、确定性上下文信封、Vault 外最小任务索引、启动恢复投影、流式/取消与错误终态。
+- `tests/task-index.test.ts` 与 `tests/task-recovery.test.ts`：双槽原子快照、损坏隔离、并发锁、Vault 边界、恢复状态和失败保留；由双平台 `test:runtime` 执行。
+- `tests/real-dsh-bridge.test.ts`：独立精确锁定 alpha.3，真实加载 artifact、以 Vault 外 cwd 创建 Agent、读回模型请求中的只读系统提示且确认没有 `tools`、完成一次模型回复、DSH 原生 JSONL session 落盘、mid-turn cancel、关闭与进程退出；R2 还以第二个独立 bridge 进程精确读取标题和缺失项，并通过公开 controller 恢复同一 session ID。由 Windows CI 专项脚本执行。
 - 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 
 Batch 4 最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)：Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。本地及远端证据证明 rc.2 artifact 加载、环回模型请求、mid-turn cancel、Windows 隐藏进程、正常/强制关闭与清理；它不证明真实外部模型账号、Vault、Obsidian UI 或发布验收通过。

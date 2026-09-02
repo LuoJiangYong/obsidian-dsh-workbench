@@ -8,6 +8,7 @@ import {
   parseInitializeResult,
   parseSessionClosedResult,
   parseSessionCreatedResult,
+  parseSessionReadResult,
   type BridgeAcceptedResult,
   type BridgeEvent,
   type BridgeInitializeResult,
@@ -18,6 +19,7 @@ import {
   type BridgeSessionClosedResult,
   type BridgeSessionCreatedResult,
   type BridgeSessionMode,
+  type BridgeSessionReadResult,
   type BridgeTransport,
   type BridgeTurnOutcome,
   type KnownBridgeEvent,
@@ -189,9 +191,11 @@ export class BridgeProtocolClient {
   async createSession(input: {
     readonly sessionId: string;
     readonly mode: BridgeSessionMode;
+    readonly title: string;
   }): Promise<BridgeSessionCreatedResult> {
     this.requireReady();
     requireIdentifier(input.sessionId, 'sessionId');
+    requireTitle(input.title);
     if (this.sessions.has(input.sessionId)) throw this.invalidState('sessionId 已存在');
     const session: SessionRecord = {
       sessionId: input.sessionId,
@@ -207,7 +211,7 @@ export class BridgeProtocolClient {
         type: 'request',
         id,
         method: 'session/create',
-        params: { sessionId: input.sessionId, mode: input.mode },
+        params: { sessionId: input.sessionId, mode: input.mode, title: input.title },
       }),
       {
         parse: parseSessionCreatedResult,
@@ -218,6 +222,69 @@ export class BridgeProtocolClient {
           session.state = 'idle';
         },
         onRemoteError: () => this.sessions.delete(input.sessionId),
+      },
+    );
+  }
+
+  async readSessions(sessionIds: readonly string[]): Promise<BridgeSessionReadResult> {
+    this.requireReady();
+    if (sessionIds.length > 5_000) throw this.invalidState('session/read 超过查询上限');
+    const requested = new Set<string>();
+    for (const sessionId of sessionIds) {
+      requireIdentifier(sessionId, 'sessionId');
+      if (requested.has(sessionId)) throw this.invalidState('session/read 包含重复 sessionId');
+      requested.add(sessionId);
+    }
+    return await this.sendRequest(
+      (id) => ({
+        type: 'request',
+        id,
+        method: 'session/read',
+        params: { sessionIds },
+      }),
+      {
+        parse: parseSessionReadResult,
+        onSuccess: (result) => {
+          if (result.items.length !== requested.size
+            || result.items.some(item => !requested.has(item.sessionId))) {
+            throw new BridgeProtocolError(
+              'invalid_result',
+              'session/read 必须逐项返回且只能返回请求的 sessionId',
+            );
+          }
+        },
+      },
+    );
+  }
+
+  async restoreSession(input: {
+    readonly sessionId: string;
+    readonly mode: BridgeSessionMode;
+  }): Promise<BridgeSessionCreatedResult> {
+    this.requireReady();
+    requireIdentifier(input.sessionId, 'sessionId');
+    if (this.sessions.has(input.sessionId)) throw this.invalidState('sessionId 已存在');
+    return await this.sendRequest(
+      (id) => ({
+        type: 'request',
+        id,
+        method: 'session/restore',
+        params: input,
+      }),
+      {
+        parse: parseSessionCreatedResult,
+        onSuccess: (result) => {
+          if (result.sessionId !== input.sessionId) {
+            throw new BridgeProtocolError('invalid_result', 'session/restore 返回错误 sessionId');
+          }
+          this.sessions.set(input.sessionId, {
+            sessionId: input.sessionId,
+            mode: input.mode,
+            state: 'idle',
+            lastEventSeq: -1,
+            permissionRequestIds: new Set(),
+          });
+        },
       },
     );
   }
@@ -610,6 +677,13 @@ function isExpectedInitializeResult(result: BridgeInitializeResult): boolean {
 function requireIdentifier(value: string, label: string): void {
   if (value.length === 0 || value.trim() !== value) {
     throw new BridgeProtocolError('invalid_state', `${label} 不能为空或包含首尾空白`);
+  }
+}
+
+function requireTitle(value: string): void {
+  const characters = Array.from(value);
+  if (characters.length === 0 || characters.length > 49 || value.trim() !== value) {
+    throw new BridgeProtocolError('invalid_state', 'session title 无效');
   }
 }
 

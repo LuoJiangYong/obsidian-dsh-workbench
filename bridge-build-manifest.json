@@ -1,9 +1,9 @@
 {
-  "bridgeVersion": "0.1.0",
+  "bridgeVersion": "0.2.0",
   "protocolVersion": "1",
   "dshVersion": "0.1.2-alpha.3",
   "dshIntegrity": "sha512-VvATzYmQ4LMJREJ9e2POKksSHRfqP3y9pghplLBaQBuw2BqfbC0mQUVsaPwxe4wlcpj+riEgn8OJB01YnpF+3A==",
   "artifact": "obsidian-bridge.mjs",
-  "artifactBytes": 17460,
-  "artifactSha256": "63d6ac6ddd35c74b14ae5d0f31e1ae4f70ee0bc4d7d605fef815cd6381e16e54"
+  "artifactBytes": 21107,
+  "artifactSha256": "e11fbc559a276912eae7832a7f44b39ee5e4ef8a6814e22fc87c27acd86165c1"
 }

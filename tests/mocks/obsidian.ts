@@ -214,7 +214,16 @@ export class TFolder {
   constructor(readonly path: string) {}
 }
 
+export class FileSystemAdapter {
+  constructor(private readonly basePath: string) {}
+
+  getBasePath(): string {
+    return this.basePath;
+  }
+}
+
 export class Vault {
+  adapter: FileSystemAdapter | undefined;
   readonly contents = new Map<string, string>();
   readonly files: TFile[] = [];
   readonly folders: TFolder[] = [];

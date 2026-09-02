@@ -42,8 +42,12 @@ assert(
   'README 缺少当前 v1 的产品支持状态',
 );
 assert(
-  readme.includes('跨重启恢复仍属于下一批'),
-  'README 误报跨重启恢复状态',
+  readme.includes('R2 已实现公开 session 精确读取/恢复和 Vault 外最小任务索引'),
+  'README 缺少 R2 最小恢复事实',
+);
+assert(
+  readme.includes('项目/最近 UI、Vault 写入和删除工具不属于当前范围'),
+  'README 误报 R2 后续范围',
 );
 assert(readme.includes('GitHub Release | 未创建'), 'README 误报 GitHub Release 状态');
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');

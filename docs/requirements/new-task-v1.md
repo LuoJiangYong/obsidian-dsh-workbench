@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：已实现并验证；正式 bridge、宿主 UI、只读上下文、对话/任务链、逐轮文件 UI 与正式会话均已实现，Batch 10 专用 Vault 技术运行门、双平台 CI 与原始零 annotations 已通过；用户已于 `2026-08-31` 明确确认第一批开发目标完成
+- 状态：当前 v1 已实现并验证；R2 最小跨重启任务事实已实现且本地真实 DSH 门通过，本批远端 CI 与隔离 Vault 部署尚未完成
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -9,7 +9,7 @@
 
 用户在 Obsidian 中只通过“新建任务”开始一次 DeepSeek Harness 工作：选择“对话”或“任务执行”，明确提交内容与上下文，观察真实执行状态，在需要时审阅权限并真正取消当前 turn。失败、取消、完成和运行时终止不得互相冒充。
 
-本文件冻结 v1 的产品与宿主契约。当前连续 Goal 已授权按 Batch 2–10 实施协议、bridge、UI、只读上下文与外部工作区任务；仍不授权 Vault 写入、DSH 自动安装/更新、Release 或社区提交。
+本文件冻结 v1 的产品与宿主契约。Batch 2–10 已完成协议、bridge、UI、只读上下文与外部工作区任务；用户另行批准的 R2 只补充公开 session 恢复接缝和 Vault 外最小任务索引。项目/最近 UI、Vault 写入、DSH 自动安装/更新、Release 或社区提交仍未授权。
 
 ## 模式与入口
 
@@ -52,12 +52,20 @@ Batch 6 已依据现有 `1 MiB` NDJSON frame 上限冻结上下文子集：最�
 - 运行所有权属于插件级 `NewTaskConversationController`；关闭 Workbench 视图只移除订阅，不取消活动 turn。插件禁用或 Obsidian 退出必须关闭受管进程。
 - 完整会话历史、DSH 设置和凭据以用户原生 `$DSH_HOME` 为唯一事实来源；插件不得在 Vault 或 `data.json` 复制 session 内容。
 - bridge overlay 与插件运行状态位于操作系统应用数据目录下的 Vault 哈希分区；目录名不得包含 Vault 原始路径。
-- 插件内存只保存当前草稿、已选笔记和公开消息投影；插件重载后清除，不伪造跨重启会话恢复。
+- 插件内存保存当前草稿、已选笔记和公开消息投影；插件重载后这些 UI/消息投影仍会清除。R2 只在 Vault 外版本化最小索引中保存 `taskId ↔ sessionId`、模式、工作区身份、48 字符原始输入摘要、时间与生命周期，不复制完整消息。
 - 首条消息经确认且校验通过后建立当前插件生命周期内的 session 投影；关闭/重开 Workbench leaf 重新订阅并恢复正式页，模式与规范工作区保持锁定。
-- 返回开启页只能由用户显式确认“新建任务”；控制器先处置受管运行时，再清空当前投影。此操作不删除 DSH 原生 session 或 Vault 外逐轮账本。
+- 返回开启页只能由用户显式确认“新建任务”；控制器先处置受管运行时，再清空当前投影。此操作不删除 DSH 原生 session、R2 最小任务记录或 Vault 外逐轮账本。
 - `stateDirectory`、DSH `cwd` 或 `$DSH_HOME` 经真实路径/符号链接解析后位于 Vault 内时，必须在执行任何 DSH 检查或启动前 fail closed。
 
-详细归属与 Claudian 设计比较见 [ADR-006](../architecture/ADR-006-conversation-runtime-storage.md)。
+详细运行数据归属与 Claudian 设计比较见 [ADR-006](../architecture/ADR-006-conversation-runtime-storage.md)；R2 的最小索引、读取/恢复和失败语义见 [ADR-012](../architecture/ADR-012-session-read-and-minimal-task-index.md)。
+
+### R2 重启恢复事实
+
+- 启动时只把索引中的精确 session ID 交给 DSH 公开 controller 检查；不遍历私有文件，不把全部 DSH session 复制为插件任务。
+- session 存在、普通、非运行、可读取且规范 cwd 一致时，任务投影为 `continuable`；用户继续时采用同一 DSH session ID。
+- 索引中重启前为 `running` 的任务投影为已中断；DSH 进程内 job 与 follow/control 所有权不被伪造为已恢复。
+- session 缺失、是子代理、不可读取或 cwd 不一致时投影为 `unrecoverable`；启动阶段失败为 `startup_failed`；索引或 DSH 暂时检查失败为 `check_failed`。
+- 不可恢复任务保留记录、输入摘要和原因，只允许显式重试或新建；不自动删除 DSH 原生 session。
 
 ## 状态机与失败语义
 
@@ -83,7 +91,7 @@ cancelled | completed | failed
 - 只有 bridge/DSH 已确认取消并收到该 turn 的取消终态后，UI 才能显示 `cancelled`。
 - 取消超时后若必须终止运行时，终态是 `failed(runtime_terminated)`，不得冒充已确认取消。
 - 关闭 Workbench 视图不等于取消；插件禁用或 Obsidian 退出必须关闭所有受管运行时并移除监听器。
-- v1 不承诺 Obsidian 重启后恢复运行中会话；重启后发现未完成 turn 时必须显示为“已中断”，不得显示仍在运行或已完成。
+- v1 不承诺 Obsidian 重启后恢复运行中的 turn；R2 只恢复可继续的 session 身份。重启后发现未完成 turn 时必须显示为“已中断”，不得显示仍在运行或已完成。
 - 校验失败或启动失败保留任务草稿和已选上下文，且不得生成 session 成功状态。
 - 乱序、重复或无法关联到当前 session/turn 的事件必须拒绝或隔离，并留下脱敏且限长的诊断。
 
@@ -92,7 +100,7 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前正式 bridge 目标是 `0.1.2-alpha.3`，GitHub tag 指向提交 `dd6322d604e00eec1ba5e0c8541159906a21094a`。R1-M 以纯 215 包依赖图验证公开 session controller，再同步迁移健康检查、bridge、生产夹具、构建清单、Windows 运行门与专用隔离 Vault。既有 Batch 4–10 的对话、任务、取消、Vault 外账本与 UI 边界保持有效；跨重启恢复仍属于 R2，尚未实现。
+- 当前正式 bridge 目标是 `0.1.2-alpha.3`，GitHub tag 指向提交 `dd6322d604e00eec1ba5e0c8541159906a21094a`。R1-M 以纯 215 包依赖图验证公开 session controller，再同步迁移健康检查、bridge、生产夹具、构建清单、Windows 运行门与专用隔离 Vault。R2 已在此基础上实现公开精确读取/恢复和 Vault 外最小任务索引；本地真实 DSH 跨进程测试通过，本批精确 SHA 的双平台 CI 尚待完成。既有对话、任务、取消、逐轮账本与 UI 边界保持有效。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.2-alpha.3`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。

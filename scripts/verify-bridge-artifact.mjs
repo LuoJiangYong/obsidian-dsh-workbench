@@ -8,7 +8,7 @@ const rootPackage = JSON.parse(await readFile('package.json', 'utf8'));
 const artifact = await readFile(manifest.artifact);
 const dshLock = runtimeLock.packages?.['node_modules/@deepseek-ai/dsh'];
 
-assert(manifest.bridgeVersion === '0.1.0', 'bridge manifest 版本必须为 0.1.0');
+assert(manifest.bridgeVersion === '0.2.0', 'bridge manifest 版本必须为 0.2.0');
 assert(manifest.protocolVersion === '1', 'bridge manifest 协议必须为 1');
 assert(manifest.dshVersion === '0.1.2-alpha.3', 'bridge manifest DSH 必须为 0.1.2-alpha.3');
 assert(runtimePackage.dependencies?.['@deepseek-ai/dsh'] === manifest.dshVersion, '运行夹具未精确锁定目标 DSH');

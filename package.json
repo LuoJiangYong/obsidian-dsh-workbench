@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
-    "test:runtime": "vitest run tests/dsh-settings.test.ts tests/dsh-health.test.ts tests/runtime-storage.test.ts tests/task-workspace.test.ts tests/managed-bridge-process.test.ts",
+    "test:runtime": "vitest run tests/dsh-settings.test.ts tests/dsh-health.test.ts tests/runtime-storage.test.ts tests/task-index.test.ts tests/task-recovery.test.ts tests/task-workspace.test.ts tests/managed-bridge-process.test.ts",
     "test:bridge:runtime": "vitest run tests/real-dsh-bridge.test.ts",
     "test:runtime:candidate": "vitest run tests/dsh-alpha3-control.test.ts",
     "prepare:runtime-fixture": "npm ci --prefix tests/runtime-fixture",
