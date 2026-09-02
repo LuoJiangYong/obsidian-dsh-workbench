@@ -154,9 +154,11 @@ describe('发布与治理契约', () => {
     ]);
 
     expect(design).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
-    expect(design).toContain('R2 已实现无新 UI 的跨重启最小任务事实');
+    expect(design).toContain('R2 已实现并验证无新 UI 的跨重启最小任务事实');
     expect(designQa).toContain('final Obsidian UI user acceptance: passed');
-    expect(requirements).toContain('R2 最小跨重启任务事实已实现');
+    expect(requirements).toContain(
+      'R2 最小跨重启任务事实、本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 已通过',
+    );
     expect(requirements).toContain('当前正式 bridge 目标是 `0.1.2-alpha.3`');
     expect(runtimeAdr).toContain('当前生产目标为 alpha.3');
     expect(ardotAdr).toContain('第一批用户验收闭环；Ardot 仍只读');
@@ -166,7 +168,7 @@ describe('发布与治理契约', () => {
     expect(protocol).toContain('`session/restore`');
     expect(matrix).toContain('| `0.1.1-rc.2` | 历史健康检查与正式 bridge + v1 | `superseded`（历史证据保留） |');
     expect(matrix).toContain('| `0.1.2-alpha.2` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1 证据完成，不晋级生产） |');
-    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller、R2 精确读取/恢复 | `supported`（当前生产 v1；R2 远端闭环进行中） |');
+    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller、R2 精确读取/恢复 | `supported`（当前生产 R2） |');
     expect(r1Evidence).toContain('所有 215 个顶层 `@deepseek-ai/dsh*` 包都精确为 `0.1.2-alpha.2`');
     expect(r1Evidence).toContain('建议继续保留生产 `0.1.1-rc.2`');
     expect(r1Evidence).toContain('R2 也仍需新的明确批准');
@@ -182,7 +184,7 @@ describe('发布与治理契约', () => {
     expect(ciRoadmap).toContain('npm run test:runtime:candidate');
     expect(codexAssessment).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
     expect(releaseStatus).toContain('GitHub Release、发布资产验收和 Obsidian 社区提交仍未批准或执行');
-    expect(implementationRoadmap).toContain('R2 已获批准并完成实现');
+    expect(implementationRoadmap).toContain('G0-1、G0-2、R1、R1-M、R2 已完成');
     expect(implementationRoadmap).toContain('D1 及后续批次未获授权');
     expect(implementationRoadmap).toContain('权威配置来源固定为 Obsidian 桌面 Vault 注册表');
     expect(designQa).toContain('G0-2 dedicated Vault reproducible read-only preflight: passed');
@@ -785,7 +787,7 @@ describe('发布与治理契约', () => {
     expect(spike).toContain('CI run 32708553927');
     expect(spike).toContain('原始 annotations API 后数组长度也均为 `0`');
     expect(matrix).toContain('| `0.1.1-rc.2` | 历史健康检查与正式 bridge + v1 | `superseded`（历史证据保留） |');
-    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller、R2 精确读取/恢复 | `supported`（当前生产 v1；R2 远端闭环进行中） |');
+    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller、R2 精确读取/恢复 | `supported`（当前生产 R2） |');
     expect(matrix).toContain('新版本只产生“待验证候选”');
     expect(matrix).toContain('不得自动安装或更新用户 DSH');
     expect(matrix).toContain('不得自动合并、Release 或提交社区目录');
@@ -852,7 +854,7 @@ describe('发布与治理契约', () => {
     expect(protocol).toContain('CI run 32717711862');
     expect(protocol).toContain('Ubuntu check `97402381390`、Windows check `97402381253`');
     expect(protocol).toContain('两个原始 annotations 数组均为 `[]`');
-    expect(matrix).toContain('`supported`（当前生产 v1；R2 远端闭环进行中）');
+    expect(matrix).toContain('`supported`（当前生产 R2）');
     expect(roadmap).toContain('环回模型请求后的 mid-turn cancel');
     expect(roadmap).toContain('CI `32717476733` 在干净检出中揭示进程单测依赖未跟踪构建产物');
     expect(roadmap).toContain('最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664`');

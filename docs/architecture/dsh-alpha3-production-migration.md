@@ -74,4 +74,4 @@ alpha.3 删除的是可选 SQLite session persistence 后端；现有插件没�
 
 ## 8. R2 后续状态（2026-09-02）
 
-本文件以上内容仍是 R1-M 当时的范围与精确证据，不因后续批次而改写。用户已单独批准 R2；当前源码把正式 bridge 推进为 `0.2.0` / protocol `1`，artifact 为 `21,107` bytes，SHA-256 `e11fbc559a276912eae7832a7f44b39ee5e4ef8a6814e22fc87c27acd86165c1`，并在同一 alpha.3 生产基线上增加公开 session 精确读取/恢复与 Vault 外最小任务索引。本地真实 DSH 双进程测试已通过；R2 精确实现 SHA 的远端 CI 尚待完成，隔离 Vault 部署仍需另行展示资产 diff 并获得批准。R2 没有修改 Ardot、真实 Vault、用户 DSH、Release 或社区目录。
+本文件以上内容仍是 R1-M 当时的范围与精确证据，不因后续批次而改写。用户已单独批准 R2；当前源码把正式 bridge 推进为 `0.2.0` / protocol `1`，artifact 为 `21,107` bytes，SHA-256 `e11fbc559a276912eae7832a7f44b39ee5e4ef8a6814e22fc87c27acd86165c1`，并在同一 alpha.3 生产基线上增加公开 session 精确读取/恢复与 Vault 外最小任务索引。本地真实 DSH 双进程测试已通过；实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 的 CI `33581009658` 双平台成功且两个原始 annotations 数组均为 `[]`。隔离 Vault 部署仍需另行展示资产 diff 并获得批准。R2 没有修改 Ardot、真实 Vault、用户 DSH、Release 或社区目录。

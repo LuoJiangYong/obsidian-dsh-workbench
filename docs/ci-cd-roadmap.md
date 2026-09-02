@@ -69,7 +69,7 @@ Phase B 只证明治理与架构契约一致，不证明运行时已经可用。
 
 ## Phase C：运行时与 Vault 安全门
 
-状态：当前 v1 + alpha.3 生产范围已通过本地、Windows 与专用隔离 Vault 技术门；R1 历史 alpha.2 和 Batch 4–10 的 rc.2 证据保持，R1-M 已把 alpha.3 推进到 `supported`。R2 session 读取/恢复、Vault 外最小索引和启动投影已实现，本地真实 DSH 门通过，本批精确 SHA 双平台 CI 待完成；R2 隔离 Vault 部署、真实 Vault 写入与 D1 后续能力未授权。
+状态：当前 v1 + alpha.3 生产范围已通过本地、Windows 与专用隔离 Vault 技术门；R1 历史 alpha.2 和 Batch 4–10 的 rc.2 证据保持，R1-M 已把 alpha.3 推进到 `supported`。R2 session 读取/恢复、Vault 外最小索引和启动投影的本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 已通过；R2 隔离 Vault 部署、真实 Vault 写入与 D1 后续能力未授权。
 
 进入运行时和 Vault Bridge 实现后逐项建立：
 
@@ -123,6 +123,8 @@ R1 历史证据新增独立 `tests/runtime-candidate-fixture`，并在当时用 
 R1-M 生产分步随后把健康检查、正式 bridge、生产 fixture/lockfile、构建清单、Windows job 与治理契约统一迁移到 alpha.3。bridge `0.1.0` / protocol `1` 不变，artifact SHA-256 为 `63d6ac6ddd35c74b14ae5d0f31e1ae4f70ee0bc4d7d605fef815cd6381e16e54`。专用隔离 Vault 经具体资产 diff 确认后只替换 `main.js` 与 `obsidian-bridge.mjs`；Obsidian 原生重载、插件健康读回、真实无工具对话、显式新建任务处置和零目标 Node 进程通过。Ardot、真实 Vault、用户 DSH、R2、Release 与社区目录均未修改。
 
 R2 把正式 bridge 推进为 `0.2.0` / protocol `1`，增加 `session-read`、精确 `session/read` 和公开 controller `session/restore`；artifact 为 `21,107` bytes，SHA-256 `e11fbc559a276912eae7832a7f44b39ee5e4ef8a6814e22fc87c27acd86165c1`。`tests/task-index.test.ts` 与 `tests/task-recovery.test.ts` 已加入双平台 `test:runtime`，覆盖双槽原子写入、损坏隔离、并发锁、Vault 外路径、可继续/不可恢复/启动失败/检查失败投影；协议、正式 bridge 与新建任务控制器测试固定精确身份、原生标题、同 ID 恢复和失败保留。Windows `test:bridge:runtime` 使用两个独立真实 alpha.3 bridge 进程完成创建、关闭、精确读取标题/缺失项和恢复。现有 workflow 已在 Ubuntu/Windows 执行完整 `npm test`，并在 Windows 执行 `test:runtime`、真实 bridge 与进程测试，因此无需新增 job；`verify:ci-coverage` 同批增加 R2 消费链检查。本批只有精确实现 SHA 的所有 job 与原始 annotations 通过后才完成。
+
+R2 实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 已通过 [CI run `33581009658`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33581009658)：Windows job `100095105463` 与 Ubuntu job `100095105593` 均成功，两个原始 annotations 数组均为 `[]`。这关闭 R2 自动门，不授权隔离 Vault 部署或 D1。
 
 ## Phase D：隔离 Vault 与发布门
 
@@ -179,4 +181,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10、G0-1、G0-2、R1 与 R1-M 的既有门保持有效。用户于 `2026-09-02` 单独批准 R2；当前只完成 R2 的本地实现与验证，并继续闭合精确 SHA 双平台 CI。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只新增 Vault 外最小任务引用与公开恢复投影。Ardot 保持只读。R2 完成后必须停止；D1、隔离 Vault 部署、真实 Vault、Release、发布资产、社区提交、任意 Shell、自动安装/更新用户 DSH 或上游监测 workflow 均未授权。
+用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10、G0-1、G0-2、R1 与 R1-M 的既有门保持有效。用户于 `2026-09-02` 单独批准的 R2 已完成本地实现、真实 DSH、精确 SHA 双平台 CI 与原始零 annotations。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只新增 Vault 外最小任务引用与公开恢复投影。Ardot 保持只读。当前必须停止；D1、隔离 Vault 部署、真实 Vault、Release、发布资产、社区提交、任意 Shell、自动安装/更新用户 DSH 或上游监测 workflow 均未授权。

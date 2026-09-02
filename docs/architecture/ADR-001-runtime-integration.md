@@ -44,7 +44,7 @@ Workbench 需要的不只是“能得到最终回答”，还包括真实 sessio
 成本与约束：
 
 - 项目必须维护 bridge/DSH 精确版本矩阵、协议契约测试和上游漂移审计。
-- 当前生产目标为 alpha.3。协议、假 bridge、正式 bridge 与真实 alpha.3 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭、JSONL session 和 Windows 进程树清理；R1-M 专用隔离 Vault 已读回健康检查、真实无工具对话、显式运行时处置与零残留。R2 的精确 session 读取、同 ID 恢复和 Vault 外最小索引已实现并通过本地真实跨进程测试；本批远端 CI 与另行审批的隔离 Vault 部署仍未完成。项目/最近 UI、Release 与社区提交未授权。
+- 当前生产目标为 alpha.3。协议、假 bridge、正式 bridge 与真实 alpha.3 已覆盖握手漂移、乱序、超时、取消、权限、EOF、正常关闭、JSONL session 和 Windows 进程树清理；R1-M 专用隔离 Vault 已读回健康检查、真实无工具对话、显式运行时处置与零残留。R2 的精确 session 读取、同 ID 恢复和 Vault 外最小索引已实现，本地真实跨进程测试与实现 SHA `fd476a2e590c7281aa1de12640628e12a73b69d8` 的双平台 CI/原始零 annotations 均通过；另行审批的 R2 隔离 Vault 部署未执行。项目/最近 UI、Release 与社区提交未授权。
 - 需要单独的批准批次选择 bridge 的部署与打包方式；本 ADR 不授权自动安装或修改用户 DSH profile。
 - 当前连续目标已授权 Batch 3/4 在保持“不自动安装、不修改用户 DSH profile”的前提下完成协议、部署与 Windows 验证；Release 和社区提交仍未授权。
 

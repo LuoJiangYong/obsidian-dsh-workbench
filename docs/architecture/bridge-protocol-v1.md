@@ -3,7 +3,7 @@
 - 协议版本：`1`
 - 目标 bridge 版本：`0.2.0`
 - 目标 DSH：`0.1.2-alpha.3`
-- 当前状态：既有协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.2-alpha.3` 真实运行保持；R2 已增加精确 session 读取/恢复和原生标题接缝，本地真实 DSH 跨进程验证通过，远端 CI 尚待本批精确 SHA 完成
+- 当前状态：既有协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.2-alpha.3` 真实运行保持；R2 已增加精确 session 读取/恢复和原生标题接缝，本地真实 DSH 跨进程验证、精确 SHA 双平台 CI 与原始零 annotations 均通过
 - 明确延期或未授权：项目/最近 UI、完整历史复制、隔离 Vault 部署、Release、发布资产与社区提交未获授权
 
 ## 目标与边界

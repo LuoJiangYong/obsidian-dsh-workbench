@@ -34,7 +34,7 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 ## 后果与边界
 
 - [新建任务 v1 需求基线](../requirements/new-task-v1.md) 是本 ADR 的详细验收契约。
-- 当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.2-alpha.3`。R1-M 已重新执行公开控制面、Windows 真实 bridge、专用 Vault 健康检查/真实无工具对话和零残留门；R2 已实现精确 session 读取/恢复、Vault 外最小任务索引和启动恢复投影，本地真实 DSH 跨进程门通过，远端 CI 与隔离 Vault 仍按各自门完成。项目/最近 UI、下一批统一运行与发布动作不包含在 R2 中。
+- 当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.2-alpha.3`。R1-M 已重新执行公开控制面、Windows 真实 bridge、专用 Vault 健康检查/真实无工具对话和零残留门；R2 已实现精确 session 读取/恢复、Vault 外最小任务索引和启动恢复投影，本地真实 DSH 跨进程门、实现 SHA 的双平台 CI 与原始零 annotations 均通过，R2 隔离 Vault 部署仍需另行批准。项目/最近 UI、下一批统一运行与发布动作不包含在 R2 中。
 - [Batch 2 能力尖峰](./batch-2-bridge-capability-spike.md)与[运行时兼容矩阵](./runtime-compatibility-matrix.md)记录了上游 seam、证据指纹和自动演进门。
 - [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭、精确 session 读取/恢复和 fail-closed 行为；[ADR-012](./ADR-012-session-read-and-minimal-task-index.md)固定最小索引、所有权与失败状态。当前已通过假 bridge、正式 artifact 与本地 Windows alpha.3 跨进程运行验收。
 - Batch 6 以现有 `1 MiB` NDJSON frame 和最坏 JSON 双重转义实测冻结上下文上限：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。文件夹展开同样受这些限制并采用原子加入；任务字符上限由真实发送批次冻结。
@@ -49,4 +49,4 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 - Batch 5 宿主 UI 的状态与禁用行为由 `tests/new-task-state.test.ts` 和 `tests/plugin-baseline.test.ts` 固定。
 - Batch 6 的显式选择、原子批量加入、去重、移除、失效/二进制/超限失败、发送时重读、不可变快照与 frame 余量由 `tests/new-task-context.test.ts` 固定；Obsidian 当前笔记/选区、Markdown 文件与文件夹建议器、递归展开、整批超限、只读 `cachedRead` 和 modal 清理由 `tests/obsidian-context-host.test.ts` 固定；`tests/plugin-baseline.test.ts` 固定“选择知识库 / 已选笔记”、UI 加入/预览/移除和草稿保留。
 - Batch 7 的运行数据归属与 Claudian 对照由 [ADR-006](./ADR-006-conversation-runtime-storage.md) 固定；`tests/runtime-storage.test.ts`、`tests/new-task-conversation.test.ts` 和 `tests/workbench-conversation-ui.test.ts` 分别覆盖 Vault 外存储、对话状态机和真实 UI 行为。
-- `scripts/verify-ci-coverage.mjs` 明确读取上述测试，双平台 `npm test` 实际执行。Batch 6 实现 `7ee4b07d4afc0a67b8034e57c513599c7d562b19` 的远端 CI `33031107880` 双平台成功且原始 annotations 均为 `[]`；后续 Batch 7–9 远端门和 Batch 10 专用 Vault/远端 CI 证据记录在 `docs/ci-cd-roadmap.md` 与 `design-qa.md`。R2 新增的 `tests/task-index.test.ts`、`tests/task-recovery.test.ts` 与真实 DSH 跨进程用例必须在本批精确 SHA 的 CI 上闭环。Release、发布资产与社区提交仍需独立批准和验证。
+- `scripts/verify-ci-coverage.mjs` 明确读取上述测试，双平台 `npm test` 实际执行。Batch 6 实现 `7ee4b07d4afc0a67b8034e57c513599c7d562b19` 的远端 CI `33031107880` 双平台成功且原始 annotations 均为 `[]`；后续 Batch 7–9 远端门和 Batch 10 专用 Vault/远端 CI 证据记录在 `docs/ci-cd-roadmap.md` 与 `design-qa.md`。R2 新增的 `tests/task-index.test.ts`、`tests/task-recovery.test.ts` 与真实 DSH 跨进程用例已在实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 的 CI `33581009658` 闭环。Release、发布资产与社区提交仍需独立批准和验证。

@@ -1,6 +1,6 @@
 # ADR-012：Session 读取接缝与最小任务索引
 
-- 状态：已接受并实现；本地真实 DSH 验证已通过，远端 CI 与隔离 Vault 运行门待本批后续完成
+- 状态：已接受、实现并验证；本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 已通过，隔离 Vault 部署未授权
 - 日期：`2026-09-02`
 - 目标 DSH：`0.1.2-alpha.3`
 - bridge：`0.2.0` / protocol `1`
@@ -70,7 +70,7 @@ DSH headless 默认 profile 没有装配公开 session controller。Workbench �
 
 - 单元/契约：精确 session 身份、创建/恢复、标题、损坏隔离、双槽回退、并发锁、Vault 边界、任务生命周期与重启投影。
 - 真实 DSH：两个独立 bridge 进程共享临时 `$DSH_HOME`；第一进程创建并关闭 session，第二进程精确读取标题、确认缺失项并用公开 controller 恢复同一 ID。该本地测试已通过。
-- Windows 与 CI：`test:runtime` 覆盖索引/恢复；`test:bridge:runtime` 覆盖真实跨进程接缝；Windows/Ubuntu 完整门与原始 annotations 必须在精确实现 SHA 上通过后，本批才完成。
+- Windows 与 CI：`test:runtime` 覆盖索引/恢复；`test:bridge:runtime` 覆盖真实跨进程接缝。实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 已通过 CI `33581009658`；Windows job `100095105463` 与 Ubuntu job `100095105593` 均成功，两个原始 annotations 数组均为 `[]`。
 - 隔离 Vault：开发批准不授权部署。只有本地门通过、展示精确 Vault 身份、插件版本和资产 diff 并另获批准后才能执行。
 
 ## 8. 明确不做

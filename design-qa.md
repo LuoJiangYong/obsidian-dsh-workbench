@@ -1,6 +1,6 @@
 # Workbench 壳层与 Ardot UI 真相设计验收
 
-状态：Ardot 设计证据有效；Batch 10 专用 Vault 技术运行门与 G0-2 可复现只读预检入口已通过，用户已于 `2026-08-31` 明确确认第一批开发目标完成；R1-M 已把生产推进至 alpha.3。R2 已单独批准并实现无 UI 的 session 读取接缝与最小任务索引，本地真实 DSH 门通过；本批远端闭环进行中，隔离 Vault 部署未授权。Ardot 未修改、只读核对；D1、Release 与社区提交未授权
+状态：Ardot 设计证据有效；Batch 10 专用 Vault 技术运行门与 G0-2 可复现只读预检入口已通过，用户已于 `2026-08-31` 明确确认第一批开发目标完成；R1-M 已把生产推进至 alpha.3。R2 已单独批准并完成无 UI 的 session 读取接缝与最小任务索引，本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 均通过；隔离 Vault 部署未授权。Ardot 未修改、只读核对；D1、Release 与社区提交未授权
 
 > `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据；`docs/assets/design-qa/workbench-shell/` 只保留为历史工件，不再支撑“已通过”结论。Ardot 设计审阅证据不受影响；`docs/assets/design-qa/new-task-host-ui/` 五张截图已全部由专用 `obsidian-dsh-workbench-evidence` Vault 覆盖，当前有效运行结论只以后文修正批次为准。
 
@@ -408,6 +408,7 @@ R1-M alpha.3 production runtime and dedicated Vault technical gate: passed; R2 a
 - 真实 DSH：本地两个独立 alpha.3 bridge 进程共享临时 `$DSH_HOME`，完成 session 创建/关闭、精确标题和缺失项读取、同 ID 恢复与清理；不修改用户 DSH。
 - 数据边界：版本 `1` 最小索引位于 Vault 外应用数据分区，使用双槽原子快照、损坏隔离和独占锁；完整历史仍由 DSH 原生 JSONL 管理。
 - 失败语义：不可恢复任务保留记录、48 字符输入摘要和原因，只允许显式重试或新建；运行中 turn 在重启后标为已中断，不伪造仍在运行，不自动删除原生 session。
-- 当前证据边界：源码、单元/契约测试与本地真实 DSH 已实现；精确 SHA 双平台 CI 和原始 annotations 尚待本批完成。隔离 Vault 写入没有获得 R2 开发批准的自动授权，必须在本地门后展示精确身份、版本和资产 diff，再单独请求确认。
+- 远端证据：实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 已通过 [CI run `33581009658`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33581009658)；Windows job `100095105463` 与 Ubuntu job `100095105593` 均为 `success`，两个 check-run 的原始 annotations 数组均为 `[]`。
+- 当前证据边界：源码、单元/契约测试、本地真实 DSH 与精确远端 CI 已闭环。隔离 Vault 写入没有获得 R2 开发批准的自动授权，必须另行展示精确身份、版本和资产 diff，再单独请求确认。
 
 R2 Ardot status: read-only, unchanged; R2 UI: none; isolated Vault deployment: not authorized; D1 and release work: not authorized.

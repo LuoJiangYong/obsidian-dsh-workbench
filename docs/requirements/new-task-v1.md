@@ -1,6 +1,6 @@
 # 新建任务 v1 需求基线
 
-- 状态：当前 v1 已实现并验证；R2 最小跨重启任务事实已实现且本地真实 DSH 门通过，本批远端 CI 与隔离 Vault 部署尚未完成
+- 状态：当前 v1 已实现并验证；R2 最小跨重启任务事实、本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 已通过；R2 隔离 Vault 部署未授权
 - 日期：2026-08-24
 - UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
 - 发布关系：首个 Obsidian 社区插件发布功能
@@ -100,7 +100,7 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前正式 bridge 目标是 `0.1.2-alpha.3`，GitHub tag 指向提交 `dd6322d604e00eec1ba5e0c8541159906a21094a`。R1-M 以纯 215 包依赖图验证公开 session controller，再同步迁移健康检查、bridge、生产夹具、构建清单、Windows 运行门与专用隔离 Vault。R2 已在此基础上实现公开精确读取/恢复和 Vault 外最小任务索引；本地真实 DSH 跨进程测试通过，本批精确 SHA 的双平台 CI 尚待完成。既有对话、任务、取消、逐轮账本与 UI 边界保持有效。
+- 当前正式 bridge 目标是 `0.1.2-alpha.3`，GitHub tag 指向提交 `dd6322d604e00eec1ba5e0c8541159906a21094a`。R1-M 以纯 215 包依赖图验证公开 session controller，再同步迁移健康检查、bridge、生产夹具、构建清单、Windows 运行门与专用隔离 Vault。R2 已在此基础上实现公开精确读取/恢复和 Vault 外最小任务索引；本地真实 DSH 跨进程测试通过，实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 的远端 CI `33581009658` 双平台成功且原始 annotations 均为 `[]`。既有对话、任务、取消、逐轮账本与 UI 边界保持有效。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
 - 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.2-alpha.3`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。

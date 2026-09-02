@@ -199,7 +199,7 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 - bridge `0.2.0` / protocol `1` 新增 `session-read` capability；只检查索引给出的精确 session ID，并使用 DSH 公开 controller 读取可用性、cwd、运行/空白状态和原生标题。恢复必须采用同一 ID，身份、cwd 或状态矛盾时 fail closed。
 - 首次有效发送前建立 Vault 外版本 `1` 最小任务记录，保存 `taskId ↔ sessionId`、模式、工作区身份、48 字符输入摘要、时间和生命周期。双槽快照、原子替换、损坏隔离与活跃写锁防止静默覆盖；不复制 DSH 完整历史。
 - 启动恢复投影为 `continuable`、`unrecoverable`、`startup_failed` 或 `check_failed`。不可恢复任务保留记录、摘要和明确原因，只允许显式重试或新建；重启前运行中的 turn 标为已中断，不伪造仍在运行，也不自动删除原生 session。
-- 本地真实 alpha.3 测试已由两个独立 bridge 进程完成创建、关闭、精确读取标题/缺失项和同 ID 恢复。完整质量门、精确 SHA 双平台 CI 与原始 annotations 是本批完成条件；隔离 Vault 部署未获授权，必须展示精确身份、版本和资产 diff 后另行确认。
+- 本地真实 alpha.3 测试已由两个独立 bridge 进程完成创建、关闭、精确读取标题/缺失项和同 ID 恢复。实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 已通过远端 [CI run `33581009658`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33581009658)：Windows job `100095105463` 与 Ubuntu job `100095105593` 均成功，两个原始 annotations 数组均为 `[]`。隔离 Vault 部署未获授权，必须展示精确身份、版本和资产 diff 后另行确认。
 - R2 没有修改 UI、Ardot、真实 Vault、用户 DSH、Release 或社区目录；D1 与后续批次未获授权。详细契约见 [ADR-012](./docs/architecture/ADR-012-session-read-and-minimal-task-index.md)。
 
 ## 开发治理
