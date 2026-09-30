@@ -128,6 +128,8 @@ R2 实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 已通过 [CI run `33581009
 
 D1 在 alpha.3 生产基线上增加 `workspace-read` capability 与 `workspace/read` 精确公开读取接缝，并以版本 `1` Vault 外双槽项目索引保存项目显示名、DSH Workspace 引用、置顶和用户顺序。`tests/project-index.test.ts` 由双平台 `npm test` 与 Windows `test:runtime` 执行，`tests/dsh-alpha3-workspace.test.ts` 与真实公开 Workspace probe 由双平台 `test:runtime:candidate` 执行；该真实验收通过两个独立进程创建和精确读取 Workspace，再跨实例恢复双目录项目索引。Windows 真实 bridge 还通过 artifact handshake 读回 Workspace 缺失项。`2026-09-30` 核对的最新 GitHub/npm `0.2.0-rc.2` 只作源码漂移记录，不安装、不升级、不扩大生产支持。对应实现 SHA 的 CI run、两个 job 和原始 annotations 是本批完成证据，不另拆文档证据批次；本批不部署隔离 Vault、不修改 Ardot/真实 Vault/Release/社区目录。
 
+D1 实现 `001026b3c613455f3ad3e0fa3bca311711631748` 的 [CI run `36743179760`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/36743179760) 两个平台均成功；Windows job `109982579848` 原始 annotations 为 `[]`，Ubuntu job `109982580040` 有一条 runner 镜像迁移 notice，因此未达到本批零 annotations 完成门。该次 Ubuntu 实际运行 `24.04.5`；本批第二个实质提交将 workflow 固定为 `ubuntu-24.04` 并同步 CI 覆盖守卫，避免 `ubuntu-latest` 迁移到 Ubuntu 26 的隐式平台漂移，不隐藏、过滤或忽略 annotations。最终完成仍以修正提交的精确双平台 CI 和原始 annotations 为准。
+
 ## Phase D：隔离 Vault 与发布门
 
 状态：第一批运行与用户 UI 门已通过；发布资产验收和 Release/社区外部动作未完成，Phase D 整体仍为部分建立。

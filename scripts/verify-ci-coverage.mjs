@@ -73,7 +73,8 @@ for (const command of requiredCommands) {
   assert(workflow.includes(command), `CI 未执行：${command}`);
 }
 
-assert(workflow.includes('ubuntu-latest'), 'CI 缺少 Ubuntu job');
+assert(workflow.includes('ubuntu-24.04') && !workflow.includes('ubuntu-latest'),
+  'CI 必须固定 Ubuntu 24.04，禁止浮动镜像迁移 notice 和隐式平台变更');
 assert(workflow.includes('windows-latest'), 'CI 缺少 Windows job');
 assert(
   /name: Windows DSH 进程与 shim 专项测试\s+if: runner\.os == 'Windows'\s+run: npm run test:runtime/u.test(workflow),
