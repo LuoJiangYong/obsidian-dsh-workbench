@@ -112,6 +112,42 @@ describe('bridge 协议 v1 与假 bridge', () => {
     expect(ready.client.connectionState).toBe('failed');
   });
 
+  it('只读取 DSH 公开 Workspace 引用，并拒绝未请求的身份', async () => {
+    const ready = await createReadyClient();
+    const read = ready.client.readWorkspaces(['workspace-1', 'workspace-missing']);
+    const request = ready.transport.takeRequest();
+    expect(request).toMatchObject({
+      method: 'workspace/read',
+      params: { workspaceIds: ['workspace-1', 'workspace-missing'] },
+    });
+    ready.transport.deliver(okResponse(request, { items: [
+      {
+        workspaceId: 'workspace-1',
+        status: 'available',
+        canonicalPath: process.cwd(),
+        title: '项目一',
+        createdAt: '2026-09-01T00:00:00.000Z',
+        updatedAt: '2026-09-01T00:00:00.000Z',
+        sessionIds: ['session-1'],
+      },
+      { workspaceId: 'workspace-missing', status: 'missing' },
+    ] }));
+    await expect(read).resolves.toMatchObject({
+      items: [
+        { workspaceId: 'workspace-1', status: 'available', canonicalPath: process.cwd() },
+        { workspaceId: 'workspace-missing', status: 'missing' },
+      ],
+    });
+
+    const invalid = ready.client.readWorkspaces(['workspace-1']);
+    const invalidRequest = ready.transport.takeRequest();
+    ready.transport.deliver(okResponse(invalidRequest, {
+      items: [{ workspaceId: 'workspace-unrequested', status: 'missing' }],
+    }));
+    await expect(invalid).rejects.toMatchObject({ code: 'invalid_result' });
+    expect(ready.client.connectionState).toBe('failed');
+  });
+
   it('session/read 拒绝超长原生标题，不把未界定文本带入任务投影', async () => {
     const ready = await createReadyClient();
     const read = ready.client.readSessions([SESSION_ID]);

@@ -12,11 +12,17 @@ const ndjsonTests = await readFile('tests/bridge-ndjson-transport.test.ts', 'utf
 const managedBridgeTests = await readFile('tests/managed-bridge-process.test.ts', 'utf8');
 const realDshBridgeTests = await readFile('tests/real-dsh-bridge.test.ts', 'utf8');
 const alpha3CandidateTests = await readFile('tests/dsh-alpha3-control.test.ts', 'utf8');
+const alpha3WorkspaceTests = await readFile('tests/dsh-alpha3-workspace.test.ts', 'utf8');
 const alpha3CandidateProbe = await readFile(
   'tests/fixtures/dsh-alpha3-control-probe.mjs',
   'utf8',
 );
+const alpha3WorkspaceProbe = await readFile(
+  'tests/fixtures/dsh-alpha3-workspace-probe.mjs',
+  'utf8',
+);
 const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf8');
+const projectIndexTests = await readFile('tests/project-index.test.ts', 'utf8');
 const taskIndexTests = await readFile('tests/task-index.test.ts', 'utf8');
 const taskRecoveryTests = await readFile('tests/task-recovery.test.ts', 'utf8');
 const taskWorkspaceTests = await readFile('tests/task-workspace.test.ts', 'utf8');
@@ -129,6 +135,14 @@ assert(
   'test:runtime 必须覆盖最小任务索引与跨重启恢复投影',
 );
 assert(
+  packageJson.scripts['test:runtime'].includes('tests/project-index.test.ts'),
+  'test:runtime 必须覆盖项目索引与 Vault 外持久化',
+);
+assert(
+  packageJson.scripts['test:runtime:candidate'].includes('tests/dsh-alpha3-workspace.test.ts'),
+  'test:runtime:candidate 必须覆盖 DSH alpha.3 Workspace 公开接缝',
+);
+assert(
   packageJson.scripts['test:runtime'].includes('tests/task-workspace.test.ts'),
   'test:runtime 必须覆盖任务工作区变更账本',
 );
@@ -172,6 +186,26 @@ for (const candidateContract of [
     `alpha.3 候选测试缺少契约：${candidateContract}`,
   );
 }
+for (const workspaceContract of [
+  'DSH 0.1.2-alpha.3 公开 Workspace 接缝',
+  '真实读取公开 WorkspaceRegistry、canonical path、稳定 ID 与跨进程持久化',
+]) {
+  assert(alpha3WorkspaceTests.includes(workspaceContract), `alpha.3 Workspace 测试缺少契约：${workspaceContract}`);
+}
+for (const workspaceProbeContract of [
+  "export const inject = ['workspaceRegistry']",
+  'context.workspaceRegistry.create',
+  'context.workspaceRegistry.list',
+  'workspace.status()',
+]) {
+  assert(
+    alpha3WorkspaceProbe.includes(workspaceProbeContract),
+    `alpha.3 Workspace 探针缺少公开能力证据：${workspaceProbeContract}`,
+  );
+}
+assert(alpha3WorkspaceTests.includes('readThroughBridge(dshHome,')
+  && alpha3WorkspaceTests.includes('new ProjectIndexStore(options).load()'),
+  'D1 必须用真实 Workspace 公开引用贯通正式 bridge 与项目索引重启读回');
 for (const candidateProbeContract of [
   "context.on('approval/request'",
   'context.sessionController.create',
@@ -364,6 +398,20 @@ for (const taskIndexContract of [
   '活动写锁导致显式并发失败，死亡进程锁被隔离后可恢复',
 ]) {
   assert(taskIndexTests.includes(taskIndexContract), `最小任务索引测试缺少契约：${taskIndexContract}`);
+}
+for (const projectIndexContract of [
+  'Vault 外项目数据模型与持久化',
+  '以版本化双槽快照保存 DSH Workspace 引用、置顶和用户顺序，并可跨实例读回',
+  '拒绝名称、DSH Workspace 身份和路径包含关系冲突，并保留失效源文件夹记录',
+  '拒绝无效、非 canonical 或不存在的源文件夹，且不把失败写入索引',
+  '最新槽损坏时隔离证据并回退上一有效版本，所有槽损坏时 fail closed',
+  '活动写锁显式失败，死亡进程锁被隔离后可恢复',
+  '拒绝 Vault 内或通过 junction 越界的状态目录',
+  '拒绝 Vault 或状态目录作为项目源，且不改写其内容',
+  '不接管尚未写完整的锁，并拒绝未知版本覆盖旧快照',
+  '并发实例不会丢失成功写入，残留恢复 guard 明确阻止写入',
+]) {
+  assert(projectIndexTests.includes(projectIndexContract), `项目索引测试缺少契约：${projectIndexContract}`);
 }
 for (const taskRecoveryContract of [
   'R2 跨重启任务恢复投影',

@@ -1,10 +1,11 @@
 export const BRIDGE_PROTOCOL_VERSION = '1';
-export const TARGET_BRIDGE_VERSION = '0.2.0';
+export const TARGET_BRIDGE_VERSION = '0.3.0';
 export const TARGET_BRIDGE_DSH_VERSION = '0.1.2-alpha.3';
 
 export const BRIDGE_CAPABILITIES = [
   'session',
   'session-read',
+  'workspace-read',
   'events',
   'cancel',
   'permission',
@@ -78,6 +79,13 @@ export interface SessionRestoreRequest extends BridgeRequestBase {
   };
 }
 
+export interface WorkspaceReadRequest extends BridgeRequestBase {
+  readonly method: 'workspace/read';
+  readonly params: {
+    readonly workspaceIds: readonly string[];
+  };
+}
+
 export interface TurnStartRequest extends BridgeRequestBase {
   readonly method: 'turn/start';
   readonly params: {
@@ -124,6 +132,7 @@ export type BridgeRequest =
   | SessionCreateRequest
   | SessionReadRequest
   | SessionRestoreRequest
+  | WorkspaceReadRequest
   | ShutdownRequest
   | TurnCancelRequest
   | TurnStartRequest;
@@ -254,6 +263,29 @@ export interface BridgeSessionReadResult {
   readonly items: readonly BridgeSessionReadItem[];
 }
 
+export interface BridgeWorkspaceAvailableReadItem {
+  readonly workspaceId: string;
+  readonly status: 'available';
+  readonly canonicalPath: string;
+  readonly title: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly sessionIds: readonly string[];
+}
+
+export interface BridgeWorkspaceUnavailableReadItem {
+  readonly workspaceId: string;
+  readonly status: 'missing' | 'unreadable';
+}
+
+export type BridgeWorkspaceReadItem =
+  | BridgeWorkspaceAvailableReadItem
+  | BridgeWorkspaceUnavailableReadItem;
+
+export interface BridgeWorkspaceReadResult {
+  readonly items: readonly BridgeWorkspaceReadItem[];
+}
+
 export interface BridgeSessionClosedResult {
   readonly closed: true;
 }
@@ -361,6 +393,51 @@ export function parseSessionReadResult(value: unknown): BridgeSessionReadResult 
       return { sessionId, status };
     }
     throw new Error(`${label}.status 未知`);
+  });
+  return { items };
+}
+
+export function parseWorkspaceReadResult(value: unknown): BridgeWorkspaceReadResult {
+  const record = expectRecord(value, 'workspace read result');
+  assertExactKeys(record, ['items'], [], 'workspace read result');
+  const rawItems = record['items'];
+  if (!Array.isArray(rawItems)) throw new Error('workspace read items 必须是数组');
+  const workspaceIds = new Set<string>();
+  const items = rawItems.map((rawItem, index): BridgeWorkspaceReadItem => {
+    const label = `workspace read items[${String(index)}]`;
+    const item = expectRecord(rawItem, label);
+    const workspaceId = expectIdentifier(item, 'workspaceId', label);
+    if (workspaceIds.has(workspaceId)) throw new Error('workspace read workspaceId 重复');
+    workspaceIds.add(workspaceId);
+    const status = expectString(item, 'status', label);
+    if (status === 'missing' || status === 'unreadable') {
+      assertExactKeys(item, ['workspaceId', 'status'], [], label);
+      return { workspaceId, status };
+    }
+    if (status !== 'available') throw new Error(`${label}.status 未知`);
+    assertExactKeys(
+      item,
+      ['canonicalPath', 'createdAt', 'sessionIds', 'status', 'title', 'updatedAt', 'workspaceId'],
+      [],
+      label,
+    );
+    const rawSessionIds = item['sessionIds'];
+    if (!Array.isArray(rawSessionIds)) throw new Error(`${label}.sessionIds 必须是数组`);
+    const sessionIds = rawSessionIds.map((sessionId, sessionIndex) => {
+      if (typeof sessionId !== 'string' || sessionId.trim() !== sessionId || sessionId.length === 0) {
+        throw new Error(`${label}.sessionIds[${String(sessionIndex)}] 无效`);
+      }
+      return sessionId;
+    });
+    return {
+      workspaceId,
+      status,
+      canonicalPath: expectNonEmptyString(item, 'canonicalPath', label),
+      title: expectNonEmptyString(item, 'title', label),
+      createdAt: expectNonEmptyString(item, 'createdAt', label),
+      updatedAt: expectNonEmptyString(item, 'updatedAt', label),
+      sessionIds,
+    };
   });
   return { items };
 }

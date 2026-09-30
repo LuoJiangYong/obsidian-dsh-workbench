@@ -1,10 +1,10 @@
 # `obsidian-bridge` 协议 v1
 
 - 协议版本：`1`
-- 目标 bridge 版本：`0.2.0`
+- 目标 bridge 版本：`0.3.0`
 - 目标 DSH：`0.1.2-alpha.3`
-- 当前状态：既有协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.2-alpha.3` 真实运行保持；R2 已增加精确 session 读取/恢复和原生标题接缝，本地真实 DSH 跨进程验证、精确 SHA 双平台 CI 与原始零 annotations 均通过
-- 明确延期或未授权：项目/最近 UI、完整历史复制、隔离 Vault 部署、Release、发布资产与社区提交未获授权
+- 当前状态：既有协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.2-alpha.3` 真实运行保持；R2 已增加精确 session 读取/恢复，D1 已增加公开 Workspace 读取和最小项目索引接缝，本地真实 DSH 跨进程验证通过，完成门要求本提交的精确 SHA 双平台 CI 成功与原始零 annotations
+- 明确延期或未授权：项目/最近 UI、完整历史复制、DSH 升级、隔离 Vault 部署、Release、发布资产与社区提交未获授权
 
 ## 目标与边界
 
@@ -33,6 +33,7 @@ client 第一个请求固定为：
       "cancel",
       "permission",
       "session-read",
+      "workspace-read",
       "shutdown"
     ]
   }
@@ -44,7 +45,7 @@ client 第一个请求固定为：
 ```json
 {
   "protocolVersion": "1",
-  "bridgeVersion": "0.2.0",
+  "bridgeVersion": "0.3.0",
   "dshVersion": "0.1.2-alpha.3",
   "capabilities": [
     "session",
@@ -52,6 +53,7 @@ client 第一个请求固定为：
     "cancel",
     "permission",
     "session-read",
+    "workspace-read",
     "shutdown"
   ]
 }
@@ -69,6 +71,7 @@ client 第一个请求固定为：
 | `session/create` | `sessionId`、`mode: chat|task`、非空限长 `title` | `{ sessionId }` | ready、ID 未占用 |
 | `session/read` | 精确、非重复的 `sessionIds[]` | 与请求一一对应的 `available | missing | subagent | unreadable` | ready、无本地活动 session |
 | `session/restore` | `sessionId`、`mode: chat|task` | `{ sessionId }` | 已读回为普通、非运行、可读取且 cwd 一致 |
+| `workspace/read` | 精确、非重复的 `workspaceIds[]` | 与请求一一对应的 `available | missing | unreadable` | ready |
 | `turn/start` | `sessionId`、`turnId`、非空 `text` | `{ accepted: true }` | idle session |
 | `turn/cancel` | `sessionId`、`turnId` | `{ accepted: true }` | 当前活动 turn |
 | `permission/resolve` | session/turn/request 三重身份、`allow-once|reject` | `{ accepted: true }` | 当前一次性权限请求 |
@@ -84,6 +87,13 @@ client 第一个请求固定为：
 - `session/restore` 使用公开 `sessionController.create({ sessionId, cwd })` 采用既有 ID，再安装现有模式边界；它不恢复进程内 job、follow/control 或 mid-turn handle。
 - headless 启动只在 Vault 外临时 overlay 中装配 DSH 公开 `workspace` 与 `session-controller` 服务，不修改用户 profile 或 DSH 安装。
 - 详细数据所有权、索引与失败状态见 [ADR-012](./ADR-012-session-read-and-minimal-task-index.md)。
+
+## D1 Workspace 读取与项目索引边界
+
+- `workspace/read` 只列举调用方项目索引给出的精确 DSH Workspace ID；bridge 使用 alpha.3 公开 `workspaceRegistry.list()`，返回 Workspace ID、canonical path、标题、时间和 session membership。
+- 缺失或读取异常返回对应 Workspace 的 `missing` 或 `unreadable`，不会创建、重命名、删除、归档、置顶 Workspace，也不会解析 DSH 私有存储。
+- 插件项目索引只保存 `projectId`、显示名、Workspace 引用、置顶和顺序；源路径是最后一次公开 canonical path 事实，用于重复、包含和漂移检测，不是第二套 DSH registry。
+- 详细数据所有权、失败语义和最新上游能力核对见 [ADR-013](./ADR-013-project-model-and-dsh-workspace-boundary.md)。
 
 ## 事件信封与顺序
 
@@ -153,10 +163,13 @@ client 第一个请求固定为：
 - `tests/fakes/fake-bridge.ts`：不启动外部进程的可控 transport。
 - `tests/bridge-protocol.test.ts`：假 bridge 行为矩阵，由 Windows/Ubuntu 的完整 `npm test` 执行。
 - `src/obsidian-bridge.ts`：正式 Cordis plugin、DSH 事件窄投影、Agent 所有权与一次性权限回路。
+- `src/project-index.ts`：版本化 Vault 外项目索引、双槽原子写入、损坏隔离、路径/Workspace 冲突校验。
 - `src/bridge-ndjson-transport.ts` 与 `src/managed-bridge-process.ts`：1 MiB 封闭 framing、精确版本预检、用户原生 `$DSH_HOME`、Vault 外插件 overlay、隐藏启动、正常退出与强制清理。
 - `src/new-task-conversation.ts`、`src/task-index.ts`、`src/task-recovery.ts` 与 `src/workbench-view.ts`：插件级 session 所有权、确定性上下文信封、Vault 外最小任务索引、启动恢复投影、流式/取消与错误终态。
 - `tests/task-index.test.ts` 与 `tests/task-recovery.test.ts`：双槽原子快照、损坏隔离、并发锁、Vault 边界、恢复状态和失败保留；由双平台 `test:runtime` 执行。
 - `tests/real-dsh-bridge.test.ts`：独立精确锁定 alpha.3，真实加载 artifact、以 Vault 外 cwd 创建 Agent、读回模型请求中的只读系统提示且确认没有 `tools`、完成一次模型回复、DSH 原生 JSONL session 落盘、mid-turn cancel、关闭与进程退出；R2 还以第二个独立 bridge 进程精确读取标题和缺失项，并通过公开 controller 恢复同一 session ID。由 Windows CI 专项脚本执行。
+- `tests/dsh-alpha3-workspace.test.ts` 与 `tests/fixtures/dsh-alpha3-workspace-probe.mjs`：在两个独立真实 alpha.3 进程中验证公开 WorkspaceRegistry 的创建、列举、状态读取、稳定 ID、canonical path 和跨进程持久化；由双平台候选 workflow 执行。
+- `tests/project-index.test.ts`：验证项目名称/Workspace/path 冲突、非 canonical 或失效源目录、双槽损坏隔离、锁恢复、未知版本拒绝覆盖、Vault/junction 越界与跨实例读回；由双平台 `npm test` 和 Windows `test:runtime` 执行。
 - 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 
 Batch 4 最终实现状态 `a719b03c88807740581a2a0327a462fa5e5b7664` 已通过远端 [CI run 32717711862](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32717711862)：Ubuntu check `97402381390`、Windows check `97402381253` 均成功，两个原始 annotations 数组均为 `[]`。本地及远端证据证明 rc.2 artifact 加载、环回模型请求、mid-turn cancel、Windows 隐藏进程、正常/强制关闭与清理；它不证明真实外部模型账号、Vault、Obsidian UI 或发布验收通过。

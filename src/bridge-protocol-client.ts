@@ -9,6 +9,7 @@ import {
   parseSessionClosedResult,
   parseSessionCreatedResult,
   parseSessionReadResult,
+  parseWorkspaceReadResult,
   type BridgeAcceptedResult,
   type BridgeEvent,
   type BridgeInitializeResult,
@@ -20,6 +21,7 @@ import {
   type BridgeSessionCreatedResult,
   type BridgeSessionMode,
   type BridgeSessionReadResult,
+  type BridgeWorkspaceReadResult,
   type BridgeTransport,
   type BridgeTurnOutcome,
   type KnownBridgeEvent,
@@ -250,6 +252,37 @@ export class BridgeProtocolClient {
             throw new BridgeProtocolError(
               'invalid_result',
               'session/read 必须逐项返回且只能返回请求的 sessionId',
+            );
+          }
+        },
+      },
+    );
+  }
+
+  async readWorkspaces(workspaceIds: readonly string[]): Promise<BridgeWorkspaceReadResult> {
+    this.requireReady();
+    if (workspaceIds.length > 5_000) throw this.invalidState('workspace/read 超过查询上限');
+    const requested = new Set<string>();
+    for (const workspaceId of workspaceIds) {
+      requireIdentifier(workspaceId, 'workspaceId');
+      if (requested.has(workspaceId)) throw this.invalidState('workspace/read 包含重复 workspaceId');
+      requested.add(workspaceId);
+    }
+    return await this.sendRequest(
+      (id) => ({
+        type: 'request',
+        id,
+        method: 'workspace/read',
+        params: { workspaceIds },
+      }),
+      {
+        parse: parseWorkspaceReadResult,
+        onSuccess: (result) => {
+          if (result.items.length !== requested.size
+            || result.items.some(item => !requested.has(item.workspaceId))) {
+            throw new BridgeProtocolError(
+              'invalid_result',
+              'workspace/read 必须逐项返回且只能返回请求的 workspaceId',
             );
           }
         },

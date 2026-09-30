@@ -19,7 +19,13 @@ import {
 } from './bridge-protocol';
 
 export const name = 'obsidian-bridge';
-export const inject = ['agents', 'agentDefaultModel', 'sessionController', 'tools'] as const;
+export const inject = [
+  'agents',
+  'agentDefaultModel',
+  'sessionController',
+  'tools',
+  'workspaceRegistry',
+] as const;
 export const MAX_BRIDGE_FRAME_BYTES = 1024 * 1024;
 
 const CHAT_BOUNDARY_SECTION = 'obsidian:chat-boundary';
@@ -116,6 +122,7 @@ export interface DshContext {
     currentSelection(): DshModelSelection;
   };
   readonly sessionController: DshSessionController;
+  readonly workspaceRegistry?: DshWorkspaceRegistry;
   effect(effect: () => () => void | Promise<void>, label?: string): unknown;
   get(service: 'appExit'): ((code: number) => void) | undefined;
   get(service: 'loader'): { await(): Promise<void> } | undefined;
@@ -158,6 +165,19 @@ export interface DshSessionController {
     readonly title: string;
     readonly seq: number;
   }>;
+}
+
+export interface DshWorkspace {
+  readonly id: string;
+  readonly path: string;
+  readonly title: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly sessionIds: readonly string[];
+}
+
+export interface DshWorkspaceRegistry {
+  list(): readonly DshWorkspace[];
 }
 
 export interface DshApprovalRequest {
@@ -300,6 +320,9 @@ export class ObsidianBridgeServer {
         return;
       case 'session/restore':
         await this.restoreSession(request);
+        return;
+      case 'workspace/read':
+        await this.readWorkspaces(request);
         return;
       case 'turn/start':
         await this.startTurn(request);
@@ -471,6 +494,49 @@ export class ObsidianBridgeServer {
       activeTurn: undefined,
     });
     await this.writeSuccess(request.id, { sessionId });
+  }
+
+  private async readWorkspaces(
+    request: Extract<BridgeRequest, { method: 'workspace/read' }>,
+  ): Promise<void> {
+    await this.context.get('loader')?.await();
+    const registry = this.context.workspaceRegistry;
+    if (!registry) throw new BridgeRequestError('capability_missing', 'DSH Workspace registry 不可用');
+    const workspaces = new Map<string, DshWorkspace>();
+    try {
+      for (const workspace of registry.list()) {
+        if (workspaces.has(workspace.id)) throw new Error('DSH Workspace registry 返回重复身份');
+        workspaces.set(workspace.id, workspace);
+      }
+    } catch {
+      throw new BridgeRequestError('internal_error', 'DSH Workspace registry 无法读取');
+    }
+    const items = request.params.workspaceIds.map((workspaceId) => {
+      const workspace = workspaces.get(workspaceId);
+      if (!workspace) return { workspaceId, status: 'missing' as const };
+      try {
+        if (!workspace.path || !workspace.title || !workspace.createdAt || !workspace.updatedAt) {
+          return { workspaceId, status: 'unreadable' as const };
+        }
+        const sessionIds: string[] = [];
+        for (const sessionId of workspace.sessionIds) {
+          if (typeof sessionId !== 'string') return { workspaceId, status: 'unreadable' as const };
+          sessionIds.push(sessionId);
+        }
+        return {
+          workspaceId,
+          status: 'available' as const,
+          canonicalPath: workspace.path,
+          title: workspace.title,
+          createdAt: workspace.createdAt,
+          updatedAt: workspace.updatedAt,
+          sessionIds,
+        };
+      } catch {
+        return { workspaceId, status: 'unreadable' as const };
+      }
+    });
+    await this.writeSuccess(request.id, { items });
   }
 
   private async startTurn(request: Extract<BridgeRequest, { method: 'turn/start' }>): Promise<void> {
@@ -1047,6 +1113,16 @@ function parseBridgeRequest(value: unknown): BridgeRequest {
         method,
         params: { sessionId: requireIdentifier(params['sessionId'], 'sessionId'), mode },
       };
+    }
+    case 'workspace/read': {
+      requireExactKeys(params, ['workspaceIds'], 'workspace/read params');
+      const workspaceIds = params['workspaceIds'];
+      if (!Array.isArray(workspaceIds) || workspaceIds.length > 5_000) {
+        throw new Error('workspace/read workspaceIds 无效');
+      }
+      const parsed = workspaceIds.map(workspaceId => requireIdentifier(workspaceId, 'workspaceId'));
+      if (new Set(parsed).size !== parsed.length) throw new Error('workspace/read workspaceId 重复');
+      return { type: 'request', id, method, params: { workspaceIds: parsed } };
     }
     case 'turn/start':
       requireExactKeys(params, ['sessionId', 'turnId', 'text'], 'turn/start params');

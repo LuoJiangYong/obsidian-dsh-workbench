@@ -6,6 +6,8 @@ Ardot 负责页面、布局、状态、图标、文案层级和响应式外观�
 
 ## 0. Ardot 审阅基线
 
+D1 补充：Vault 外项目数据模型和 DSH 公开 Workspace 读取接缝已实现并通过本地验证，项目/最近 UI 仍未实现；`main.ts` 没有新增项目加载或写入口。本批无 UI 差异，仅核对本文件的 Ardot v2 文字基线；Ardot 未修改，未进行在线画板或 Obsidian 项目 UI 验收。自动完成门要求对应实现提交的双平台 CI 成功和原始零 annotations。
+
 - 项目：`DeepSeek Harness Workbench · UI 真相`
 - 文件 ID：`718186366720195`
 - 用户审阅版本：`v2`，批准日期 `2026-08-24`

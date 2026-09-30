@@ -55,7 +55,7 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('- 不采集客户端遥测。');
   });
 
-  it('G0-1 至 R1-M 历史证据与 R2 当前能力一致且不越过 D1 边界', async () => {
+  it('G0-1 至 D1 历史证据与当前能力一致且不越过 N1 边界', async () => {
     const [
       design,
       designQa,
@@ -164,11 +164,11 @@ describe('发布与治理契约', () => {
     expect(ardotAdr).toContain('第一批用户验收闭环；Ardot 仍只读');
     expect(hostAdr).toContain('当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.2-alpha.3`');
     expect(sessionAdr).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
-    expect(protocol).toContain('目标 bridge 版本：`0.2.0`');
+    expect(protocol).toContain('目标 bridge 版本：`0.3.0`');
     expect(protocol).toContain('`session/restore`');
     expect(matrix).toContain('| `0.1.1-rc.2` | 历史健康检查与正式 bridge + v1 | `superseded`（历史证据保留） |');
     expect(matrix).toContain('| `0.1.2-alpha.2` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1 证据完成，不晋级生产） |');
-    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller、R2 精确读取/恢复 | `supported`（当前生产 R2） |');
+    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller/WorkspaceRegistry、R2 精确读取/恢复、D1 项目数据模型 | `supported`（当前生产 D1） |');
     expect(r1Evidence).toContain('所有 215 个顶层 `@deepseek-ai/dsh*` 包都精确为 `0.1.2-alpha.2`');
     expect(r1Evidence).toContain('建议继续保留生产 `0.1.1-rc.2`');
     expect(r1Evidence).toContain('R2 也仍需新的明确批准');
@@ -184,8 +184,8 @@ describe('发布与治理契约', () => {
     expect(ciRoadmap).toContain('npm run test:runtime:candidate');
     expect(codexAssessment).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
     expect(releaseStatus).toContain('GitHub Release、发布资产验收和 Obsidian 社区提交仍未批准或执行');
-    expect(implementationRoadmap).toContain('G0-1、G0-2、R1、R1-M、R2 已完成');
-    expect(implementationRoadmap).toContain('D1 及后续批次未获授权');
+    expect(implementationRoadmap).toContain('G0-1、G0-2、R1、R1-M、R2 已完成；D1 已实现并完成本地验证');
+    expect(implementationRoadmap).toContain('N1 及后续批次未获授权');
     expect(implementationRoadmap).toContain('权威配置来源固定为 Obsidian 桌面 Vault 注册表');
     expect(designQa).toContain('G0-2 dedicated Vault reproducible read-only preflight: passed');
     expect(designQa).toContain('R1/R1-M alpha.3 production evidence: passed');
@@ -266,7 +266,7 @@ describe('发布与治理契约', () => {
       ),
     ]);
 
-    expect(requirements).toContain('状态：R2 已单独批准并实现；D1 及后续统一工作台产品批次仍是未获批准的未来实施输入');
+    expect(requirements).toContain('状态：R2、D1 已单独批准并实现；N1 及后续统一工作台产品批次仍是未获批准的未来实施输入');
     expect(requirements).toContain('上方产品功能导航');
     expect(requirements).toContain('下方项目与任务导航');
     expect(requirements).toContain('项目任务与“最近”互斥，不重复展示');
@@ -278,13 +278,13 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('`运行` 保留在上方产品功能导航');
     expect(requirements).toContain('项目归档、移除与任务归档、删除的准确语义');
     expect(requirements).toContain('统一工作台分批实施路线');
-    expect(requirements).toContain('不自动批准 D1 或后续批次');
+    expect(requirements).toContain('不自动批准 N1 或后续批次');
     expect(implementationRoadmap).toContain('G0-1：第一批状态真相闭环');
     expect(implementationRoadmap).toContain('G0-2：隔离 Vault 可复现验收入口');
     expect(implementationRoadmap).toContain('R1：DSH 正式控制面兼容候选');
     expect(implementationRoadmap).toContain('R1-M：DSH alpha.3 生产运行时迁移门');
     expect(implementationRoadmap).toContain('任务归档、删除和恢复语义');
-    expect(implementationRoadmap).toContain('D1 及后续产品');
+    expect(implementationRoadmap).toContain('D1 已实现 Vault 外项目模型和顺序持久化；N1 项目/最近 UI 仍未实现');
     expect(implementationRoadmap).toContain('Ardot 未修改、只读核对');
     expect(design).toContain('统一工作台下一批未来实施契约');
     expect(readme).toContain('统一工作台下一批未来实施契约');
@@ -787,7 +787,7 @@ describe('发布与治理契约', () => {
     expect(spike).toContain('CI run 32708553927');
     expect(spike).toContain('原始 annotations API 后数组长度也均为 `0`');
     expect(matrix).toContain('| `0.1.1-rc.2` | 历史健康检查与正式 bridge + v1 | `superseded`（历史证据保留） |');
-    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller、R2 精确读取/恢复 | `supported`（当前生产 R2） |');
+    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller/WorkspaceRegistry、R2 精确读取/恢复、D1 项目数据模型 | `supported`（当前生产 D1） |');
     expect(matrix).toContain('新版本只产生“待验证候选”');
     expect(matrix).toContain('不得自动安装或更新用户 DSH');
     expect(matrix).toContain('不得自动合并、Release 或提交社区目录');
@@ -823,7 +823,7 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
     expect(roadmap).toContain('39023169811fc591be5fe33fde05662fbbc9657e');
     expect(roadmap).toContain('CI run 32711052033');
-    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | bridge `0.2.0` / protocol `1` 已实现；DSH `0.1.2-alpha.3` 已真实加载并完成握手、Agent session、精确读取/同 ID 恢复、mid-turn cancel、JSONL session 与正常关闭；现有对话/任务边界保持不变 |');
+    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | bridge `0.3.0` / protocol `1` 已实现；DSH `0.1.2-alpha.3` 已真实加载并完成握手、Agent session、精确读取/同 ID 恢复、公开 Workspace 读取、mid-turn cancel、JSONL session 与正常关闭；现有对话/任务边界保持不变 |');
   });
 
   it('固定当前正式 bridge artifact、alpha.3 夹具与历史 Batch 4 运行证据', async () => {
@@ -843,10 +843,10 @@ describe('发布与治理契约', () => {
     ]);
 
     expect(manifest).toMatchObject({
-      bridgeVersion: '0.2.0',
+      bridgeVersion: '0.3.0',
       protocolVersion: '1',
       dshVersion: '0.1.2-alpha.3',
-      artifactSha256: 'e11fbc559a276912eae7832a7f44b39ee5e4ef8a6814e22fc87c27acd86165c1',
+      artifactSha256: '3c69c61d67fe7398b08d87f83a07d1fdbf99c81012560430ae834d0a291e644d',
     });
     expect(manifest.dshIntegrity).toMatch(/^sha512-/u);
     expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.1.2-alpha.3');
@@ -854,7 +854,7 @@ describe('发布与治理契约', () => {
     expect(protocol).toContain('CI run 32717711862');
     expect(protocol).toContain('Ubuntu check `97402381390`、Windows check `97402381253`');
     expect(protocol).toContain('两个原始 annotations 数组均为 `[]`');
-    expect(matrix).toContain('`supported`（当前生产 R2）');
+    expect(matrix).toContain('`supported`（当前生产 D1）');
     expect(roadmap).toContain('环回模型请求后的 mid-turn cancel');
     expect(roadmap).toContain('CI `32717476733` 在干净检出中揭示进程单测依赖未跟踪构建产物');
     expect(roadmap).toContain('最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664`');

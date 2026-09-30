@@ -77,9 +77,9 @@ function runManagedBridge(scenario) {
       if (request.method === 'initialize') {
         respond(request.id, {
           protocolVersion: '1',
-          bridgeVersion: '0.2.0',
+          bridgeVersion: '0.3.0',
           dshVersion: '0.1.2-alpha.3',
-          capabilities: ['session', 'session-read', 'events', 'cancel', 'permission', 'shutdown'],
+          capabilities: ['session', 'session-read', 'workspace-read', 'events', 'cancel', 'permission', 'shutdown'],
         });
       } else if (request.method === 'shutdown') {
         if (scenario === 'managed-graceful') {

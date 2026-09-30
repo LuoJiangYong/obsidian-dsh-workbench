@@ -12,12 +12,12 @@
 | --- | --- |
 | Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
 | 新建任务 | 宿主 UI、只读知识库、真实对话与 Vault 外任务链均已实现；R1-M 已把生产运行时迁移到 DSH `0.1.2-alpha.3`，本地、专用 Vault 与双平台 CI 门均纳入同一支持闭环 |
-| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；R2 已实现公开 session 精确读取/恢复和 Vault 外最小任务索引，可在重启后重建可继续或明确不可恢复的任务事实；项目/最近 UI、Vault 写入和删除工具不属于当前范围 |
+| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；R2 已实现公开 session 精确读取/恢复和 Vault 外最小任务索引，D1 已实现 Vault 外项目模型与 DSH Workspace 公开读取接缝；项目/最近 UI、Vault 写入和删除工具不属于当前范围 |
 | 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
 | ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
 | 可选右侧任务环境 | 原“快速助手”已原位演进为默认关闭的原生 `ItemView`；专用 Vault 已验证打开/复用、公开事实投影、完整路径排除和关闭不影响中央会话 |
 | DSH 路径配置与健康检查 | 命令校验和进程边界已实现；生产目标统一为 `0.1.2-alpha.3`，本地与专用隔离 Vault 读回通过，并由双平台 CI 执行精确夹具 |
-| 正式 bridge、协议 v1 与 NDJSON | bridge `0.2.0` / protocol `1` 已实现；DSH `0.1.2-alpha.3` 已真实加载并完成握手、Agent session、精确读取/同 ID 恢复、mid-turn cancel、JSONL session 与正常关闭；现有对话/任务边界保持不变 |
+| 正式 bridge、协议 v1 与 NDJSON | bridge `0.3.0` / protocol `1` 已实现；DSH `0.1.2-alpha.3` 已真实加载并完成握手、Agent session、精确读取/同 ID 恢复、公开 Workspace 读取、mid-turn cancel、JSONL session 与正常关闭；现有对话/任务边界保持不变 |
 | DSH 会话、流式事件与取消 | 对话与任务链均已接入 Obsidian 宿主；专用 Vault 已验证成功、明确失败与恢复、真实文件变更/审核/撤销，以及禁用后受管进程从 `2` 归零 |
 | Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |
 | GitHub Release | 未创建 |
@@ -80,7 +80,7 @@ npm run test:bridge:runtime
 
 当前健康检查与正式 bridge 统一精确支持 DSH `0.1.2-alpha.3`；其他版本会明确显示不受支持，不做兼容 fallback。插件不会安装或更新 DSH；只有用户确认发送只读对话或已校验的 Vault 外任务后，`main.ts` 才启动正式 bridge 与模型请求。
 
-正式 `obsidian-bridge` 是独立 ESM artifact，只投影公开文本、工具身份、一次性权限关联和 R2 精确 session 可恢复事实，不复制工具参数、推理内容或完整消息。插件用固定 `--profile headless --patch <Vault 外 overlay>` 参数启动用户配置的 DSH；DSH 原生 `$DSH_HOME` 继续保存其设置、凭据和 session，插件生成的 overlay 位于操作系统应用数据目录下按 Vault 哈希分区的状态目录。任何状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 都会在启动 DSH 前失败。对话模式在 DSH 层以空工具清单、执行 guard 和只读系统提示拒绝全部工具；任务模式只允许 `edit/glob/grep/read/read_image/write`，拒绝 Shell、网络、Skill、子代理、路径越界和依赖/缓存/构建/版本控制目录。逐轮基线、撤销材料与 R2 最小索引保存在同一 Vault 外状态分区；索引采用版本化双槽快照、原子替换、损坏隔离和独占锁。关闭时先请求协议退出，超时后终止整棵进程树。Batch 7 最终 bridge 修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的双平台 job 与原始零 annotations；Batch 10 与 `2026-08-31` 用户确认已把正式 bridge + 产品对话/任务组合推进到 `supported`。R2 不授权项目/最近 UI、隔离 Vault 部署、Release、发布资产或社区提交。
+正式 `obsidian-bridge` 是独立 ESM artifact，只投影公开文本、工具身份、一次性权限关联、R2 精确 session 可恢复事实和 D1 精确 Workspace 读取，不复制工具参数、推理内容、完整消息或 DSH 私有文件。插件用固定 `--profile headless --patch <Vault 外 overlay>` 参数启动用户配置的 DSH；DSH 原生 `$DSH_HOME` 继续保存其设置、凭据和 session，插件生成的 overlay 位于操作系统应用数据目录下按 Vault 哈希分区的状态目录。任何状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 都会在启动 DSH 前失败。对话模式在 DSH 层以空工具清单、执行 guard 和只读系统提示拒绝全部工具；任务模式只允许 `edit/glob/grep/read/read_image/write`，拒绝 Shell、网络、Skill、子代理、路径越界和依赖/缓存/构建/版本控制目录。逐轮基线、撤销材料、R2 最小索引和 D1 项目索引保存在同一 Vault 外状态分区；索引采用版本化双槽快照、原子替换、损坏隔离和独占锁。关闭时先请求协议退出，超时后终止整棵进程树。Batch 7 最终 bridge 修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的双平台 job 与原始零 annotations；Batch 10 与 `2026-08-31` 用户确认已把正式 bridge + 产品对话/任务组合推进到 `supported`。R2 与 D1 都没有修改项目/最近 UI、隔离 Vault、Release、发布资产或社区目录。
 
 Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI run 33135433215](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33135433215) 的 Ubuntu check `98734194893`、Windows check `98734195115` 和两个原始 `[]` annotations。Batch 8B 实现提交 `5f88c95b7795dd2494aee30da4bf01d29b7d86ac` 首轮 CI 只暴露 Windows 临时路径断言差异；最小测试修复 `e9563cda85bbf6cb05d18984d0c5c8b47af6cf74` 后，[CI run 33149126275](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33149126275) 的 Ubuntu check `98776774841`、Windows check `98776774966` 均成功，原始 annotations 均为 `[]`。这证明任务安全边界和逐轮账本已进入 CI，不证明任务 UI 或 Obsidian 运行验收通过。
 
@@ -196,11 +196,18 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 
 ## R2：Session 读取接缝与最小任务索引
 
-- bridge `0.2.0` / protocol `1` 新增 `session-read` capability；只检查索引给出的精确 session ID，并使用 DSH 公开 controller 读取可用性、cwd、运行/空白状态和原生标题。恢复必须采用同一 ID，身份、cwd 或状态矛盾时 fail closed。
+- R2 的 bridge `0.2.0` / protocol `1` 新增 `session-read` capability，当前 D1 bridge `0.3.0` 保持该契约；只检查索引给出的精确 session ID，并使用 DSH 公开 controller 读取可用性、cwd、运行/空白状态和原生标题。恢复必须采用同一 ID，身份、cwd 或状态矛盾时 fail closed。
 - 首次有效发送前建立 Vault 外版本 `1` 最小任务记录，保存 `taskId ↔ sessionId`、模式、工作区身份、48 字符输入摘要、时间和生命周期。双槽快照、原子替换、损坏隔离与活跃写锁防止静默覆盖；不复制 DSH 完整历史。
 - 启动恢复投影为 `continuable`、`unrecoverable`、`startup_failed` 或 `check_failed`。不可恢复任务保留记录、摘要和明确原因，只允许显式重试或新建；重启前运行中的 turn 标为已中断，不伪造仍在运行，也不自动删除原生 session。
 - 本地真实 alpha.3 测试已由两个独立 bridge 进程完成创建、关闭、精确读取标题/缺失项和同 ID 恢复。实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 已通过远端 [CI run `33581009658`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33581009658)：Windows job `100095105463` 与 Ubuntu job `100095105593` 均成功，两个原始 annotations 数组均为 `[]`。隔离 Vault 部署未获授权，必须展示精确身份、版本和资产 diff 后另行确认。
-- R2 没有修改 UI、Ardot、真实 Vault、用户 DSH、Release 或社区目录；D1 与后续批次未获授权。详细契约见 [ADR-012](./docs/architecture/ADR-012-session-read-and-minimal-task-index.md)。
+- R2 没有修改 UI、Ardot、真实 Vault、用户 DSH、Release 或社区目录；详细契约见 [ADR-012](./docs/architecture/ADR-012-session-read-and-minimal-task-index.md)。
+
+## D1：项目数据模型与 Vault 外持久化
+
+- 项目索引版本 `1` 使用 Vault 外双槽快照保存项目显示名、一个或多个 DSH Workspace 引用、置顶状态和用户顺序；跨实例重启读回通过，源文件夹不被写入、移动或删除。
+- DSH `0.1.2-alpha.3` 的公开 `WorkspaceRegistry` 是 Workspace 身份、canonical path、标题、时间和 session membership 的事实源；bridge `workspace/read` 只按请求的 Workspace ID 返回公开事实，缺失或不可读时 fail closed，不创建、删除、归档、置顶或解析私有文件。
+- 项目索引拒绝名称、Workspace 身份、重复/包含路径、非 canonical、缺失或符号链接源目录冲突；损坏快照隔离并回退上一有效槽，所有槽不可读时保持失败，不伪造空项目。
+- 本批没有 UI、项目/最近导航、DSH 升级、Vault/Ardot/Release 写入。详细契约见 [ADR-013](./docs/architecture/ADR-013-project-model-and-dsh-workspace-boundary.md)。
 
 ## 开发治理
 

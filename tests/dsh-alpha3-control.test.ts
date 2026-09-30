@@ -127,6 +127,9 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.3 正式控制面候选�
     let closed = false;
     try {
       await client.initialize();
+      await expect(client.readWorkspaces(['d1-workspace-missing'])).resolves.toEqual({ items: [
+        { workspaceId: 'd1-workspace-missing', status: 'missing' },
+      ] });
       await client.createSession({
         sessionId: 'runtime-migration-alpha3-bridge',
         mode: 'chat',

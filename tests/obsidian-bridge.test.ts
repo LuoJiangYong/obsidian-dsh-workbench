@@ -153,6 +153,30 @@ describe('正式 obsidian-bridge', () => {
       ok: true,
       result: { sessionId: SESSION_ID },
     });
+
+    await server.receive({
+      type: 'request',
+      id: 'request-4',
+      method: 'workspace/read',
+      params: { workspaceIds: ['workspace-1', 'workspace-missing'] },
+    });
+    expect(lastFrame(wire.frames)).toEqual({
+      type: 'response',
+      id: 'request-4',
+      ok: true,
+      result: { items: [
+        {
+          workspaceId: 'workspace-1',
+          status: 'available',
+          canonicalPath: process.cwd(),
+          title: '测试 Workspace',
+          createdAt: '2026-09-01T00:00:00.000Z',
+          updatedAt: '2026-09-01T00:00:00.000Z',
+          sessionIds: [SESSION_ID],
+        },
+        { workspaceId: 'workspace-missing', status: 'missing' },
+      ] },
+    });
   });
 
   it('恢复时拒绝仍在运行的 session', async () => {
@@ -452,6 +476,16 @@ class FakeContext {
   readonly exitCodes: number[] = [];
   readonly adoptedSessionIds: string[] = [];
   readonly sessionSummaries: DshSessionSummary[] = [];
+  readonly workspaceRegistry = {
+    list: () => [{
+      id: 'workspace-1',
+      path: process.cwd(),
+      title: '测试 Workspace',
+      createdAt: '2026-09-01T00:00:00.000Z',
+      updatedAt: '2026-09-01T00:00:00.000Z',
+      sessionIds: [SESSION_ID],
+    }],
+  };
   createdOptions: {
     readonly agentOptions: { readonly provider: string; readonly model: string };
     readonly meta?: { readonly cwd?: string };

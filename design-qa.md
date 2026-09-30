@@ -1,6 +1,6 @@
 # Workbench 壳层与 Ardot UI 真相设计验收
 
-状态：Ardot 设计证据有效；Batch 10 专用 Vault 技术运行门与 G0-2 可复现只读预检入口已通过，用户已于 `2026-08-31` 明确确认第一批开发目标完成；R1-M 已把生产推进至 alpha.3。R2 已单独批准并完成无 UI 的 session 读取接缝与最小任务索引，本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 均通过；隔离 Vault 部署未授权。Ardot 未修改、只读核对；D1、Release 与社区提交未授权
+状态：Ardot 设计证据有效；Batch 10 专用 Vault 技术运行门与 G0-2 可复现只读预检入口已通过，用户已于 `2026-08-31` 明确确认第一批开发目标完成；R1-M 已把生产推进至 alpha.3。R2 已完成；D1 已单独批准并实现无 UI 的 Workspace 读取接缝和项目索引，本地真实 DSH 通过，完成门要求对应实现 SHA 双平台 CI 成功及原始零 annotations；隔离 Vault 部署未授权。Ardot 未修改；N1、Release 与社区提交未授权
 
 > `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据；`docs/assets/design-qa/workbench-shell/` 只保留为历史工件，不再支撑“已通过”结论。Ardot 设计审阅证据不受影响；`docs/assets/design-qa/new-task-host-ui/` 五张截图已全部由专用 `obsidian-dsh-workbench-evidence` Vault 覆盖，当前有效运行结论只以后文修正批次为准。
 
@@ -411,4 +411,12 @@ R1-M alpha.3 production runtime and dedicated Vault technical gate: passed; R2 a
 - 远端证据：实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 已通过 [CI run `33581009658`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33581009658)；Windows job `100095105463` 与 Ubuntu job `100095105593` 均为 `success`，两个 check-run 的原始 annotations 数组均为 `[]`。
 - 当前证据边界：源码、单元/契约测试、本地真实 DSH 与精确远端 CI 已闭环。隔离 Vault 写入没有获得 R2 开发批准的自动授权，必须另行展示精确身份、版本和资产 diff，再单独请求确认。
 
-R2 Ardot status: read-only, unchanged; R2 UI: none; isolated Vault deployment: not authorized; D1 and release work: not authorized.
+R2/D1 Ardot status: read-only, unchanged; R2/D1 UI: none; isolated Vault deployment: not authorized; N1 and release work: not authorized.
+
+## D1：项目数据模型与公开 Workspace 接缝（2026-09-28）
+
+- 本批没有 UI 变化。文字基线记录的 Ardot 文件 `718186366720195`、页面 `UI 真相 v2`（`12:1`）保持原状；本批只读核对其 DESIGN 镜像，未执行 Ardot 在线画板验收，也未新增、删除、移动或更新任何节点。
+- 用户结果：项目显示名、一个或多个 DSH Workspace 引用、置顶与用户顺序在 Vault 外版本化双槽保存并可跨实例读回；源文件夹不被修改，项目/最近导航仍未渲染。
+- DSH 能力真相：alpha.3 公开 `WorkspaceRegistry` 的稳定 Workspace ID、canonical path、标题、时间和 session membership 已由两个独立候选进程实测；bridge 只提供精确 `workspace/read`，不创建、删除、归档、置顶或解析私有文件。
+- 失败门：名称、Workspace ID、重复/包含路径、非 canonical/失效/符号链接源目录、损坏快照、活动锁和 Vault/junction 越界均 fail closed；损坏槽隔离并回退有效槽，所有槽不可读时不伪造空索引。
+- 验收边界：本地与双平台 CI 通过后，本批仍不授权写入专用隔离 Vault；如需部署，必须展示精确 Vault 身份、版本和资产 diff 后单独请求确认。
