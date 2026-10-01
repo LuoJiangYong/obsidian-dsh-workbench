@@ -9,11 +9,13 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { NdjsonBridgeTransport } from '../src/bridge-ndjson-transport';
 import { BridgeProtocolClient } from '../src/bridge-protocol-client';
+import { DshHealthProbe } from '../src/dsh-health';
 import { createBridgeOverlay, createDshLaunchSpec } from '../src/managed-bridge-process';
 
-const CANDIDATE_VERSION = '0.1.2-alpha.3';
-const CANDIDATE_INTEGRITY = 'sha512-VvATzYmQ4LMJREJ9e2POKksSHRfqP3y9pghplLBaQBuw2BqfbC0mQUVsaPwxe4wlcpj+riEgn8OJB01YnpF+3A==';
-const SESSION_CONTROLLER_INTEGRITY = 'sha512-uMkeiIXaK49KF8ddU4nWMBVikOxEc8uG5jsRDpCsU9VwXflbsILWxWs7/v3t+jPxDwwbDQIo038YHULvJU4BlQ==';
+// Historical filename retained; live candidate identity is asserted, never inferred from a filename.
+const CANDIDATE_VERSION = '0.2.0-rc.2';
+const CANDIDATE_INTEGRITY = 'sha512-EAJ3gPNcVt/uv8X19PMm9NkVhWgT7xXNMk0UKCVm+IQ5rpSQOcsMUa0HWlnYYVybKMsccjcRB21vVVsaXQ6IdA==';
+const SESSION_CONTROLLER_INTEGRITY = 'sha512-WDmk1aWOHbzIKRRt7rtHDxSupw/XLB+BgMyKHlzB7QGinXrK/Dnht6JIdgE1iSShnf1RNANGAGh2G94VzDpl5Q==';
 const fixtureRoot = path.join(process.cwd(), 'tests', 'runtime-candidate-fixture');
 const candidatePackagePath = path.join(fixtureRoot, 'package.json');
 const candidateLockPath = path.join(fixtureRoot, 'package-lock.json');
@@ -28,7 +30,7 @@ const probePath = path.join(process.cwd(), 'tests', 'fixtures', 'dsh-alpha3-cont
 const bridgePath = path.join(process.cwd(), 'obsidian-bridge.mjs');
 let temporaryRoot = '';
 
-describe('DSH 0.1.2-alpha.3 独立候选身份契约', () => {
+describe('DSH 0.2.0-rc.2 独立候选身份契约', () => {
   it('在独立夹具精确锁定候选版本和 npm integrity，并与同版本生产夹具保持来源隔离', async () => {
     const [candidatePackage, candidateLock, productionFixture, rootPackage] = await Promise.all([
       readJson(candidatePackagePath),
@@ -59,7 +61,7 @@ describe('DSH 0.1.2-alpha.3 独立候选身份契约', () => {
       version: CANDIDATE_VERSION,
       integrity: SESSION_CONTROLLER_INTEGRITY,
     });
-    expect(directDshPackages.length).toBeGreaterThan(200);
+    expect(directDshPackages.length).toBe(278);
     expect(directDshPackages.every(entry => entry.version === CANDIDATE_VERSION)).toBe(true);
     expect(asRecord(production['dependencies'])['@deepseek-ai/dsh']).toBe(CANDIDATE_VERSION);
     expect(asRecord(root['dependencies'])['@deepseek-ai/dsh']).toBeUndefined();
@@ -67,7 +69,7 @@ describe('DSH 0.1.2-alpha.3 独立候选身份契约', () => {
   });
 });
 
-describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.3 正式控制面候选运行验收', () => {
+describe.runIf(existsSync(dshBinPath))('DSH 0.2.0-rc.2 正式控制面候选运行验收', () => {
   beforeAll(async () => {
     vi.stubGlobal('window', {
       clearTimeout: globalThis.clearTimeout,
@@ -82,7 +84,7 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.3 正式控制面候选�
     vi.unstubAllGlobals();
   });
 
-  it('真实 shim 读回精确版本', () => {
+  it('真实 shim 读回精确版本', async () => {
     const launch = createDshLaunchSpec(dshShimPath, ['--version'], process.platform, process.env);
     const result = spawnSync(launch.command, [...launch.args], {
       encoding: 'utf8',
@@ -92,6 +94,20 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.3 正式控制面候选�
     });
     expect({ status: result.status, stderr: result.stderr.trim() }).toEqual({ status: 0, stderr: '' });
     expect(result.stdout.trim()).toBe(CANDIDATE_VERSION);
+    const pathKey = Object.keys(process.env).find(key => key.toUpperCase() === 'PATH') ?? 'PATH';
+    const environment = {
+      ...process.env,
+      [pathKey]: `${path.join(fixtureRoot, 'node_modules', '.bin')}${path.delimiter}${process.env[pathKey] ?? ''}`,
+      DSH_HOME: path.join(temporaryRoot, 'version-dsh-home'),
+    };
+    const health = new DshHealthProbe({ environment });
+    try {
+      for (const command of ['dsh', dshShimPath]) {
+        await expect(health.check(command)).resolves.toEqual({ status: 'available', version: CANDIDATE_VERSION });
+      }
+    } finally {
+      health.dispose();
+    }
   });
 
   it('真实 artifact 加载当前 bridge 并完成握手、session 创建/关闭和正常退出', async () => {
@@ -206,7 +222,7 @@ describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.3 正式控制面候选�
 
     const sessionsRoot = path.join(temporaryRoot, 'dsh-home', 'sessions');
     const artifacts = await readdir(sessionsRoot, { recursive: true });
-    expect(artifacts.some(entry => /session\.jsonl(?:\.zstd)?$/u.test(entry))).toBe(true);
+    expect(artifacts.some(entry => /session\.v4\.jsonl(?:\.zstd)?$/u.test(entry))).toBe(true);
     expect(seed.stdout + seed.stderr + restored.stdout + restored.stderr).not.toContain('fixture-key');
   }, 120_000);
 });
@@ -271,6 +287,10 @@ function createProbeOverlay(): string {
     '- insert:',
     '    - id: workspace',
     "      name: '@deepseek-ai/dsh-workspace'",
+    '    - id: connection',
+    "      name: '@deepseek-ai/dsh-client-connection'",
+    '    - id: file-upload',
+    "      name: '@deepseek-ai/dsh-client-file-upload'",
     '    - id: session-controller',
     "      name: '@deepseek-ai/dsh-api-session-controller'",
     '    - id: r1-control-probe',

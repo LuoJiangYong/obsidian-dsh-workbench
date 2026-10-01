@@ -55,8 +55,11 @@ describe('正式 bridge 受管进程', () => {
     const overlay = await readFile(path.join(stateDirectory, 'obsidian-bridge.cordis.patch.yml'), 'utf8');
     expect(overlay).toBe(createBridgeOverlay(bridgePath));
     expect(overlay).toContain('disabled: true');
-    expect(overlay).toContain("name: '@deepseek-ai/dsh-api-session-controller'");
-    expect(overlay).toContain('inject: [agents, agentDefaultModel, sessionController, tools, workspaceRegistry]');
+    expect(overlay).toContain('sessionQuery, sessionTitle, sessions, sessionPersistence');
+    expect(overlay).not.toContain("name: '@deepseek-ai/dsh-api-session-controller'");
+    expect(overlay).not.toContain('@deepseek-ai/dsh-client-connection');
+    expect(overlay).not.toContain('@deepseek-ai/dsh-client-file-upload');
+    expect(overlay).toContain('inject: [agents, agentDefaultModel, sessionQuery, sessionTitle, sessions, sessionPersistence, tools, workspaceRegistry]');
     expect(overlay).not.toContain('DEEPSEEK_API_KEY');
     await expect(readFile(environmentFile, 'utf8').then((value) => JSON.parse(value) as unknown))
       .resolves.toEqual({

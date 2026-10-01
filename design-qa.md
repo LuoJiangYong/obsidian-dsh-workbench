@@ -431,3 +431,13 @@ R2/D1 Ardot status: read-only, unchanged; R2/D1 UI: none; isolated Vault deploym
 - 停止：本地门通过后才能提出精确隔离 Vault 身份、版本与资产 diff，并单独请求部署；不自动进入 P1/O1/U1。DSH rc.2 兼容迁移与开发会话本机更新已另获授权，但尚未晋级仓库支持；本机已是该版本，不重复安装。不改 Ardot、真实 Vault 或发布。
 
 N1 implementation: present; isolated Vault deployment: not authorized; final N1 Obsidian UI user acceptance: pending.
+
+
+## DSH 0.2.0-rc.2 兼容迁移（2026-10-01）
+
+- 依据实时公开 DSH、源码、测试与用户专项授权，不改 Ardot；唯一结果与停止门见 ADR-015。N1 最终 CI `36817240377` 双平台成功，原始 annotations 均为 `[]`。
+- 生产不挂载有凭据副作用的 controller/Connection/file-upload；公开查询、标题、发布前 resume/setup 和 owned disposer 仍保持窄 bridge。新增 assistant.reset 只撤回临时 attempt，durable message 与 turn/end 决定最终事实。
+- 本地真实 DSH 门：rc.2 控制面与 Workspace、Messages 回复/直播/取消/原 ID 恢复，六文件工具允许清单、工作区写入及越界零 Vault 写入，alpha.3 原生历史迁移、旧字节保留、恢复无新增模型请求及无凭据创建已通过。使用临时 DSH_HOME 和环回模型，不冒充真实账号/Obsidian UI 验收。
+- 对应精确提交的 CI/原始 annotations 是自动完成门。新组合专用隔离 Vault 部署、明暗/宽窄/键盘/重启导航、真实运行和最终用户 UI 验收尚未执行；须先展示精确 Vault 身份、版本与资产 diff，再单独请求批准。未写真实 Vault，未创建 Release 或社区提交。
+
+rc.2 local native-runtime gate: passed; new-combination isolated Vault deployment: not authorized; final N1/rc.2 Obsidian UI user acceptance: pending.

@@ -64,14 +64,11 @@ describe('正式 obsidian-bridge', () => {
     harness.context.emitSession(harness.agent.session, {
       type: 'turn/start', seq: 4, time: 1, data: { turn: 1 },
     });
-    harness.context.emitSession(harness.agent.session, {
-      type: 'assistant/chunk', seq: 5, time: 2,
-      data: { turn: 1, step: 1, chunk: { type: 'reasoning-delta', index: 0, text: '私有推理' } },
-    });
-    harness.context.emitSession(harness.agent.session, {
-      type: 'assistant/chunk', seq: 6, time: 3,
-      data: { turn: 1, step: 1, chunk: { type: 'text-delta', index: 0, text: '你' } },
-    });
+    harness.context.emitStream(harness.agent, { type: 'start', attemptId: 'attempt-1', revision: 1, turn: 1, step: 1 });
+    harness.context.emitStream(harness.agent, { type: 'chunk', attemptId: 'attempt-1', revision: 2, index: 0, time: 2,
+      chunk: { type: 'reasoning-delta', index: 0, text: '私有推理' } });
+    harness.context.emitStream(harness.agent, { type: 'chunk', attemptId: 'attempt-1', revision: 3, index: 1, time: 3,
+      chunk: { type: 'text-delta', index: 0, text: '你' } });
     harness.context.emitSession(harness.agent.session, {
       type: 'assistant/message', seq: 7, time: 4,
       data: {
@@ -88,13 +85,14 @@ describe('正式 obsidian-bridge', () => {
     expect(harness.wire.frames.slice(2)).toEqual([
       { type: 'response', id: 'request-3', ok: true, result: { accepted: true } },
       eventFrame('turn.started', 0, {}, 4),
-      eventFrame('assistant.delta', 1, { text: '你' }, 6),
-      eventFrame('assistant.message', 2, { text: '你好' }, 7),
-      eventFrame('turn.ended', 3, { outcome: 'completed' }, 8),
+      eventFrame('assistant.reset', 1, {}),
+      eventFrame('assistant.delta', 2, { text: '你' }),
+      eventFrame('assistant.message', 3, { text: '你好' }, 7),
+      eventFrame('turn.ended', 4, { outcome: 'completed' }, 8),
     ]);
   });
 
-  it('只读列举精确 session 引用，并以 DSH 公开控制器恢复 ordinary session', async () => {
+  it('只读列举精确 session 引用，并以 DSH 公开 resume 在发布前安装边界并持有 disposer', async () => {
     const context = new FakeContext();
     context.sessionSummaries.push(
       {
@@ -177,6 +175,66 @@ describe('正式 obsidian-bridge', () => {
         { workspaceId: 'workspace-missing', status: 'missing' },
       ] },
     });
+    await server.receive({ type: 'request', id: 'request-5', method: 'session/close', params: { sessionId: SESSION_ID } });
+    expect(context.handle.disposed).toBe(true);
+  });
+
+  it('rc.2 直播拒绝缺口、重复或跨 attempt，恢复拒绝待处理 inbox 且不清空原生输入', async () => {
+    for (const invalid of [
+      { attemptId: 'attempt-1', index: 1 },
+      { attemptId: 'another-attempt', index: 0 },
+    ]) {
+      const h = await createRunningTurn();
+      h.context.emitStream(h.agent, { type: 'start', attemptId: 'attempt-1', revision: 1, turn: 1, step: 1 });
+      h.context.emitStream(h.agent, { type: 'chunk', revision: 2, time: 1, chunk: { type: 'text-delta', text: '错误' }, ...invalid });
+      await flushWrites();
+      expect(h.wire.closed).toBe(true);
+      expect(h.handle.disposed).toBe(true);
+    }
+    const h = await createRunningTurn();
+    const start = { type: 'start', attemptId: 'attempt-1', revision: 1, turn: 1, step: 1 };
+    h.context.emitStream(h.agent, start);
+    h.context.emitStream(h.agent, { type: 'chunk', attemptId: 'attempt-1', revision: 2, index: 0, time: 1, chunk: { type: 'text-delta', text: '一' } });
+    h.context.emitStream(h.agent, { type: 'end', attemptId: 'attempt-1', revision: 3, index: 1, outcome: { kind: 'abandoned' } });
+    h.context.emitStream(h.agent, { ...start, attemptId: 'attempt-2', revision: 4 });
+    await flushWrites();
+    expect(h.wire.frames).toContainEqual(eventFrame('assistant.reset', 3, {}));
+    h.context.emitStream(h.agent, { type: 'chunk', attemptId: 'attempt-2', revision: 5, index: 0, time: 2, chunk: { type: 'text-delta', text: '二' } });
+    h.context.emitStream(h.agent, { type: 'chunk', attemptId: 'attempt-2', revision: 6, index: 0, time: 2, chunk: { type: 'text-delta', text: '重复' } });
+    await flushWrites();
+    expect(h.wire.closed).toBe(true);
+
+    const context = new FakeContext();
+    context.agent.inbox.nextTurn.push('原生待处理输入');
+    context.sessionSummaries.push({ sessionId: SESSION_ID, blank: false, running: false, cwd: process.cwd() });
+    const wire = new FakeWire();
+    const server = new ObsidianBridgeServer(context as unknown as DshContext, wire);
+    await server.receive(initializeRequest('request-1'));
+    await server.receive({ type: 'request', id: 'request-2', method: 'session/restore', params: { sessionId: SESSION_ID, mode: 'chat' } });
+    expect(lastFrame(wire.frames)).toMatchObject({ ok: false, error: { code: 'session_unrecoverable' } });
+    expect(context.agent.inbox.nextTurn).toEqual(['原生待处理输入']);
+    expect(context.agent.messages).toEqual([]);
+  });
+
+  it('rc.2 直播跨 attempt 也拒绝 revision 缺口或重复，首帧可继承原生计数', async () => {
+    for (const revision of [6, 8]) {
+      const h = await createRunningTurn();
+      h.context.emitStream(h.agent, { type: 'start', attemptId: 'attempt-1', revision: 5, turn: 1, step: 1 });
+      h.context.emitStream(h.agent, { type: 'end', attemptId: 'attempt-1', revision: 6, index: 0, outcome: { kind: 'abandoned' } });
+      h.context.emitStream(h.agent, { type: 'start', attemptId: 'attempt-2', revision, turn: 1, step: 1 });
+      await flushWrites();
+      expect(h.wire.closed).toBe(true);
+      expect(h.handle.disposed).toBe(true);
+    }
+    const h = await createRunningTurn();
+    h.context.emitStream(h.agent, { type: 'start', attemptId: 'attempt-1', revision: 5, turn: 1, step: 1 });
+    h.context.emitStream(h.agent, { type: 'end', attemptId: 'attempt-1', revision: 6, index: 0, outcome: { kind: 'abandoned' } });
+    h.context.emitStream(h.agent, { type: 'start', attemptId: 'attempt-2', revision: 7, turn: 1, step: 1 });
+    h.context.emitStream(h.agent, { type: 'chunk', attemptId: 'attempt-2', revision: 8, index: 0, time: 2, chunk: { type: 'text-delta', text: '有效' } });
+    await flushWrites();
+    expect(h.wire.closed).toBe(false);
+    expect(h.wire.frames).toContainEqual(eventFrame('assistant.delta', 3, { text: '有效' }));
+    await h.server.dispose();
   });
 
   it('恢复时拒绝仍在运行的 session', async () => {
@@ -439,13 +497,15 @@ class FakeScopedContext {
 }
 
 class FakeAgent implements DshAgent {
+  status = 'idle';
+  readonly inbox = { nextTurn: [] as unknown[], nextStep: [] as unknown[] };
   readonly session: DshSession;
   readonly ctx: DshScopedContext;
   readonly messages: DshMessage[] = [];
   readonly cancelCauses: Array<{ readonly kind: 'user' }> = [];
 
   constructor(sessionId: string, context: DshScopedContext = new FakeScopedContext()) {
-    this.session = { id: sessionId };
+    this.session = { id: sessionId, header: { id: sessionId, cwd: process.cwd() } };
     this.ctx = context;
   }
 
@@ -492,12 +552,18 @@ class FakeContext {
     readonly sessionId: string;
   } | undefined;
   private sessionListener: ((session: DshSession, event: unknown) => void) | undefined;
+  private streamListener: ((payload: { readonly agent: DshAgent; readonly frame: unknown }) => void) | undefined;
   private approvalListener: ((
     request: DshApprovalRequest,
     next: () => Promise<'allowed-once' | 'cancelled' | 'rejected' | 'unavailable'>,
   ) => Promise<'allowed-once' | 'cancelled' | 'rejected' | 'unavailable'>) | undefined;
 
   readonly agents = {
+    resume: async (options: { readonly resumeSessionId: string; readonly setup: (context: DshScopedContext, agent: DshAgent) => void }): Promise<DshAgentHandle> => {
+      options.setup(this.scoped, this.agent);
+      this.adoptedSessionIds.push(options.resumeSessionId);
+      return this.handle;
+    },
     create: async (options: {
       readonly agentOptions: { readonly provider: string; readonly model: string };
       readonly meta?: { readonly cwd?: string };
@@ -509,30 +575,33 @@ class FakeContext {
       options.setup(this.scoped);
       return this.handle;
     },
-    get: (sessionId: string): DshAgent | undefined => (
-      sessionId === this.agent.session.id ? this.agent : undefined
-    ),
+    get: (sessionId: string): DshAgent | undefined => {
+      if (sessionId !== this.agent.session.id) return undefined;
+      this.agent.status = this.sessionSummaries.find(item => item.sessionId === sessionId)?.running ? 'running' : 'idle';
+      return this.agent;
+    },
   };
 
   readonly agentDefaultModel = {
     currentSelection: () => ({ provider: 'deepseek', model: 'deepseek-chat' }),
   };
 
-  readonly sessionController = {
-    list: () => Promise.resolve({ items: this.sessionSummaries }),
-    inspect: (sessionId: string) => Promise.resolve({
-      meta: { id: sessionId, cwd: process.cwd() },
-      events: [],
-    }),
-    create: (request: { readonly sessionId: string }) => {
-      this.adoptedSessionIds.push(request.sessionId);
-      return Promise.resolve({ sessionId: request.sessionId });
+  readonly sessionQuery = {
+    listSessions: () => Promise.resolve(this.sessionSummaries.map(item => ({ header: {
+      id: item.sessionId, cwd: item.cwd, origin: item.origin,
+    } }))),
+    readSession: (sessionId: string) => {
+      const item = this.sessionSummaries.find(item => item.sessionId === sessionId);
+      return Promise.resolve({ session: { id: sessionId, cwd: item?.cwd ?? process.cwd(), origin: item?.origin },
+        events: item?.blank === false ? [{ type: 'turn/start' }] : [] });
     },
-    rename: (request: { readonly title: string }) => Promise.resolve({
-      title: request.title,
-      seq: 0,
-    }),
+    readTitle: (sessionId: string) => {
+      const title = this.sessionSummaries.find(item => item.sessionId === sessionId)?.projections?.values['title'];
+      return Promise.resolve(typeof title === 'string' ? { title } : undefined);
+    },
   };
+  readonly sessionTitle = { rename: (_session: DshSession, title: string) => ({ title }) };
+  readonly sessions = { flush: () => Promise.resolve() };
 
   effect(_effect: () => () => void | Promise<void>, _label?: string): unknown {
     return undefined;
@@ -551,12 +620,18 @@ class FakeContext {
       this.sessionListener = listener as (session: DshSession, value: unknown) => void;
     } else if (event === 'approval/request') {
       this.approvalListener = listener as typeof this.approvalListener;
+    } else if (event === 'agent/assistant-stream') {
+      this.streamListener = listener as typeof this.streamListener;
     }
     return () => undefined;
   }
 
   emitSession(session: DshSession, event: unknown): void {
     this.sessionListener?.(session, event);
+  }
+
+  emitStream(agent: DshAgent, frame: unknown): void {
+    this.streamListener?.({ agent, frame });
   }
 
   askApproval(

@@ -2,8 +2,8 @@
 
 - 状态：已接受、实现并验证；本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 已通过，隔离 Vault 部署未授权
 - 日期：`2026-09-02`
-- 目标 DSH：`0.1.2-alpha.3`
-- bridge：`0.2.0` / protocol `1`
+- 原批次目标 DSH：`0.1.2-alpha.3`；当前接缝已按 ADR-015 适配 `0.2.0-rc.2`
+- 原批次 bridge：`0.2.0` / protocol `1`；当前 bridge `0.4.0` / protocol `1`
 
 ## 1. 唯一结果
 
@@ -13,13 +13,13 @@
 
 1. 用户要恢复的是“这个任务能否继续”的事实，而不是由插件复制第二份完整消息历史。
 2. DSH 继续拥有完整 session、JSONL 历史、原生标题和 Agent 生命周期；Obsidian 继续拥有 Vault 内容；插件只拥有宿主任务身份、恢复投影和 Vault 外索引。
-3. 当前 DSH 公开 session controller 能按 ID 列举、检查、采用既有 session ID、读取标题并创建 Agent。它不能跨进程恢复正在执行的 job、follow/control 所有权或 mid-turn 状态，因此重启前处于 `running` 的插件任务必须投影为已中断，不能宣称仍在运行。
+3. DSH 公开 session 能按 ID 列举、检查、读取标题和恢复 Agent；当前通过 sessionQuery/title 与 agents.resume 复用这些事实（原 R2 使用 controller）。它不能跨进程恢复正在执行的 job、follow/control 所有权或 mid-turn 状态，因此重启前处于 `running` 的插件任务必须投影为已中断，不能宣称仍在运行。
 4. 最小机制是精确 ID 读取、显式恢复和小型版本化索引，不建立公共多运行时仓库。当前只有 DSH 一个真实消费者，不满足多运行时框架门槛。
 
 ### 2.1 Claudian、DSH 与 Obsidian 只读对照
 
 - Claudian：R2 开始时只读核对公开 HEAD `191e7c541bd9d0662067939e58166c651c2d2560`。复用的宿主思路是 repository/lifecycle 分层、generation fence 与路径包含关系防护；不采用其 provider registry 产品语义，不复制 `.claudian` 会话/输入存储，也不把它作为 fork 或长期基线。
-- DSH：继续精确锁定 `0.1.2-alpha.3`，直接复用公开 `@deepseek-ai/dsh-api-session-controller` 的 `list`、`inspect`、显式 ID `create`、`rename` 和 DSH 原生 JSONL 持久化；follow/control 与运行 job 是进程内事实，不能跨重启伪造恢复。无法直接复用的是 Obsidian 产品 task 身份、输入摘要和宿主恢复状态，因此这些才进入插件最小索引。
+- DSH：R2 当时精确锁定 `0.1.2-alpha.3`，复用公开 controller 与原生 JSONL 持久化；当前 rc.2 的公开接缝见第 4 节与 ADR-015。follow/control 与运行 job 是进程内事实，不能跨重启伪造恢复。无法直接复用的是 Obsidian 产品 task 身份、输入摘要和宿主恢复状态，因此这些才进入插件最小索引。
 - Obsidian：当前官方 `Plugin.loadData()/saveData()` 对应插件目录中的 `data.json`，仍位于 Vault 配置目录内，不适合作为 DSH session、任务索引或运行账本。Workbench 只通过桌面 `FileSystemAdapter` 取得并校验 Vault 身份；R2 数据继续使用现有操作系统应用数据分区，不写 Vault。
 - 插件职责与供应商边界：插件只承担 `taskId ↔ sessionId`、Vault 外最小索引、精确恢复检查和 fail-closed 状态投影；DSH 私有 JSONL 结构留在 bridge 边界之外。该窄接缝允许未来重新评估其他运行时，但本批不建立注册框架，也不实现 PI/Codex 适配器。
 
@@ -30,7 +30,7 @@
 | 完整消息、工具事件、原生标题、JSONL session | DSH `$DSH_HOME` | 否 |
 | Vault 笔记与附件 | Obsidian Vault | 否 |
 | `taskId ↔ sessionId`、模式、工作区身份、48 字符输入摘要、生命周期与失败原因 | Vault 外最小任务索引 | 是，仅保存这些最小字段 |
-| 当前可恢复性、session 是否存在/运行/空白、规范 cwd | DSH 公开 session controller 的实时读回 | 否，只投影结果 |
+| 当前可恢复性、session 是否存在/运行/空白、规范 cwd | DSH 公开 sessionQuery 与 agents 的实时读回 | 否，只投影结果 |
 
 索引位于现有 Vault 哈希分区的操作系统应用数据状态目录下，不使用 Obsidian `data.json`，不进入 Vault。工作区路径只保存在 Vault 外；面向用户的失败原因不得带本机绝对路径。
 
@@ -38,12 +38,12 @@
 
 bridge v1 增加 `session-read` capability，并提供两个窄请求：
 
-- `session/read`：只接收调用方给出的精确 session ID 列表；结果必须一一对应且不允许多出、遗漏或重复身份。bridge 通过公开 `sessionController.list()` 与 `inspect()` 建立 `available | missing | subagent | unreadable` 事实，不向插件暴露私有存储结构。
-- `session/restore`：只恢复已被 `session/read` 确认为普通、非运行、可读取且规范 cwd 与当前进程工作区一致的 session。bridge 使用公开 `sessionController.create({ sessionId, cwd })` 采用原 ID，再取得 Agent 并安装现有对话/任务执行边界。
+- `session/read`：只接收调用方给出的精确 session ID 列表；结果必须一一对应且不允许多出、遗漏或重复身份。当前 bridge 通过公开 `sessionQuery.listSessions()`、`readSession()`、`readTitle()` 建立 `available | missing | subagent | unreadable` 事实，不向插件暴露私有存储结构。
+- `session/restore`：只恢复已被 `session/read` 确认为普通、非运行、可读取且规范 cwd 与当前进程工作区一致的 session。当前 bridge 使用公开 `agents.resume({ resumeSessionId, setup })` 采用原 ID；发布前复验 header/cwd/ordinary/空 inbox 并安装模式边界，持有原生 owned disposer。待处理输入不自动执行、不清空。
 
-新 session 仍使用 DSH `agents.create()`，以保留当前模型、提供方和原生组装行为；创建后通过公开 controller `rename()` 保存经限长的任务标题。恢复不会伪造正在执行的 handle，关闭由 DSH `appExit` 和现有受管进程清理负责。
+新 session 仍使用 DSH `agents.create()`，以保留当前模型、提供方和原生组装行为；创建后通过公开 `sessionTitle.rename()` 与 `sessions.flush()` 保存经限长的任务标题。恢复不会伪造正在执行的 handle，关闭由 DSH `appExit` 和现有受管进程清理负责。
 
-DSH headless 默认 profile 没有装配公开 session controller。Workbench 只在每次启动的 Vault 外临时 overlay 中显式加入公开 `@deepseek-ai/dsh-workspace` 与 `@deepseek-ai/dsh-api-session-controller` 服务；不修改用户 profile、配置或 DSH 安装，不引入私有包或私有文件解析。
+DSH headless 默认 profile 没有装配公开 session controller。当前 Workbench 在 Vault 外临时 overlay 中仅加入 Workspace，并注入 base 已有的 sessionQuery/sessionTitle/sessions/sessionPersistence；不挂载 rc.2 controller/Connection/file-upload，避免新增浏览器签名凭据或 HTTP 入口（历史 R2 的 controller 部署已被 ADR-015 替代）；不修改用户 profile、配置或 DSH 安装，不引入私有包或私有文件解析。
 
 ## 5. 最小索引与恢复状态
 

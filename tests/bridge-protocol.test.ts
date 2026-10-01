@@ -29,6 +29,16 @@ afterAll(() => {
 });
 
 describe('bridge 协议 v1 与假 bridge', () => {
+  it('assistant.reset 使用严格空载荷和当前 turn 身份，旧 bridge 版本不得握手', async () => {
+    const { client, transport } = await createRunningTurn();
+    transport.deliver(eventFrame('assistant.reset', 1, {}));
+    expect(client.getSession(SESSION_ID)?.activeTurn?.state).toBe('running');
+    transport.deliver(eventFrame('assistant.reset', 2, { text: '不能夹带历史' }));
+    expect(client.connectionState).toBe('failed');
+    const old = startClient();
+    old.transport.deliver(okResponse(old.transport.takeRequest(), initializeResult({ bridgeVersion: '0.3.0' })));
+    await expect(old.initialize).rejects.toMatchObject({ code: 'handshake_mismatch' });
+  });
   it('完成精确握手并固定 initialize 请求', async () => {
     const { client, initialize, transport } = startClient();
     const request = transport.takeRequest();

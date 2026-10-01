@@ -1,0 +1,9 @@
+{
+  "name": "obsidian-dsh-workbench-runtime-legacy-fixture",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CI-only alpha.3 producer for native historical-session migration tests; not a production fallback.",
+  "license": "MIT",
+  "engines": { "node": ">=24 <26" },
+  "dependencies": { "@deepseek-ai/dsh": "0.1.2-alpha.3" }
+}

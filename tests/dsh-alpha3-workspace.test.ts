@@ -13,7 +13,7 @@ import { BridgeProtocolClient } from '../src/bridge-protocol-client';
 import { createBridgeOverlay } from '../src/managed-bridge-process';
 import { ProjectIndexStore } from '../src/project-index';
 
-const CANDIDATE_VERSION = '0.1.2-alpha.3';
+const CANDIDATE_VERSION = '0.2.0-rc.2';
 const fixtureRoot = path.join(process.cwd(), 'tests', 'runtime-candidate-fixture');
 const dshBinPath = path.join(fixtureRoot, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
 const probePath = path.join(process.cwd(), 'tests', 'fixtures', 'dsh-alpha3-workspace-probe.mjs');
@@ -33,7 +33,7 @@ afterAll(async () => {
   vi.unstubAllGlobals();
 });
 
-describe.runIf(existsSync(dshBinPath))('DSH 0.1.2-alpha.3 公开 Workspace 接缝', () => {
+describe.runIf(existsSync(dshBinPath))('DSH 0.2.0-rc.2 公开 Workspace 接缝', () => {
   it('真实读取公开 WorkspaceRegistry、canonical path、稳定 ID 与跨进程持久化', async () => {
     const dshHome = path.join(temporaryRoot, 'dsh-home');
     const seed = await runProbe('seed', dshHome);

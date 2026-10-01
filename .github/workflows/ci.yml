@@ -43,13 +43,16 @@ jobs:
       - name: 生产构建
         run: npm run build
 
-      - name: 安装精确锁定的 DSH alpha.3 候选夹具
+      - name: 安装精确锁定的 DSH 0.2.0-rc.2 候选夹具
         run: npm run prepare:runtime-candidate-fixture
 
-      - name: 双平台 DSH alpha.3 正式控制面候选验收
+      - name: 安装仅用于历史迁移的 DSH alpha.3 夹具
+        run: npm run prepare:runtime-legacy-fixture
+
+      - name: 双平台 DSH 0.2.0-rc.2 正式控制面与历史迁移验收
         run: npm run test:runtime:candidate
 
-      - name: 安装精确锁定的 DSH alpha.3 生产运行夹具
+      - name: 安装精确锁定的 DSH 0.2.0-rc.2 生产运行夹具
         if: runner.os == 'Windows'
         run: npm run prepare:runtime-fixture
 
@@ -57,7 +60,7 @@ jobs:
         if: runner.os == 'Windows'
         run: npm run test:runtime
 
-      - name: Windows DSH alpha.3 正式 bridge 运行验收
+      - name: Windows DSH 0.2.0-rc.2 正式 bridge 运行验收
         if: runner.os == 'Windows'
         run: npm run test:bridge:runtime
 

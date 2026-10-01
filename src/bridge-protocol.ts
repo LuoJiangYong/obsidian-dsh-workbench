@@ -1,6 +1,6 @@
 export const BRIDGE_PROTOCOL_VERSION = '1';
-export const TARGET_BRIDGE_VERSION = '0.3.0';
-export const TARGET_BRIDGE_DSH_VERSION = '0.1.2-alpha.3';
+export const TARGET_BRIDGE_VERSION = '0.4.0';
+export const TARGET_BRIDGE_DSH_VERSION = '0.2.0-rc.2';
 
 export const BRIDGE_CAPABILITIES = [
   'session',
@@ -176,6 +176,11 @@ export interface AssistantDeltaEvent extends BridgeEventBase {
   readonly payload: { readonly text: string };
 }
 
+export interface AssistantResetEvent extends BridgeEventBase {
+  readonly event: 'assistant.reset';
+  readonly payload: Record<string, never>;
+}
+
 export interface AssistantMessageEvent extends BridgeEventBase {
   readonly event: 'assistant.message';
   readonly payload: {
@@ -216,6 +221,7 @@ export interface IgnorableBridgeEvent extends BridgeEventBase {
 }
 
 export type KnownBridgeEvent =
+  | AssistantResetEvent
   | AssistantDeltaEvent
   | AssistantMessageEvent
   | PermissionRequestedEvent
@@ -480,6 +486,12 @@ function parseEvent(record: Record<string, unknown>): BridgeEvent {
       assertKnownEventKeys(record, 'turn.started');
       const payload = expectRecord(record['payload'], 'turn.started payload');
       assertExactKeys(payload, [], [], 'turn.started payload');
+      return { ...common, event, payload: {} };
+    }
+    case 'assistant.reset': {
+      assertKnownEventKeys(record, 'assistant.reset');
+      const payload = expectRecord(record['payload'], 'assistant.reset payload');
+      assertExactKeys(payload, [], [], 'assistant.reset payload');
       return { ...common, event, payload: {} };
     }
     case 'assistant.delta': {

@@ -661,6 +661,12 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       case 'assistant.delta':
         this.appendAssistantText(event.turnId, event.payload.text);
         return;
+      case 'assistant.reset': {
+        const index = findAssistantMessage(this.snapshot.messages, event.turnId);
+        const message = this.snapshot.messages[index];
+        if (message) this.replaceMessage(message.id, { ...message, text: '', interrupted: undefined });
+        return;
+      }
       case 'assistant.message':
         this.commitAssistantMessage(
           event.turnId,

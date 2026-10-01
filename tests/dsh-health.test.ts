@@ -46,7 +46,7 @@ describe('DSH 只读健康检查', () => {
 
     await expect(probe.check(fakeCommand)).resolves.toMatchObject({
       status: 'available',
-      version: '0.1.2-alpha.3',
+      version: '0.2.0-rc.2',
     });
   });
 
@@ -57,7 +57,7 @@ describe('DSH 只读健康检查', () => {
 
     await expect(probe.check('dsh')).resolves.toMatchObject({
       status: 'available',
-      version: '0.1.2-alpha.3',
+      version: '0.2.0-rc.2',
     });
   });
 

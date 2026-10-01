@@ -7,6 +7,8 @@
 - 权限分层：[ADR-011](../architecture/ADR-011-context-environment-and-permission-levels.md)
 - UI 真相：实时代码与过往已完成的用户验收；Ardot 文件 `718186366720195` / v2 页面 `12:1` 仅为历史参考，未修改
 
+当前代码目标已按另行批准的 ADR-015 前移为 DSH `0.2.0-rc.2` / bridge `0.4.0`。上游能力不自动批准新产品功能；新组合隔离 Vault/用户验收未完成。
+
 ## 1. 阶段结论与用户结果
 
 用户已明确确认第一批开发目标完成，并单独批准 R2、D1 和 `2026-10-01` 的 N1。R2 建立恢复事实与最小任务索引，D1 建立项目模型，N1 已接入只读导航和原身份打开；新 UI 运行验收仍未完成。R2 v1 没有项目归属，现有任务全部进入最近；项目选择及首次发送归属留给 P1/U1，不按路径猜测。本文件不自动批准 P1 或后续批次，也不批准隔离 Vault 部署、Release 或社区提交。证据由 `new-task-v1.md`、ADR-014、`DESIGN.md` 和 `design-qa.md` 描述。
@@ -127,7 +129,7 @@ DSH 仍是唯一生产运行时。实现应以最小运行时接缝隔离 DSH �
 
 - DSH 原生 session、完整历史、模型和提供方设置继续是唯一事实源；插件不复制完整对话数据库。
 - R2 已实现 `taskId ↔ sessionId`、模式、工作区身份、48 字符输入摘要和生命周期的 Vault 外版本化最小任务索引；启动时只检查索引中的精确 DSH session ID，并投影可继续、不可恢复、启动失败或检查失败。不可恢复任务保留记录、摘要和原因，只允许显式重试或新建。
-- D1 已实现版本 `1` Vault 外双槽项目索引，保存项目显示名、一个或多个 DSH Workspace 引用、置顶状态和用户顺序；DSH `0.1.2-alpha.3` 公开 WorkspaceRegistry 负责 Workspace ID、canonical path、标题、时间和 session membership，bridge 只按请求 ID 读取，不创建、删除、归档或解析私有文件。
+- D1 已实现版本 `1` Vault 外双槽项目索引，保存项目显示名、一个或多个 DSH Workspace 引用、置顶状态和用户顺序；DSH 公开 WorkspaceRegistry（D1 原验收为 alpha.3，当前兼容目标 rc.2） 负责 Workspace ID、canonical path、标题、时间和 session membership，bridge 只按请求 ID 读取，不创建、删除、归档或解析私有文件。
 - 项目、项目显示名称、源文件夹引用、手动顺序、置顶状态、任务归属和最小 DSH session 引用需要在 Vault 外建立可验证的最小索引，禁止写入知识库。
 - 如果 DSH 提供公开稳定的 session 标题则优先采用；否则使用首次用户输入的确定性截断标题，并允许用户重命名，不额外调用模型生成标题。
 - 项目关联多个源文件夹后，DSH 主 `cwd`、多根文件边界、标准权限范围和工具/MCP 继承方式必须由官方契约与实测决定；不得自行发明不可验证的多工作区执行协议。

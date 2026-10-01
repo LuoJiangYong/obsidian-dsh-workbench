@@ -56,6 +56,23 @@ const alpha3MigrationEvidence = await readFile(
   'utf8',
 );
 
+const migrationTests = await readFile('tests/dsh-runtime-migration.test.ts', 'utf8');
+const migrationAdr = await readFile('docs/architecture/ADR-015-dsh-rc2-runtime-migration.md', 'utf8');
+const legacyFixture = JSON.parse(await readFile('tests/runtime-legacy-fixture/package.json', 'utf8'));
+const legacyLock = JSON.parse(await readFile('tests/runtime-legacy-fixture/package-lock.json', 'utf8'));
+const legacyDshPackages = Object.entries(legacyLock.packages ?? {})
+  .filter(([packagePath]) => /^node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(packagePath));
+assert(legacyFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.3'
+  && legacyLock.packages?.['']?.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.3'
+  && legacyDshPackages.length === 215
+  && legacyDshPackages.every(([, metadata]) => metadata.version === '0.1.2-alpha.3')
+  && legacyLock.packages?.['node_modules/@deepseek-ai/dsh']?.integrity === 'sha512-VvATzYmQ4LMJREJ9e2POKksSHRfqP3y9pghplLBaQBuw2BqfbC0mQUVsaPwxe4wlcpj+riEgn8OJB01YnpF+3A==',
+  '历史 producer 必须保留纯 alpha.3 依赖图和已验证 integrity，不能混入新运行时或成为生产 fallback');
+assert(packageJson.scripts['test:runtime:candidate'].includes('tests/dsh-runtime-migration.test.ts'), 'CI 必须实际执行历史 session 迁移');
+assert(migrationTests.includes('oldHashes') && migrationTests.includes('modelRequests).toBe(1)') && migrationTests.includes("'.credentials.yaml'"), '历史迁移必须证明字节保留、无模型自动请求与无凭据创建');
+assert(formalBridgeTests.includes('待处理 inbox') && bridgeProtocolTests.includes('assistant.reset') && newTaskConversationTests.includes('attempt 替换'), 'rc.2 恢复与重试窄契约必须由完整测试执行');
+assert(migrationAdr.includes('278 个直接 DSH 包') && migrationAdr.includes('不挂载 controller/file-upload/Connection'), 'rc.2 治理必须披露版本全图与凭据边界');
+
 const requiredCommands = [
   'npm ci',
   'npm run typecheck',
@@ -64,6 +81,7 @@ const requiredCommands = [
   'npm run test:runtime',
   'npm run prepare:runtime-fixture',
   'npm run prepare:runtime-candidate-fixture',
+  'npm run prepare:runtime-legacy-fixture',
   'npm run test:bridge:runtime',
   'npm run test:runtime:candidate',
   'npm run build',
@@ -82,12 +100,12 @@ assert(
   'CI 必须在 Windows runner 显式执行 DSH 进程与 shim 专项测试',
 );
 assert(
-  /name: Windows DSH alpha\.3 正式 bridge 运行验收\s+if: runner\.os == 'Windows'\s+run: npm run test:bridge:runtime/u.test(workflow),
-  'CI 必须在 Windows runner 显式执行 DSH alpha.3 正式 bridge 运行验收',
+  /name: Windows DSH 0\.2\.0-rc\.2 正式 bridge 运行验收\s+if: runner\.os == 'Windows'\s+run: npm run test:bridge:runtime/u.test(workflow),
+  'CI 必须在 Windows runner 显式执行 DSH 0.2.0-rc.2 正式 bridge 运行验收',
 );
 assert(
-  /name: 双平台 DSH alpha\.3 正式控制面候选验收\s+run: npm run test:runtime:candidate/u.test(workflow),
-  'CI 必须在 Ubuntu 与 Windows runner 执行 DSH alpha.3 正式控制面候选验收',
+  /name: 双平台 DSH 0\.2\.0-rc\.2 正式控制面与历史迁移验收\s+run: npm run test:runtime:candidate/u.test(workflow),
+  'CI 必须在 Ubuntu 与 Windows runner 执行 DSH 0.2.0-rc.2 正式控制面与历史迁移验收',
 );
 assert(workflow.includes("node-version: '24'"), 'CI 必须固定 Node 24');
 assert(
@@ -110,6 +128,7 @@ for (const script of [
   'test:runtime:candidate',
   'prepare:runtime-fixture',
   'prepare:runtime-candidate-fixture',
+  'prepare:runtime-legacy-fixture',
   'build',
   'verify:bridge-artifact',
   'verify:isolated-vault',
@@ -142,33 +161,33 @@ assert(
 );
 assert(
   packageJson.scripts['test:runtime:candidate'].includes('tests/dsh-alpha3-workspace.test.ts'),
-  'test:runtime:candidate 必须覆盖 DSH alpha.3 Workspace 公开接缝',
+  'test:runtime:candidate 必须覆盖 DSH 0.2.0-rc.2 Workspace 公开接缝',
 );
 assert(
   packageJson.scripts['test:runtime'].includes('tests/task-workspace.test.ts'),
   'test:runtime 必须覆盖任务工作区变更账本',
 );
 assert(
-  runtimeFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.3',
-  '运行夹具必须精确锁定 @deepseek-ai/dsh 0.1.2-alpha.3',
+  runtimeFixture.dependencies?.['@deepseek-ai/dsh'] === '0.2.0-rc.2',
+  '运行夹具必须精确锁定 @deepseek-ai/dsh 0.2.0-rc.2',
 );
 const directRuntimeDshPackages = Object.entries(runtimeLock.packages ?? {})
   .filter(([packagePath]) => /^node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(packagePath));
 assert(
-  directRuntimeDshPackages.length > 200
-    && directRuntimeDshPackages.every(([, metadata]) => metadata.version === '0.1.2-alpha.3'),
-  '生产 lockfile 禁止通过 semver 范围混入后续 DSH alpha 内部包',
+  directRuntimeDshPackages.length === 278
+    && directRuntimeDshPackages.every(([, metadata]) => metadata.version === '0.2.0-rc.2'),
+  '生产 lockfile 禁止通过 semver 范围混入其他 DSH 内部包',
 );
 assert(
-  runtimeCandidateFixture.dependencies?.['@deepseek-ai/dsh'] === '0.1.2-alpha.3',
-  '候选夹具必须独立精确锁定 @deepseek-ai/dsh 0.1.2-alpha.3',
+  runtimeCandidateFixture.dependencies?.['@deepseek-ai/dsh'] === '0.2.0-rc.2',
+  '候选夹具必须独立精确锁定 @deepseek-ai/dsh 0.2.0-rc.2',
 );
 const directCandidateDshPackages = Object.entries(runtimeCandidateLock.packages ?? {})
   .filter(([packagePath]) => /^node_modules\/@deepseek-ai\/dsh(?:-[^/]+)?$/u.test(packagePath));
 assert(
-  directCandidateDshPackages.length > 200
-    && directCandidateDshPackages.every(([, metadata]) => metadata.version === '0.1.2-alpha.3'),
-  '候选 lockfile 禁止通过 semver 范围混入后续 DSH alpha 内部包',
+  directCandidateDshPackages.length === 278
+    && directCandidateDshPackages.every(([, metadata]) => metadata.version === '0.2.0-rc.2'),
+  '候选 lockfile 禁止通过 semver 范围混入其他 DSH 内部包',
 );
 for (const evidenceContract of [
   '所有 215 个顶层 `@deepseek-ai/dsh*` 包都精确为 `0.1.2-alpha.2`',
@@ -185,14 +204,14 @@ for (const candidateContract of [
 ]) {
   assert(
     alpha3CandidateTests.includes(candidateContract),
-    `alpha.3 候选测试缺少契约：${candidateContract}`,
+    `rc.2 候选测试缺少契约：${candidateContract}`,
   );
 }
 for (const workspaceContract of [
-  'DSH 0.1.2-alpha.3 公开 Workspace 接缝',
+  'DSH 0.2.0-rc.2 公开 Workspace 接缝',
   '真实读取公开 WorkspaceRegistry、canonical path、稳定 ID 与跨进程持久化',
 ]) {
-  assert(alpha3WorkspaceTests.includes(workspaceContract), `alpha.3 Workspace 测试缺少契约：${workspaceContract}`);
+  assert(alpha3WorkspaceTests.includes(workspaceContract), `rc.2 Workspace 测试缺少契约：${workspaceContract}`);
 }
 for (const workspaceProbeContract of [
   "export const inject = ['workspaceRegistry']",
@@ -202,7 +221,7 @@ for (const workspaceProbeContract of [
 ]) {
   assert(
     alpha3WorkspaceProbe.includes(workspaceProbeContract),
-    `alpha.3 Workspace 探针缺少公开能力证据：${workspaceProbeContract}`,
+    `rc.2 Workspace 探针缺少公开能力证据：${workspaceProbeContract}`,
   );
 }
 assert(alpha3WorkspaceTests.includes('readThroughBridge(dshHome,')
@@ -219,7 +238,7 @@ for (const candidateProbeContract of [
 ]) {
   assert(
     alpha3CandidateProbe.includes(candidateProbeContract),
-    `alpha.3 候选探针缺少公开能力证据：${candidateProbeContract}`,
+    `rc.2 候选探针缺少公开能力证据：${candidateProbeContract}`,
   );
 }
 for (const migrationEvidenceContract of [
@@ -341,7 +360,7 @@ for (const newTaskContract of [
   '发送动作建立不可变上下文快照',
   '整个 Vault 不得成为 DSH 默认可写 `cwd`',
   '每个 turn 只能产生一个终态',
-  '当前正式 bridge 目标是 `0.1.2-alpha.3`',
+  '当前正式 bridge 目标是 `0.2.0-rc.2`',
   '插件自动安装或更新 DSH',
   'Release 成功不自动授权社区提交',
 ]) {
@@ -367,7 +386,7 @@ for (const bridgeProtocolContract of [
 
 for (const formalBridgeContract of [
   '正式 obsidian-bridge',
-  '只读列举精确 session 引用，并以 DSH 公开控制器恢复 ordinary session',
+  '只读列举精确 session 引用，并以 DSH 公开 resume 在发布前安装边界并持有 disposer',
   '恢复时拒绝仍在运行的 session',
   '禁止对话模式全部 DSH 工具',
   '依赖、缓存、构建产物与版本控制目录不属于可编辑工作区',
@@ -510,7 +529,7 @@ for (const conversationUiContract of [
   );
 }
 for (const runtimeContract of [
-  'DSH 0.1.2-alpha.3 正式 bridge 运行验收',
+  'DSH 0.2.0-rc.2 正式 bridge 运行验收',
   '真实加载 artifact',
   '原生 DSH 会话落盘',
   '跨进程 session 恢复',
@@ -521,7 +540,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、alpha.3 控制面、隔离 Vault dry-run guard、N1 只读导航与原身份打开、正式会话/任务环境、实时 UI 与历史验收真相、Vault 外数据、bridge 协议与 Windows 真实运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、rc.2 控制面与历史迁移、隔离 Vault dry-run guard、N1 只读导航与原身份打开、正式会话/任务环境、实时 UI 与历史验收真相、Vault 外数据、bridge 协议与 Windows 真实运行门已接入。',
 );
 
 function assert(condition, message) {

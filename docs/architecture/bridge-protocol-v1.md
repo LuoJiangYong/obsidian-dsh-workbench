@@ -1,10 +1,10 @@
 # `obsidian-bridge` 协议 v1
 
 - 协议版本：`1`
-- 目标 bridge 版本：`0.3.0`
-- 目标 DSH：`0.1.2-alpha.3`
-- 当前状态：既有协议、正式 bridge、NDJSON、受管进程与 DSH `0.1.2-alpha.3` 真实运行保持；R2 已增加精确 session 读取/恢复，D1 已增加公开 Workspace 读取和最小项目索引接缝，本地真实 DSH 跨进程验证通过，完成门要求本提交的精确 SHA 双平台 CI 成功与原始零 annotations
-- 明确延期或未授权：项目/最近 UI、完整历史复制、DSH 升级、隔离 Vault 部署、Release、发布资产与社区提交未获授权
+- 目标 bridge 版本：`0.4.0`
+- 目标 DSH：`0.2.0-rc.2`
+- 当前状态：正式 bridge、NDJSON、受管进程已适配 rc.2；R2/D1/N1 保持窄事实与原身份恢复，自动门及新组合隔离 Vault 门分别记录，未声明新组合 supported。详见 ADR-015。
+- 明确延期或未授权：完整历史复制、项目管理、隔离 Vault 部署、Release、发布资产与社区提交；N1 和开发会话 DSH 更新已另行批准。
 
 ## 目标与边界
 
@@ -45,8 +45,8 @@ client 第一个请求固定为：
 ```json
 {
   "protocolVersion": "1",
-  "bridgeVersion": "0.3.0",
-  "dshVersion": "0.1.2-alpha.3",
+  "bridgeVersion": "0.4.0",
+  "dshVersion": "0.2.0-rc.2",
   "capabilities": [
     "session",
     "events",
@@ -78,19 +78,19 @@ client 第一个请求固定为：
 | `session/close` | `sessionId` | `{ closed: true }` | 无活动 turn |
 | `shutdown` | 空对象 | `{ accepted: true }` | 无活动 turn |
 
-远端业务错误使用 `{ type: "response", id, ok: false, error: { code, message } }`。已知业务错误只拒绝对应请求；解析错误、未知 code 或状态矛盾属于协议失败。`session/create` 失败不得留下 session 成功事实。读取结果多出、遗漏或重复 session 身份属于 `invalid_result`；恢复遇到运行中、子代理、缺失、不可读或 cwd 不一致返回 `session_unrecoverable`，本地 ID 冲突返回 `session_conflict`，不得静默创建新 session。
+远端业务错误使用 `{ type: "response", id, ok: false, error: { code, message } }`。已知业务错误只拒绝对应请求；解析错误、未知 code 或状态矛盾属于协议失败。`session/create` 失败不得留下 session 成功事实。读取结果多出、遗漏或重复 session 身份属于 `invalid_result`。恢复缺失返回 `session_not_found`；运行中或本地 ID 已加载返回 `session_busy`；子代理、不可读或待处理 inbox 返回 `session_unrecoverable`；真实身份或 cwd 漂移返回 `session_conflict`。所有恢复失败都不得静默创建新 session。
 
 ## R2 精确读取与恢复边界
 
-- `session/read` 只列举调用方索引中给出的精确 ID。bridge 可以调用 DSH 公开 `list()`/`inspect()`，但不得把全部原生 session、私有 JSONL 路径或消息内容投影给插件。
+- `session/read` 只列举调用方索引中给出的精确 ID。bridge 可以调用 DSH 公开 `sessionQuery.listSessions()`/`readSession()`/`readTitle()`，但不得把全部原生 session、私有 JSONL 路径或消息内容投影给插件。
 - `available` 只包含规范 `cwd`、`running`、`blank` 与可选原生 `title`。完整历史继续由 DSH 保存。
-- `session/restore` 使用公开 `sessionController.create({ sessionId, cwd })` 采用既有 ID，再安装现有模式边界；它不恢复进程内 job、follow/control 或 mid-turn handle。
-- headless 启动只在 Vault 外临时 overlay 中装配 DSH 公开 `workspace` 与 `session-controller` 服务，不修改用户 profile 或 DSH 安装。
+- `session/restore` 使用公开 `agents.resume({ resumeSessionId, setup })`：在 unpublished setup 复验真实 header ID/cwd/ordinary 和空 inbox，安装模式/模型边界后才允许发布，持有 owned disposer。不恢复进程内 job、follow/control 或 mid-turn handle；待处理 inbox 不自动执行或清空。
+- headless 启动只在 Vault 外临时 overlay 中装配 DSH 公开 `workspace`、已在 base 中挂载的 `sessionQuery/sessionTitle/sessions/sessionPersistence` 服务；不挂载 controller/Connection/file-upload，以避免新增浏览器签名凭据或 HTTP 入口，不修改用户 profile 或 DSH 安装。
 - 详细数据所有权、索引与失败状态见 [ADR-012](./ADR-012-session-read-and-minimal-task-index.md)。
 
 ## D1 Workspace 读取与项目索引边界
 
-- `workspace/read` 只列举调用方项目索引给出的精确 DSH Workspace ID；bridge 使用 alpha.3 公开 `workspaceRegistry.list()`，返回 Workspace ID、canonical path、标题、时间和 session membership。
+- `workspace/read` 只列举调用方项目索引给出的精确 DSH Workspace ID；bridge 使用 rc.2 公开 `workspaceRegistry.list()`，返回 Workspace ID、canonical path、标题、时间和 session membership。
 - 缺失或读取异常返回对应 Workspace 的 `missing` 或 `unreadable`，不会创建、重命名、删除、归档、置顶 Workspace，也不会解析 DSH 私有存储。
 - 插件项目索引只保存 `projectId`、显示名、Workspace 引用、置顶和顺序；源路径是最后一次公开 canonical path 事实，用于重复、包含和漂移检测，不是第二套 DSH registry。
 - 详细数据所有权、失败语义和最新上游能力核对见 [ADR-013](./ADR-013-project-model-and-dsh-workspace-boundary.md)。
@@ -106,12 +106,12 @@ client 第一个请求固定为：
   "sessionId": "session-1",
   "turnId": "turn-1",
   "seq": 1,
-  "sourceSeq": 4,
   "payload": { "text": "..." }
 }
 ```
 
 - `seq` 是 bridge 为每个 session 生成的连续协议序号，从 `0` 开始；重复、回退或缺口使连接失败。
+- start/chunk/end 直播来自公开 `agent/assistant-stream`，按逐帧递增 revision、同 attempt 和零基 dense index 校验；推理不投影，直播/reset 没有 durable sourceSeq，失败不回退到旧 assistant/chunk。
 - `sourceSeq` 是可选 DSH 原始 session-event seq；因为 bridge 只投影窄事件，允许有缺口，但出现时必须严格递增。
 - session/turn 必须精确关联当前活动 turn。
 - 未知 required 事件拒绝；只有显式 `ignorable: true` 的未知事件可以只推进 `seq`，且不进入产品事件流。
@@ -122,6 +122,7 @@ client 第一个请求固定为：
 | event | payload | 状态作用 |
 | --- | --- | --- |
 | `turn.started` | 空对象 | `starting → running` |
+| `assistant.reset` | 空对象 | 新 attempt 撤回本轮临时文本，不产生终态 |
 | `assistant.delta` | `{ text }` | 流式文本；不产生终态 |
 | `assistant.message` | `{ text, interrupted? }` | 一步提交消息；不产生终态 |
 | `tool.started` | `{ callId, toolName }` | 只公开关联身份，不复制参数 |
@@ -144,7 +145,7 @@ client 第一个请求固定为：
 ## Batch 8 任务模式文件边界
 
 - 任务 session 只枚举并允许 `edit`、`glob`、`grep`、`read`、`read_image`、`write` 六个 DSH 文件工具；Shell、PowerShell、网络、Skill、子代理和其他工具同时从工具列表与执行 guard 拒绝。
-- 受管 DSH 进程只有在任务模式下显式使用 alpha.3 的 `workspace-write + ask` 组合；它不是全局设置，也没有 `allow-always`。
+- 受管 DSH 进程只有在任务模式下显式使用 rc.2 的 `workspace-write + ask` 组合；它不是全局设置，也没有 `allow-always`。
 - 所有工具路径必须位于已校验的 Vault 外工作区。绝对越界、`..`、不存在祖先越界、符号链接越界和权限升级参数 fail closed。
 - `.git`、`node_modules`、`dist` 等依赖、缓存、构建产物与版本控制目录使用 [ADR-007](./ADR-007-task-workspace-ledger.md) 的共享排除表，不能由文件工具访问或进入变更基线。
 - bridge 只负责执行边界与窄事件投影；逐轮变更事实、审核材料和安全撤销由 Vault 外 `TaskWorkspaceLedger` 提供。详细文件、审核、原生菜单和撤销 UI 已接通；当前插件 v1 allow-list 仍只有 `edit/glob/grep/read/read_image/write`，不包含删除，因此删除请求明确失败，不得伪装为已执行。
@@ -167,8 +168,8 @@ client 第一个请求固定为：
 - `src/bridge-ndjson-transport.ts` 与 `src/managed-bridge-process.ts`：1 MiB 封闭 framing、精确版本预检、用户原生 `$DSH_HOME`、Vault 外插件 overlay、隐藏启动、正常退出与强制清理。
 - `src/new-task-conversation.ts`、`src/task-index.ts`、`src/task-recovery.ts` 与 `src/workbench-view.ts`：插件级 session 所有权、确定性上下文信封、Vault 外最小任务索引、启动恢复投影、流式/取消与错误终态。
 - `tests/task-index.test.ts` 与 `tests/task-recovery.test.ts`：双槽原子快照、损坏隔离、并发锁、Vault 边界、恢复状态和失败保留；由双平台 `test:runtime` 执行。
-- `tests/real-dsh-bridge.test.ts`：独立精确锁定 alpha.3，真实加载 artifact、以 Vault 外 cwd 创建 Agent、读回模型请求中的只读系统提示且确认没有 `tools`、完成一次模型回复、DSH 原生 JSONL session 落盘、mid-turn cancel、关闭与进程退出；R2 还以第二个独立 bridge 进程精确读取标题和缺失项，并通过公开 controller 恢复同一 session ID。由 Windows CI 专项脚本执行。
-- `tests/dsh-alpha3-workspace.test.ts` 与 `tests/fixtures/dsh-alpha3-workspace-probe.mjs`：在两个独立真实 alpha.3 进程中验证公开 WorkspaceRegistry 的创建、列举、状态读取、稳定 ID、canonical path 和跨进程持久化；由双平台候选 workflow 执行。
+- `tests/real-dsh-bridge.test.ts`：独立精确锁定 rc.2，真实加载 artifact、以 Vault 外 cwd 创建 Agent、读回模型请求中的只读系统提示且确认 `tools: []`、完成一次模型回复、DSH 原生 JSONL session 落盘、mid-turn cancel、关闭与进程退出；R2 还以第二个独立 bridge 进程精确读取标题和缺失项，并通过公开 resume/setup 恢复同一 session ID。由 Windows CI 专项脚本执行。
+- `tests/dsh-alpha3-workspace.test.ts` 与 `tests/fixtures/dsh-alpha3-workspace-probe.mjs`：在两个独立真实 rc.2 进程中验证公开 WorkspaceRegistry 的创建、列举、状态读取、稳定 ID、canonical path 和跨进程持久化；由双平台候选 workflow 执行。
 - `tests/project-index.test.ts`：验证项目名称/Workspace/path 冲突、非 canonical 或失效源目录、双槽损坏隔离、锁恢复、未知版本拒绝覆盖、Vault/junction 越界与跨实例读回；由双平台 `npm test` 和 Windows `test:runtime` 执行。
 - 实现提交 `39023169811fc591be5fe33fde05662fbbc9657e` 已通过远端 [CI run 32711052033](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/32711052033)：Ubuntu check `97382324601`、Windows check `97382324697` 均成功，声明 annotations 为 `0`，原始 annotations 数组也均为 `[]`。
 

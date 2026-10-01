@@ -2,8 +2,10 @@
 
 - 状态：当前 v1 已实现并验证；R2 最小跨重启任务事实、本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 已通过；R2 隔离 Vault 部署未授权
 - 日期：2026-08-24
-- UI 审阅基线：Ardot `UI 真相 v2`（页面 `12:1`）
+- UI 审阅基线：实时代码与过往有效用户验收；Ardot v2（页面 `12:1`）仅历史参考
 - 发布关系：首个 Obsidian 社区插件发布功能
+
+rc.2 兼容迁移与 N1 新 UI 的自动门和隔离 Vault 门分别记录在 ADR-015、ADR-014；历史 v1 已验证不代表新组合已通过。
 
 ## 用户结果
 
@@ -100,10 +102,11 @@ cancelled | completed | failed
 生产路线只采用 ADR-001 的单一薄 `obsidian-bridge`，不把 SDK 或 ACP 作为并行生产 fallback。
 
 - 每个 bridge 实现或兼容批次开始时，分别读取 DeepSeek Harness 官方 GitHub 最新预发布与 npm `@deepseek-ai/dsh` 的 `latest`/`next` dist-tag；两者一致后才形成候选。
-- 当前正式 bridge 目标是 `0.1.2-alpha.3`，GitHub tag 指向提交 `dd6322d604e00eec1ba5e0c8541159906a21094a`。R1-M 以纯 215 包依赖图验证公开 session controller，再同步迁移健康检查、bridge、生产夹具、构建清单、Windows 运行门与专用隔离 Vault。R2 已在此基础上实现公开精确读取/恢复和 Vault 外最小任务索引；本地真实 DSH 跨进程测试通过，实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 的远端 CI `33581009658` 双平台成功且原始 annotations 均为 `[]`。既有对话、任务、取消、逐轮账本与 UI 边界保持有效。
+- 当前正式 bridge 目标是 `0.2.0-rc.2`，GitHub tag 指向提交 `639ed015397290b3745d163aafe02ffee4aa3f84`，bridge `0.4.0` 与两份当前夹具的 278 个直接 DSH 包精确一致。sessionQuery/title/resume、assistant-stream 与原生 Messages API 的兼容证据见 ADR-015；新组合隔离 Vault 与用户 UI 门未完成。
+- 历史 R1-M 的 alpha.3 tag commit 为 `dd6322d604e00eec1ba5e0c8541159906a21094a`，以纯 215 包依赖图验证公开 session controller，完成当时的 Windows/Vault 门。R2 在该基础上实现公开精确读取/恢复和最小索引，实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 的 CI `33581009658` 双平台成功且原始 annotations 均为 `[]`；历史证据不继承为当前 rc.2 运行验收。
 - 获批实现必须精确锁定 DSH 版本、上游 tag/commit、bridge 版本和 lockfile，不使用浮动版本范围。
 - 握手必须返回精确 bridge 版本、DSH 版本、协议版本和 capability；缺失、陈旧或不匹配时失败可见且 fail closed。
-- 当前插件健康检查与正式 bridge 已统一精确支持 `0.1.2-alpha.3`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback。
+- 当前插件健康检查与正式 bridge 已统一精确锁定 `0.2.0-rc.2`；版本不匹配时两条路径都 fail closed，不增加兼容 fallback，不把开发目标冒充 supported。
 - 项目[bridge 协议 v1](../architecture/bridge-protocol-v1.md)已实现严格类型、client 状态约束、正式 bridge、NDJSON 与 Windows 受管进程；Batch 7 最终修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过 CI `33132970545` 的 Ubuntu/Windows job 与原始零 annotations。任务执行已接通；当前正式工具集固定为 `edit/glob/grep/read/read_image/write`，不含删除工具。
 
 ## 任务结束后的已编辑文件
@@ -156,6 +159,6 @@ Batch 8 变更账本契约已由 [ADR-007](../architecture/ADR-007-task-workspac
 | Windows 真实运行时 | 裸命令、绝对路径、`.cmd` shim、隐藏窗口、真实取消、正常关闭、强制终止回退、无残留进程 | UI 或 Vault 验收通过 |
 | 隔离 Vault | 上下文选择/预览/移除/快照、发送前审阅、真实流式回复、停止/失败、重载与进程清理、最终宽窄屏与明暗主题 | 真实个人 Vault 安全 |
 | CI | Ubuntu/Windows 实际执行相关测试，构建与边界检查通过，原始 annotations 为 0 | 社区发布已批准 |
-| 用户验收 | 最终 Obsidian 运行 UI 与获批 Ardot 同步，用户明确批准 | 自动批准 Release 或社区提交 |
+| 用户验收 | 最终 Obsidian 运行 UI 与实时代码、有效过往验收及当前批准契约一致，用户明确批准；Ardot 仅历史参考 | 自动批准 Release 或社区提交 |
 
 任何一项缺少证据均标记为“延期，未通过”，不能进入社区发布审批。

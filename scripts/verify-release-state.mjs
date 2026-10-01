@@ -22,7 +22,7 @@ assert(manifest.description.length <= 250, 'manifest description 超过 250 字�
 assert(manifest.description.endsWith('.'), 'manifest description 必须以句点结尾');
 assert(readme.includes(expected.unofficialStatement), 'README 缺少非官方声明');
 assert(
-  readme.includes('DSH 路径配置与健康检查 | 命令校验和进程边界已实现；生产目标统一为 `0.1.2-alpha.3`，本地与专用隔离 Vault 读回通过，并由双平台 CI 执行精确夹具'),
+  readme.includes('DSH 路径配置与健康检查 | 当前目标精确锁定 `0.2.0-rc.2`；本机已是目标版本，不重复安装；新组合隔离 Vault 验收未完成'),
   'README 误报健康检查状态',
 );
 assert(
@@ -30,7 +30,8 @@ assert(
   'README 会话能力边界漂移',
 );
 assert(
-  readme.includes('当前健康检查与正式 bridge 统一精确支持 DSH `0.1.2-alpha.3`'),
+  readme.includes('当前健康检查与正式 bridge 统一精确锁定 DSH `0.2.0-rc.2`')
+    && readme.includes('该开发目标不等于新组合已经 supported，隔离 Vault 与最终 UI 验收仍需单独批准'),
   'README 缺少目标 DSH 版本',
 );
 assert(
@@ -39,7 +40,7 @@ assert(
 );
 assert(
   readme.includes('正式 bridge + 产品对话/任务组合推进到 `supported`'),
-  'README 缺少当前 v1 的产品支持状态',
+  'README 缺少历史 v1 的产品支持状态',
 );
 assert(
   readme.includes('R2 已实现公开 session 精确读取/恢复和 Vault 外最小任务索引'),

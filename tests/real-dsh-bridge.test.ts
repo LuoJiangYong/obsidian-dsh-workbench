@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -37,7 +37,67 @@ afterAll(async () => {
   vi.unstubAllGlobals();
 });
 
-describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行验收', () => {
+describe.runIf(existsSync(dshCommand))('DSH 0.2.0-rc.2 正式 bridge 运行验收', () => {
+  it('真实任务请求只暴露六个文件工具，原生写入仅限 Vault 外工作区且越界调用零写入', async () => {
+    const root = path.join(temporaryRoot, 'task-boundary');
+    const workspace = path.join(root, 'workspace');
+    const vault = path.join(root, 'vault');
+    await Promise.all([mkdir(workspace, { recursive: true }), mkdir(vault, { recursive: true })]);
+    const bodies: string[] = [];
+    const model = createServer((request, response) => {
+      let body = '';
+      request.setEncoding('utf8');
+      request.on('data', (chunk: string) => { body += chunk; });
+      request.on('end', () => {
+        bodies.push(body);
+        response.writeHead(200, { 'content-type': 'text/event-stream' });
+        const emit = (value: Record<string, unknown>) => response.write(`data: ${JSON.stringify(value)}\n\n`);
+        emit({ type: 'message_start', message: { usage: { input_tokens: 1, output_tokens: 0 } } });
+        if (bodies.length === 1) {
+          for (const [index, filePath] of ['result.txt', path.join(vault, 'forbidden.txt')].entries()) {
+            emit({ type: 'content_block_start', index, content_block: { type: 'tool_use', id: `call-${index}`, name: 'write', input: {} } });
+            emit({ type: 'content_block_delta', index, delta: { type: 'input_json_delta', partial_json: JSON.stringify({ file_path: filePath, content: '真实工作区结果' }) } });
+            emit({ type: 'content_block_stop', index });
+          }
+          emit({ type: 'message_delta', delta: { stop_reason: 'tool_use' } });
+        } else {
+          emit({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } });
+          emit({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '完成边界验证' } });
+          emit({ type: 'content_block_stop', index: 0 });
+          emit({ type: 'message_delta', delta: { stop_reason: 'end_turn' } });
+        }
+        emit({ type: 'message_stop' });
+        response.end();
+      });
+    });
+    await new Promise<void>(resolve => model.listen(0, '127.0.0.1', resolve));
+    const address = model.address();
+    if (!address || typeof address === 'string') throw new Error('本地模型端口缺失');
+    const manager = new ManagedBridgeProcess({ bridgePath, command: dshCommand, permissionMode: 'workspace-write',
+      dshHome: path.join(root, 'dsh-home'), stateDirectory: path.join(root, 'state'), vaultPath: vault, workingDirectory: workspace,
+      environment: { ...process.env, DEEPSEEK_API_KEY: 'fixture-key-never-logged', DEEPSEEK_BASE_URL: `http://127.0.0.1:${address.port}` },
+      startTimeoutMs: 15_000, requestTimeoutMs: 10_000, shutdownTimeoutMs: 5_000 });
+    try {
+      const client = await manager.start();
+      client.onEvent(event => { if (event.event === 'permission.requested') {
+        void client.resolvePermission({ sessionId: event.sessionId, turnId: event.turnId, requestId: event.payload.requestId, decision: 'allow-once' });
+      } });
+      await client.createSession({ sessionId: 'real-task-boundary', mode: 'task', title: '真实任务边界' });
+      const ended = waitForEvent(client, event => event.event === 'turn.ended');
+      await client.startTurn({ sessionId: 'real-task-boundary', turnId: 'real-task-turn', text: '写入指定测试结果' });
+      await expect(ended).resolves.toMatchObject({ payload: { outcome: 'completed' } });
+      const first = JSON.parse(bodies[0] ?? '{}') as { tools: { name: string }[] };
+      expect(first.tools.map(tool => tool.name).sort()).toEqual(['edit', 'glob', 'grep', 'read', 'read_image', 'write']);
+      expect(await readFile(path.join(workspace, 'result.txt'), 'utf8')).toBe('真实工作区结果');
+      expect(await readdir(vault)).toEqual([]);
+      expect(bodies[1]).toContain('工具路径不得越过当前工作区。');
+      await client.closeSession('real-task-boundary');
+      await expect(manager.shutdown()).resolves.toEqual({ outcome: 'graceful' });
+    } finally {
+      await manager.dispose();
+      await closeServer(model);
+    }
+  }, 45_000);
   it('N1 从新实例索引导航打开真实原 session 并继续；打开不发模型请求，正常关闭受管进程', async () => {
     const root = path.join(temporaryRoot, 'navigation');
     const stateDirectory = path.join(root, 'state');
@@ -77,7 +137,8 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行�
       expect(controller.getSnapshot()).toMatchObject({ taskId: 'n1-original-task', restored: true, phase: 'idle', messages: [] });
       expect(model.requests).toEqual([]);
       await expect(controller.submit({ contexts: [], draft: '继续原 session，只回复好', mode: 'chat', reader: { readVaultText: async p => ({ content: '', path: p }) } })).resolves.toBe(true);
-      await vi.waitFor(() => expect(controller.getSnapshot().phase).toBe('completed'), { timeout: 10_000 });
+      await vi.waitFor(() => expect({ phase: controller.getSnapshot().phase, error: controller.getSnapshot().error,
+        modelRequestCount: model.requests.length }).toEqual({ phase: 'completed', error: null, modelRequestCount: 1 }), { timeout: 10_000 });
       expect(controller.getSnapshot().messages).toMatchObject([{ role: 'user' }, { role: 'assistant', text: '好' }]);
       expect((await tasks.load()).document.tasks.map(task => [task.taskId, task.sessionId])).toEqual([
         ['n1-original-task', 'n1-original-session'],
@@ -123,6 +184,7 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行�
     try {
       const client = await manager.start();
       await client.createSession({ sessionId: 'real-session-1', mode: 'chat', title: '正式 bridge 验收' });
+      const firstDelta = waitForEvent(client, event => event.event === 'assistant.delta');
       const firstReply = waitForEvent(client, event => event.event === 'assistant.message');
       const firstTerminal = waitForEvent(client, event => event.event === 'turn.ended');
       await client.startTurn({
@@ -131,10 +193,12 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行�
         text: '只回复一个字：好',
       });
       await expect(firstReply).resolves.toMatchObject({ payload: { text: '好' } });
+      await expect(firstDelta).resolves.toMatchObject({ payload: { text: '好' } });
+      expect(await firstDelta).not.toHaveProperty('sourceSeq');
       await expect(firstTerminal).resolves.toMatchObject({ payload: { outcome: 'completed' } });
       const chatRequest = model.requests.find(body => body.includes('contexts[].content'));
       expect(chatRequest).toContain('不得输出 DSML 或其他工具调用标记');
-      expect(JSON.parse(chatRequest ?? '{}')).not.toHaveProperty('tools');
+      expect(JSON.parse(chatRequest ?? '{}') as unknown).toMatchObject({ tools: [] });
 
       const terminal = waitForEvent(client, event => (
         event.event === 'turn.ended' && event.turnId === 'real-turn-2'
@@ -194,7 +258,7 @@ describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行�
         await restartManager.dispose();
       }
       const sessionArtifacts = await readdir(path.join(dshHome, 'sessions'), { recursive: true });
-      expect(sessionArtifacts.some((entry) => /session\.jsonl(?:\.zstd)?$/u.test(entry))).toBe(true);
+      expect(sessionArtifacts.some((entry) => /session\.v4\.jsonl(?:\.zstd)?$/u.test(entry))).toBe(true);
       expect(existsSync(path.join(stateDirectory, 'obsidian-bridge.cordis.patch.yml'))).toBe(true);
       expect(existsSync(path.join(dshHome, 'obsidian-bridge.cordis.patch.yml'))).toBe(false);
     } finally {
@@ -208,10 +272,12 @@ function waitForEvent(
   client: NonNullable<ManagedBridgeProcess['client']>,
   predicate: (event: KnownBridgeEvent) => boolean,
 ): Promise<KnownBridgeEvent> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { detach(); reject(new Error(`等待真实事件超时：${client.failure?.message ?? client.connectionState}`)); }, 15_000);
     const detach = client.onEvent((event) => {
       if (!predicate(event)) return;
       detach();
+      clearTimeout(timer);
       resolve(event);
     });
   });
@@ -232,15 +298,19 @@ async function createModelServer(): Promise<{
       requestCount += 1;
       requests.push(body);
       response.writeHead(200, { 'content-type': 'text/event-stream' });
-      response.write('data: {"choices":[{"delta":{"role":"assistant","content":null}}]}\n\n');
+      const emit = (value: Record<string, unknown>) => response.write(`data: ${JSON.stringify(value)}\n\n`);
+      emit({ type: 'message_start', message: { id: 'fixture-response', type: 'message', role: 'assistant', model: 'deepseek-flash', content: [], usage: { input_tokens: 1, output_tokens: 0 } } });
+      emit({ type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } });
       if (requestCount === 1) {
-        response.write('data: {"choices":[{"delta":{"content":"好"}}]}\n\n');
-        response.write('data: [DONE]\n\n');
+        emit({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '好' } });
+        emit({ type: 'content_block_stop', index: 0 });
+        emit({ type: 'message_delta', delta: { stop_reason: 'end_turn' }, usage: { output_tokens: 1 } });
+        emit({ type: 'message_stop' });
         response.end();
         return;
       }
       const timer = setInterval(() => {
-        response.write('data: {"choices":[{"delta":{"content":"好"}}]}\n\n');
+        emit({ type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: '好' } });
       }, 1_000);
       response.on('close', () => clearInterval(timer));
     });

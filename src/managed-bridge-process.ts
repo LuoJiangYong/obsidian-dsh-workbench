@@ -230,11 +230,9 @@ export function createBridgeOverlay(bridgePath: string): string {
     '- insert:',
     '    - id: workspace',
     "      name: '@deepseek-ai/dsh-workspace'",
-    '    - id: session-controller',
-    "      name: '@deepseek-ai/dsh-api-session-controller'",
     '    - id: obsidian-bridge',
     `      name: ${JSON.stringify(bridgeUrl)}`,
-    '      inject: [agents, agentDefaultModel, sessionController, tools, workspaceRegistry]',
+    '      inject: [agents, agentDefaultModel, sessionQuery, sessionTitle, sessions, sessionPersistence, tools, workspaceRegistry]',
     '',
   ].join('\n');
 }

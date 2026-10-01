@@ -34,9 +34,9 @@ ADR-004 已把“新建任务”固定为唯一主对话与任务入口，但实
 ## 后果与边界
 
 - [新建任务 v1 需求基线](../requirements/new-task-v1.md) 是本 ADR 的详细验收契约。
-- 当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.2-alpha.3`。R1-M 已重新执行公开控制面、Windows 真实 bridge、专用 Vault 健康检查/真实无工具对话和零残留门；R2 已实现精确 session 读取/恢复、Vault 外最小任务索引和启动恢复投影，本地真实 DSH 跨进程门、实现 SHA 的双平台 CI 与原始零 annotations 均通过，R2 隔离 Vault 部署仍需另行批准。项目/最近 UI、下一批统一运行与发布动作不包含在 R2 中。
+- 当前正式 bridge 与健康检查统一精确锁定 DSH `0.2.0-rc.2`。新组合运行验收见 ADR-015，不继承 alpha.3 的隔离 Vault 支持结论。R1-M 已重新执行公开控制面、Windows 真实 bridge、专用 Vault 健康检查/真实无工具对话和零残留门；R2 已实现精确 session 读取/恢复、Vault 外最小任务索引和启动恢复投影，本地真实 DSH 跨进程门、实现 SHA 的双平台 CI 与原始零 annotations 均通过，R2 隔离 Vault 部署仍需另行批准。项目/最近 UI、下一批统一运行与发布动作不包含在 R2 中。
 - [Batch 2 能力尖峰](./batch-2-bridge-capability-spike.md)与[运行时兼容矩阵](./runtime-compatibility-matrix.md)记录了上游 seam、证据指纹和自动演进门。
-- [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭、精确 session 读取/恢复和 fail-closed 行为；[ADR-012](./ADR-012-session-read-and-minimal-task-index.md)固定最小索引、所有权与失败状态。当前已通过假 bridge、正式 artifact 与本地 Windows alpha.3 跨进程运行验收。
+- [bridge 协议 v1](./bridge-protocol-v1.md)固定项目握手、事件、权限、取消、关闭、精确 session 读取/恢复和 fail-closed 行为；[ADR-012](./ADR-012-session-read-and-minimal-task-index.md)固定最小索引、所有权与失败状态。历史 alpha.3 跨进程证据保留；当前 rc.2 假 bridge、正式 artifact 与本地 Windows 真实运行门通过，精确 CI 与新组合 Vault 门按 ADR-015 分别核实。
 - Batch 6 以现有 `1 MiB` NDJSON frame 和最坏 JSON 双重转义实测冻结上下文上限：最多 `10` 项、单项 `96 KiB`、合计 `192 KiB`。文件夹展开同样受这些限制并采用原子加入；任务字符上限由真实发送批次冻结。
 - `DESIGN.md`、ADR-003 和 ADR-004 已检查：`2026-08-27` 用户直接反馈只演进插件中的知识库入口文案、扁平选择项和文件夹来源；Ardot 未修改，导航、图标与响应式总规则不变。
 - 后续 bridge 打包、自动监测 workflow、实现源码、运行验收、Release 与社区提交仍受各自边界约束；当前连续目标只授权 Batch 3–10，不授权 Release 或社区提交。

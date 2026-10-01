@@ -41,6 +41,21 @@ beforeAll(() => vi.stubGlobal('window', globalThis));
 afterAll(() => vi.unstubAllGlobals());
 
 describe('新建任务真实对话控制器', () => {
+  it('rc.2 attempt 替换撤回临时文本，不累积失败回复，也不把 reset 当成终态', async () => {
+    const client = new FakeBridgeClient();
+    const controller = new NewTaskConversationController({ createProcess: async () => new FakeBridgeProcess(client) });
+    await controller.submit({ contexts: [], draft: '测试重试', mode: 'chat', reader: readerReturning('') });
+    client.emit(event('turn.started', 0, {}));
+    client.emit(event('assistant.delta', 1, { text: '失败 attempt' }));
+    client.emit(event('assistant.reset', 2, {}));
+    expect(controller.getSnapshot().phase).toBe('running');
+    expect(controller.getSnapshot().messages.find(item => item.role === 'assistant')?.text).toBe('');
+    client.emit(event('assistant.delta', 3, { text: '正确' }));
+    client.emit(event('assistant.message', 4, { text: '正确' }));
+    client.emit(event('turn.ended', 5, { outcome: 'completed' }));
+    expect(controller.getSnapshot().messages.find(item => item.role === 'assistant')?.text).toBe('正确');
+    await controller.dispose();
+  });
   it('N1 打开与继续使用原 task/session 身份，不创建记录、不发送首条消息、不复制历史', async () => {
     const client = new FakeBridgeClient();
     client.sessionReadStatus = 'available';

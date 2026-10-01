@@ -1,6 +1,12 @@
 # CI/CD 路线图
 
-更新时间：2026-09-01
+更新时间：2026-10-01
+
+## 当前兼容门（ADR-015）
+
+用户另行批准 DSH `0.2.0-rc.2` 兼容迁移，当前代码/夹具/清单已精确锁定该版本；alpha.3 的下列 supported 和 Vault 证据只保留为历史记录。`npm run prepare:runtime-legacy-fixture` 安装纯 alpha.3 历史 producer，`test:runtime:candidate` 在双平台实际运行 rc.2 控制面、Workspace 和跨版本原生迁移；Windows `test:bridge:runtime` 验证 Messages API、真实文本直播、同 ID 恢复、六工具边界和取消。无凭据创建、旧日志字节不变和零自动模型请求分别有断言。新组合隔离 Vault/用户 UI 门未完成；精确实现 SHA 的最新 CI 和原始 annotations 是自动完成门，不另拆证据提交。
+
+N1 最终实现 `8cc2bc1c9af506b057943cc66e7adc32fb4ec807` 的 CI `36817240377`，Windows `110224867876`、Ubuntu `110224867986` 均 success，原始 annotations 均为 `[]`；这不授权新 UI 部署。
 
 ## 定位
 

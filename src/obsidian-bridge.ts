@@ -22,7 +22,10 @@ export const name = 'obsidian-bridge';
 export const inject = [
   'agents',
   'agentDefaultModel',
-  'sessionController',
+  'sessionQuery',
+  'sessionTitle',
+  'sessions',
+  'sessionPersistence',
   'tools',
   'workspaceRegistry',
 ] as const;
@@ -61,11 +64,14 @@ export interface DshMessage {
 
 export interface DshSession {
   readonly id: string;
+  readonly header?: { readonly id: string; readonly cwd?: string; readonly origin?: 'subagent' };
 }
 
 export interface DshAgent {
+  readonly status: string;
   readonly session: DshSession;
   readonly ctx: DshScopedContext;
+  readonly inbox: { readonly nextTurn: readonly unknown[]; readonly nextStep: readonly unknown[] };
   cancel(cause: { readonly kind: 'user' }): void;
   followup(message: DshMessage): void;
 }
@@ -117,15 +123,30 @@ export interface DshContext {
       readonly setup: (agentContext: DshScopedContext) => void;
     }): Promise<DshAgentHandle>;
     get(sessionId: string): DshAgent | undefined;
+    resume(options: {
+      readonly resumeSessionId: string;
+      readonly agentOptions: { readonly provider: string; readonly model: string };
+      readonly setup: (agentContext: DshScopedContext, agent: DshAgent) => void;
+    }): Promise<DshAgentHandle>;
   };
   readonly agentDefaultModel: {
     currentSelection(): DshModelSelection;
   };
-  readonly sessionController: DshSessionController;
+  readonly sessionQuery: {
+    listSessions(signal?: AbortSignal): Promise<readonly { readonly header: NonNullable<DshSession['header']> }[]>;
+    readSession(sessionId: string): Promise<{ readonly session: NonNullable<DshSession['header']>; readonly events: readonly unknown[] }>;
+    readTitle(sessionId: string, signal?: AbortSignal): Promise<{ readonly title: string } | undefined>;
+  };
+  readonly sessionTitle: { rename(session: DshSession, title: string): unknown };
+  readonly sessions: { flush(session: DshSession): Promise<void> };
   readonly workspaceRegistry?: DshWorkspaceRegistry;
   effect(effect: () => () => void | Promise<void>, label?: string): unknown;
   get(service: 'appExit'): ((code: number) => void) | undefined;
   get(service: 'loader'): { await(): Promise<void> } | undefined;
+  on(
+    event: 'agent/assistant-stream',
+    listener: (payload: { readonly agent: DshAgent; readonly frame: unknown }) => void,
+  ): () => void;
   on(
     event: 'session/event',
     listener: (session: DshSession, event: unknown) => void,
@@ -148,23 +169,6 @@ export interface DshSessionSummary {
   readonly projections?: {
     readonly values: Readonly<Record<string, unknown>>;
   };
-}
-
-export interface DshSessionController {
-  list(request: Record<string, never>, signal: AbortSignal): Promise<{
-    readonly items: readonly DshSessionSummary[];
-  }>;
-  inspect(sessionId: string, signal?: AbortSignal): Promise<{
-    readonly meta: { readonly id: string; readonly cwd?: string };
-    readonly events: readonly unknown[];
-  }>;
-  create(request: { readonly sessionId: string; readonly cwd: string }): Promise<{
-    readonly sessionId: string;
-  }>;
-  rename(request: { readonly sessionId: string; readonly title: string }): Promise<{
-    readonly title: string;
-    readonly seq: number;
-  }>;
 }
 
 export interface DshWorkspace {
@@ -205,6 +209,8 @@ interface ActiveTurn {
   accepting: boolean;
   cancelRequested: boolean;
   upstreamTurn: number | undefined;
+  assistantRevision: number;
+  assistantStream: { readonly attemptId: string; nextIndex: number } | undefined;
   readonly buffered: ProjectedEvent[];
   pendingApproval: PendingApproval | undefined;
 }
@@ -221,6 +227,7 @@ interface SessionRecord {
 interface ProjectedEvent {
   readonly event:
     | 'assistant.delta'
+    | 'assistant.reset'
     | 'assistant.message'
     | 'permission.requested'
     | 'tool.started'
@@ -252,6 +259,9 @@ export class ObsidianBridgeServer {
   ) {
     context.on('session/event', (session, event) => {
       this.onSessionEvent(session, event);
+    });
+    context.on('agent/assistant-stream', ({ agent, frame }) => {
+      this.onAssistantStream(agent, frame);
     });
     context.on('approval/request', async (request, next) => {
       const record = this.findOwnedSession(request.agent);
@@ -380,16 +390,18 @@ export class ObsidianBridgeServer {
         else installTaskToolBoundary(agentContext, process.cwd());
       },
     });
-    if (this.sessions.has(sessionId)) {
+    if (this.closed || this.sessions.has(sessionId)) {
       await handle.dispose();
       throw new BridgeRequestError('session_busy', 'sessionId 在创建期间被占用');
     }
     try {
-      await this.context.sessionController.rename({ sessionId, title });
+      this.context.sessionTitle.rename(handle.agent.session, title);
+      await this.context.sessions.flush(handle.agent.session);
     } catch {
       await handle.dispose();
       throw new BridgeRequestError('session_unrecoverable', 'DSH 未能持久化 session 标题');
     }
+    if (this.closed) { await handle.dispose(); throw new BridgeRequestError('invalid_state', 'bridge 已关闭'); }
     this.sessions.set(sessionId, {
       sessionId,
       mode,
@@ -406,8 +418,8 @@ export class ObsidianBridgeServer {
   ): Promise<void> {
     await this.context.get('loader')?.await();
     const controller = new AbortController();
-    const listed = await this.context.sessionController.list({}, controller.signal);
-    const summaries = new Map(listed.items.map(summary => [summary.sessionId, summary]));
+    const listed = await this.context.sessionQuery.listSessions(controller.signal);
+    const summaries = new Map(listed.map(record => [record.header.id, record.header]));
     const items: BridgeSessionReadItem[] = [];
     for (const sessionId of request.params.sessionIds) {
       const summary = summaries.get(sessionId);
@@ -420,19 +432,20 @@ export class ObsidianBridgeServer {
         continue;
       }
       try {
-        const inspection = await this.context.sessionController.inspect(sessionId, controller.signal);
-        const cwd = inspection.meta.cwd ?? summary.cwd;
-        if (!cwd || inspection.meta.id !== sessionId) {
+        const inspection = await this.context.sessionQuery.readSession(sessionId);
+        if (inspection.session.origin === 'subagent') { items.push({ sessionId, status: 'subagent' }); continue; }
+        const cwd = inspection.session.cwd;
+        if (!cwd || inspection.session.id !== sessionId) {
           items.push({ sessionId, status: 'unreadable' as const });
           continue;
         }
-        const title = summary.projections?.values['title'];
+        const title = (await this.context.sessionQuery.readTitle(sessionId, controller.signal))?.title;
         items.push({
           sessionId,
           status: 'available' as const,
-          blank: summary.blank,
+          blank: !inspection.events.some(event => asRecord(event)?.['type'] === 'turn/start'),
           cwd,
-          running: summary.running,
+          running: this.context.agents.get(sessionId)?.status === 'running',
           ...(typeof title === 'string' && title.length > 0 ? { title } : {}),
         });
       } catch {
@@ -451,45 +464,64 @@ export class ObsidianBridgeServer {
     }
     await this.context.get('loader')?.await();
     const controller = new AbortController();
-    const listed = await this.context.sessionController.list({}, controller.signal);
-    const summary = listed.items.find(item => item.sessionId === sessionId);
+    const listed = await this.context.sessionQuery.listSessions(controller.signal);
+    const summary = listed.find(item => item.header.id === sessionId)?.header;
     if (!summary) throw new BridgeRequestError('session_not_found', 'DSH session 不存在');
     if (summary.origin === 'subagent') {
       throw new BridgeRequestError('session_unrecoverable', '不能把 DSH subagent 作为工作台任务恢复');
     }
-    if (summary.running) {
+    if (this.context.agents.get(sessionId)?.status === 'running') {
       throw new BridgeRequestError('session_busy', 'DSH session 仍标记为运行中');
     }
-    let inspection: Awaited<ReturnType<DshSessionController['inspect']>>;
+    let inspection: Awaited<ReturnType<DshContext['sessionQuery']['readSession']>>;
     try {
-      inspection = await this.context.sessionController.inspect(sessionId, controller.signal);
+      inspection = await this.context.sessionQuery.readSession(sessionId);
     } catch {
       throw new BridgeRequestError('session_unrecoverable', 'DSH session 无法读取');
     }
-    const sessionCwd = inspection.meta.cwd ?? summary.cwd;
-    if (!sessionCwd || inspection.meta.id !== sessionId
+    const sessionCwd = inspection.session.cwd;
+    if (!sessionCwd || inspection.session.id !== sessionId || inspection.session.origin === 'subagent'
       || !sameCanonicalPath(sessionCwd, process.cwd())) {
       throw new BridgeRequestError('session_conflict', 'DSH session 工作目录与当前任务边界不一致');
     }
+    const selection = this.context.agentDefaultModel.currentSelection();
+    let handle: DshAgentHandle;
     try {
-      const result = await this.context.sessionController.create({ sessionId, cwd: process.cwd() });
-      if (result.sessionId !== sessionId) {
-        throw new Error('DSH 返回错误 sessionId');
-      }
-    } catch {
+      handle = await this.context.agents.resume({
+        resumeSessionId: sessionId,
+        agentOptions: { provider: selection.provider, model: selection.model },
+        setup: (agentContext, agent) => {
+          const header = agent.session.header;
+          if (agent.session.id !== sessionId || header?.id !== sessionId
+            || header.origin === 'subagent' || !header.cwd
+            || !sameCanonicalPath(header.cwd, process.cwd())) {
+            throw new BridgeRequestError('session_conflict', 'DSH 恢复发布前身份或工作目录发生变化');
+          }
+          if (agent.inbox.nextTurn.length > 0 || agent.inbox.nextStep.length > 0) {
+            throw new BridgeRequestError('session_unrecoverable', 'DSH session 有待处理输入；请先在 DSH 显式处理，工作台未自动执行或清空。');
+          }
+          installModelSelection(agentContext, selection);
+          if (mode === 'chat') installChatToolBoundary(agentContext);
+          else installTaskToolBoundary(agentContext, process.cwd());
+        },
+      });
+    } catch (error) {
+      if (error instanceof BridgeRequestError) throw error;
       throw new BridgeRequestError('session_conflict', 'DSH session 无法按原身份恢复');
     }
-    const agent = this.context.agents.get(sessionId);
-    if (!agent) throw new BridgeRequestError('session_unrecoverable', 'DSH 恢复后未提供 Agent');
-    if (mode === 'chat') installChatToolBoundary(agent.ctx);
-    else installTaskToolBoundary(agent.ctx, process.cwd());
-    if (this.sessions.has(sessionId)) {
+    if (handle.agent.session.id !== sessionId) {
+      await handle.dispose();
+      throw new BridgeRequestError('session_conflict', 'DSH 返回错误 sessionId');
+    }
+    if (this.closed || this.sessions.has(sessionId)) {
+      await handle.dispose();
       throw new BridgeRequestError('session_busy', 'sessionId 在恢复期间被占用');
     }
     this.sessions.set(sessionId, {
       sessionId,
       mode,
-      agent,
+      agent: handle.agent,
+      handle,
       nextSeq: 0,
       activeTurn: undefined,
     });
@@ -547,6 +579,8 @@ export class ObsidianBridgeServer {
       accepting: true,
       cancelRequested: false,
       upstreamTurn: undefined,
+      assistantRevision: 0,
+      assistantStream: undefined,
       buffered: [],
       pendingApproval: undefined,
     };
@@ -634,17 +668,6 @@ export class ObsidianBridgeServer {
     }
     if (active.upstreamTurn === undefined || data['turn'] !== active.upstreamTurn) return;
 
-    if (type === 'assistant/chunk') {
-      const chunk = asRecord(data['chunk']);
-      if (chunk?.['type'] === 'text-delta' && typeof chunk['text'] === 'string' && chunk['text']) {
-        this.project(record, active, {
-          event: 'assistant.delta',
-          payload: { text: chunk['text'] },
-          sourceSeq: seq,
-        });
-      }
-      return;
-    }
     if (type === 'assistant/message') {
       const message = asRecord(data['message']);
       const content = message?.['content'];
@@ -680,6 +703,59 @@ export class ObsidianBridgeServer {
       this.project(record, active, { event: 'turn.ended', payload, sourceSeq: seq });
       record.activeTurn = undefined;
     }
+  }
+
+  private onAssistantStream(agent: DshAgent, value: unknown): void {
+    const record = this.findOwnedSession(agent);
+    const active = record?.activeTurn;
+    if (!record || !active) return;
+    const frame = asRecord(value);
+    const revision = readSafeInteger(frame?.['revision']);
+    const attemptId = frame?.['attemptId'];
+    if (!frame || revision === undefined || revision <= active.assistantRevision || typeof attemptId !== 'string' || !attemptId) {
+      void this.failClosed();
+      return;
+    }
+    if (active.assistantRevision > 0 && revision !== active.assistantRevision + 1) { void this.failClosed(); return; }
+    active.assistantRevision = revision;
+    if (frame['type'] === 'start') {
+      if (active.assistantStream
+        || frame['turn'] !== active.upstreamTurn || readSafeInteger(frame['step']) === undefined) {
+        void this.failClosed();
+        return;
+      }
+      active.assistantStream = { attemptId, nextIndex: 0 };
+      this.project(record, active, { event: 'assistant.reset', payload: {} });
+      return;
+    }
+    const stream = active.assistantStream;
+    if (!stream || stream.attemptId !== attemptId
+      || frame['index'] !== stream.nextIndex) {
+      void this.failClosed();
+      return;
+    }
+    if (frame['type'] === 'chunk') {
+      const chunk = asRecord(frame['chunk']);
+      if (!chunk || typeof chunk['type'] !== 'string' || readSafeInteger(frame['time']) === undefined) {
+        void this.failClosed();
+        return;
+      }
+      stream.nextIndex += 1;
+      if (chunk['type'] === 'text-delta') {
+        if (typeof chunk['text'] !== 'string') { void this.failClosed(); return; }
+        if (chunk['text']) this.project(record, active, { event: 'assistant.delta', payload: { text: chunk['text'] } });
+      }
+      return;
+    }
+    const outcome = asRecord(frame['outcome']);
+    if (frame['type'] !== 'end' || !outcome
+      || !(outcome['kind'] === 'abandoned' || (outcome['kind'] === 'committed'
+        && (outcome['eventType'] === 'assistant/message' || outcome['eventType'] === 'assistant/attempt')
+        && readSafeInteger(outcome['seq']) !== undefined))) {
+      void this.failClosed();
+      return;
+    }
+    active.assistantStream = undefined;
   }
 
   private async onApprovalRequest(

@@ -1,6 +1,6 @@
 # 统一工作台下一批实施总路线
 
-- 状态：G0-1、G0-2、R1、R1-M、R2、D1 已完成；N1 已批准并实现，自动门闭合中，隔离 Vault/用户 UI 门未完成；当前组合为 alpha.3 + bridge 0.3.0；P1 及后续批次未获授权
+- 状态：G0-1、G0-2、R1、R1-M、R2、D1 已完成；N1 已批准并实现，自动门已闭合，隔离 Vault/用户 UI 门未完成；已批准 rc.2 兼容迁移，当前代码目标 rc.2 + bridge 0.4.0，新组合未声明 supported；P1 及后续批次未获授权
 - 路线日期：2026-10-01
 - R1 开始基线：main / 802e45fde5262908ff7327c0afd628c3c691ec01
 - 产品输入：[统一工作台下一批未来实施契约](../requirements/unified-workbench-next-batch.md)
@@ -16,6 +16,8 @@
 每批只有一个用户可见或契约可验证结果；完成、push 和远端 CI 成功只关闭当前批次，不自动授权下一批。
 
 G0-1、G0-2、R1、单一 R1-M、R2 与 D1 均已完成。R1-M 的候选核验与生产切换没有另拆产品批次。R2 实现 `fd476a2e590c7281aa1de12640628e12a73b69d8` 的双平台 CI/原始零 annotations 已通过，保持不可恢复任务保留记录、摘要与原因的用户决策。D1 最终 `55f2a2f15bf7461873c33bd737a187ac1e8a8e18` 的 CI `36743757135` 双平台与原始零 annotations 已通过。用户于 `2026-10-01` 批准 N1 并调整 UI 权威；本批只接入导航与原身份打开，不升级 DSH、不复制历史、不推断项目归属。P1 及后续产品、Ardot 修改、隔离 Vault 部署、Release 和社区提交未授权。
+
+N1 最终 `8cc2bc1c9af506b057943cc66e7adc32fb4ec807` 的 CI `36817240377` 双平台成功，原始 annotations 均为 `[]`。后续另获 DSH 升级专项授权；兼容迁移作为一个完整运行时批次，见 ADR-015，不改变 R2→D1→N1→P1 的产品批次依赖，测试/文档/CI 不另拆证据批次。
 
 路线固定以下最终方向，但不把它们描述成当前已经交付：
 
@@ -33,8 +35,8 @@ G0-1、G0-2、R1、单一 R1-M、R2 与 D1 均已完成。R1-M 的候选核验�
 | --- | --- | --- |
 | Git 与 CI | 审计基线为 7254228；远端 CI 33364773528 的 Ubuntu、Windows job 均成功，原始 annotations 均为空数组 | G0-1 只修正文档和验证器真相，不重做第一批产品实现 |
 | 第一批开发目标 | 用户已经明确确认完成；G0-1 已统一权威文档、兼容矩阵、治理测试与 release verifier | 后续不得把 Batch 2–10 重新列为待实施功能 |
-| 当前生产运行时 | 生产代码、两个运行夹具、bridge 构建清单和专用 Vault 均锁定 DSH 0.1.2-alpha.3；当前 v1 组合进入 supported | rc.2 只保留历史证据；后续不得静默升级、扩大支持范围或增加宽松 fallback |
-| 上游候选 | `2026-09-30` 重新核对 GitHub `master`/最新 release tag commit `639ed015397290b3745d163aafe02ffee4aa3f84`，npm `latest/next` 与最新预发布均为 `0.2.0-rc.2`；生产仍锁定 `0.1.2-alpha.3` | alpha.3 的公开 WorkspaceRegistry 已在真实夹具验证；新候选 Workspace 核心源码与前次 0.1.7-rc.2 相同，仅记录漂移，不静默升级、不扩大支持范围 |
+| 当前生产运行时 | 已批准的 ADR-015 将代码、健康检查、两个当前夹具与清单锁定 DSH 0.2.0-rc.2 / bridge 0.4.0；新组合隔离 Vault 与最终 UI 门未完成 | alpha.3 supported 保留为历史证据，不提供双版本 fallback；开发会话更新授权不等于 Vault 部署授权 |
+| 上游候选 | `2026-10-01` GitHub/npm 共同最新为 `0.2.0-rc.2` / tag commit `639ed015397290b3745d163aafe02ffee4aa3f84`；本机已是目标版本 | 原生 sessionQuery/resume、assistant-stream、Messages API 和历史迁移已纳入当前兼容批次，不静默继承支持结论 |
 | Claudian 对照 | `2026-09-30` 重新只读核对公开 HEAD `738c456e2ee6448c3142c3a815387f2e8dcb8ae7`、README、SharedStorageService 和 TabWorkspaceMigrationCoordinator | 只参考宿主存储与 view 生命周期分层；不采用其 Vault cwd、Vault 存储、多 provider、私有历史或协作产品语义 |
 | 会话恢复 | R2 已实现 DSH 公开精确读取/同 ID 恢复、Vault 外最小索引与可继续/不可恢复投影；真实双进程 DSH 本地测试通过 | N1 已接入原身份打开，新 UI 运行验收待执行；进程内 job 只投影为已中断 |
 | 项目与最近 | D1 模型已完成；N1 已接入只读项目/最近导航与原身份打开，新 UI 运行验收待单独执行 | R2 v1 任务无项目归属，全部进入最近；项目选择/管理与排序仍属 P1/O1/U1 |
@@ -140,7 +142,7 @@ R2 是任务持久化事实源的门；D1 与 U1 可在 R2 完成后分别提案
 
 ### R1：DSH 正式控制面兼容候选
 
-- 状态：已实现并验证；完整证据见 [R1 DSH 0.1.2-alpha.2 正式控制面候选证据](../architecture/r1-dsh-alpha2-control-capability.md)。
+- 状态：已实现并验证；历史候选证据见 [R1 DSH 0.1.2-alpha.2 正式控制面候选证据](../architecture/r1-dsh-alpha2-control-capability.md)，不作为当前生产版本结论。
 
 - 唯一结果：以独立夹具并行验证 0.1.2-alpha.2 是否公开支持下一批需要的 session 列表/恢复、标题、附件、权限和运行投影能力，并给出继续保留 rc.2 或提议升级的证据结论。
 - 为什么现在需要：R2 及后续能力不能建立在猜测的私有包结构上，也不能为候选版本静默改生产路径。
@@ -157,7 +159,7 @@ R2 是任务持久化事实源的门；D1 与 U1 可在 R2 完成后分别提案
 
 ### R1-M：DSH alpha.3 生产运行时迁移门
 
-- 状态：已实现并验证；完整过程记录见 [DSH 0.1.2-alpha.3 生产运行时迁移门](../architecture/dsh-alpha3-production-migration.md)。
+- 状态：已实现并验证；[alpha.3 迁移记录](../architecture/dsh-alpha3-production-migration.md)保留历史 supported 证据，当前版本迁移由 ADR-015 单独记录。
 - 唯一结果：生产健康检查、正式 bridge、运行夹具和兼容矩阵统一精确支持 0.1.2-alpha.3，同时证明当前 v1 对话/任务、Vault 外数据和 Windows 进程行为不回归。
 - 为什么现在需要：R2 需要生产版本公开的 session controller；rc.2 依赖图没有该控制面，alpha.2 又已被 dist-tag 前移，不能把历史候选或私有文件解析作为事实源。
 - 前置依赖：R1；开始时重新核验 alpha.3 的 npm/GitHub 身份、完整依赖图、官方源码、许可证和 Claudian 当前公开 HEAD。
@@ -186,7 +188,7 @@ R2 是任务持久化事实源的门；D1 与 U1 可在 R2 完成后分别提案
 
 ### D1：项目数据模型与 Vault 外持久化
 
-- 状态：已批准并实现；本地数据与真实 DSH 门通过，完成以对应实现提交双平台 CI 成功和原始零 annotations 为准。用户于 `2026-09-28` 批准；本批无 UI，Ardot 未修改，隔离 Vault 部署未授权。
+- 状态：已实现并验证；最终 `55f2a2f15bf7461873c33bd737a187ac1e8a8e18` 的 CI `36743757135` 双平台成功、原始 annotations 均为 `[]`。本批无 UI、未部署隔离 Vault；当前 rc.2 兼容证据另见 ADR-015。
 - 唯一结果：项目名称、一个或多个源文件夹身份、置顶与用户顺序可在 Vault 外原子保存、重启读回，并且不修改源文件夹。
 - 为什么现在需要：N1、P1、O1 都需要稳定项目身份，不能把显示名称或路径当唯一主键。
 - 前置依赖：R2 的任务引用与存储边界。
@@ -201,7 +203,7 @@ R2 是任务持久化事实源的门；D1 与 U1 可在 R2 完成后分别提案
 
 ### N1：左侧项目与最近导航
 
-- 状态：用户于 `2026-10-01` 批准并实现；隔离 Vault 与最终运行 UI 验收未完成。详细事实与门见 [ADR-014](../architecture/ADR-014-project-and-recent-navigation.md)。D1 最终 CI `36743757135` 双平台成功、原始 annotations 均为 `[]`。
+- 状态：已实现但未完成运行验收；最终 `8cc2bc1c9af506b057943cc66e7adc32fb4ec807` 的 CI `36817240377` 双平台成功、原始 annotations 均为 `[]`，隔离 Vault/用户 UI 门未完成。详细契约见 [ADR-014](../architecture/ADR-014-project-and-recent-navigation.md)，rc.2 组合不得继承旧验收状态。
 
 - 唯一结果：Workbench 上方只显示新建任务和运行，下方显示项目与最近；任务只在一个位置出现并能打开同一正式会话。
 - 为什么现在需要：先建立可验证的信息架构，再叠加项目编辑和排序交互。

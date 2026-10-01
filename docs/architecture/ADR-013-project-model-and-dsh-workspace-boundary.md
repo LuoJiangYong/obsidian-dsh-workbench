@@ -2,9 +2,11 @@
 
 - 状态：已接受、已实现并完成本地验证；D1 完成门为对应实现提交的双平台 CI 成功及原始零 annotations；只交付数据模型与公开读取接缝，不包含项目 UI
 - 日期：`2026-09-28`
-- 目标生产 DSH：`0.1.2-alpha.3`
-- 最新上游候选（2026-09-30 核对，不纳入生产）：`0.2.0-rc.2`，tag commit `639ed015397290b3745d163aafe02ffee4aa3f84`，发布于 `2026-09-29T09:42:36Z`；npm `latest/next` 同值
-- bridge：`0.3.0` / protocol `1`
+- D1 原批次生产 DSH：`0.1.2-alpha.3`
+- D1 当时上游候选（2026-09-30 核对，不纳入 D1 生产）：`0.2.0-rc.2`，tag commit `639ed015397290b3745d163aafe02ffee4aa3f84`，发布于 `2026-09-29T09:42:36Z`；npm `latest/next` 同值
+- D1 原批次 bridge：`0.3.0` / protocol `1`
+
+当前版本已按另行批准的 [ADR-015](./ADR-015-dsh-rc2-runtime-migration.md) 锁定 DSH `0.2.0-rc.2` / bridge `0.4.0`，真实 Workspace 与项目索引重启门重新执行；D1 schema、公开字段、源文件夹零写入和禁止范围不变。下文 alpha.3 与“不升级”均指 D1 原批次，不作为当前版本结论，不继承旧 Vault 验收。
 
 ## 1. 唯一结果
 
@@ -18,7 +20,7 @@
 
 ### 2.2 DSH 公开 Workspace 能力
 
-当前生产夹具和两个 lockfile 继续精确锁定 `@deepseek-ai/dsh` `0.1.2-alpha.3`。本地真实 alpha.3 控制面探针已证明 `@deepseek-ai/dsh-workspace` 的公开 `ctx.workspaceRegistry` 能力：
+D1 实施时的生产夹具和两个 lockfile 精确锁定 `@deepseek-ai/dsh` `0.1.2-alpha.3`。当时真实 alpha.3 控制面探针已证明 `@deepseek-ai/dsh-workspace` 的公开 `ctx.workspaceRegistry` 能力：
 
 - `create(path, title?)` 对既有目录执行 `realpath` canonicalization，返回稳定 `WorkspaceId`；同一 canonical path 重复创建幂等；
 - `list()` 返回公开的 `id/path/title/createdAt/updatedAt/sessionIds`；`status()` 只读检查目录存在性；

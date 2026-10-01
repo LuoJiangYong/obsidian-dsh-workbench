@@ -581,6 +581,7 @@ export class BridgeProtocolClient {
         if (activeTurn.state !== 'starting') throw this.invalidState('重复或过期 turn.started');
         activeTurn.state = 'running';
         break;
+      case 'assistant.reset':
       case 'assistant.delta':
       case 'assistant.message':
         if (activeTurn.state !== 'running' && activeTurn.state !== 'cancelling') {

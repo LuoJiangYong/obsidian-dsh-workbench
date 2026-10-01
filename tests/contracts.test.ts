@@ -38,15 +38,15 @@ describe('发布与治理契约', () => {
     const readme = await readFile(path.join(repositoryRoot, 'README.md'), 'utf8');
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
-    expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库、真实对话与 Vault 外任务链均已实现；R1-M 已把生产运行时迁移到 DSH `0.1.2-alpha.3`，本地、专用 Vault 与双平台 CI 门均纳入同一支持闭环 |');
+    expect(readme).toContain('| 新建任务 | 既有 v1 通过历史运行验收；N1 与 DSH `0.2.0-rc.2` 组合已实现，精确 CI 门及新组合隔离 Vault/用户验收分别记录，不继承 alpha.3 的 supported |');
     expect(readme).toContain('N1 已实现上方“新建任务/运行”、下方“项目/最近”及原身份打开');
     expect(readme).toContain('新 UI 尚未完成隔离 Vault 与用户验收，不继承旧导航的通过状态');
     expect(readme).toContain('| 可选右侧任务环境 | 原“快速助手”已原位演进为默认关闭的原生 `ItemView`；专用 Vault 已验证打开/复用、公开事实投影、完整路径排除和关闭不影响中央会话 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
-    expect(readme).toContain('| DSH 路径配置与健康检查 | 命令校验和进程边界已实现；生产目标统一为 `0.1.2-alpha.3`，本地与专用隔离 Vault 读回通过，并由双平台 CI 执行精确夹具 |');
+    expect(readme).toContain('| DSH 路径配置与健康检查 | 当前目标精确锁定 `0.2.0-rc.2`；本机已是目标版本，不重复安装；新组合隔离 Vault 验收未完成 |');
     expect(readme).toContain('这些操作不发送模型请求');
     expect(readme).toContain('仅确认发送后才发起由 DSH 配置管理的模型请求');
-    expect(readme).toContain('当前健康检查与正式 bridge 统一精确支持 DSH `0.1.2-alpha.3`');
+    expect(readme).toContain('当前健康检查与正式 bridge 统一精确锁定 DSH `0.2.0-rc.2`');
     expect(readme).toContain('| DSH 会话、流式事件与取消 | 对话与任务链均已接入 Obsidian 宿主；专用 Vault 已验证成功、明确失败与恢复、真实文件变更/审核/撤销，以及禁用后受管进程从 `2` 归零 |');
     expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |');
     expect(readme).toContain('| Obsidian 社区提交 | 尚未进行 |');
@@ -161,16 +161,16 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain(
       'R2 最小跨重启任务事实、本地真实 DSH、精确 SHA 双平台 CI 与原始零 annotations 已通过',
     );
-    expect(requirements).toContain('当前正式 bridge 目标是 `0.1.2-alpha.3`');
-    expect(runtimeAdr).toContain('当前生产目标为 alpha.3');
+    expect(requirements).toContain('当前正式 bridge 目标是 `0.2.0-rc.2`');
+    expect(runtimeAdr).toContain('当前代码目标为 `0.2.0-rc.2`');
     expect(ardotAdr).toContain('用户明确以实时代码与过往验收为真相，Ardot 降为历史参考');
-    expect(hostAdr).toContain('当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.2-alpha.3`');
+    expect(hostAdr).toContain('当前正式 bridge 与健康检查统一精确锁定 DSH `0.2.0-rc.2`');
     expect(sessionAdr).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
-    expect(protocol).toContain('目标 bridge 版本：`0.3.0`');
+    expect(protocol).toContain('目标 bridge 版本：`0.4.0`');
     expect(protocol).toContain('`session/restore`');
     expect(matrix).toContain('| `0.1.1-rc.2` | 历史健康检查与正式 bridge + v1 | `superseded`（历史证据保留） |');
     expect(matrix).toContain('| `0.1.2-alpha.2` | 独立候选夹具 + 公开 session controller | `candidate_verified`（R1 证据完成，不晋级生产） |');
-    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller/WorkspaceRegistry、R2 精确读取/恢复、D1 项目数据模型 | `supported`（当前生产 D1） |');
+    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller/WorkspaceRegistry、R2 精确读取/恢复、D1 项目数据模型 | `superseded`（历史 supported） |');
     expect(r1Evidence).toContain('所有 215 个顶层 `@deepseek-ai/dsh*` 包都精确为 `0.1.2-alpha.2`');
     expect(r1Evidence).toContain('建议继续保留生产 `0.1.1-rc.2`');
     expect(r1Evidence).toContain('R2 也仍需新的明确批准');
@@ -710,14 +710,14 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('整个 Vault 不得成为 DSH 默认可写 `cwd`');
     expect(requirements).toContain('每个 turn 只能产生一个终态');
     expect(requirements).toContain('`failed(runtime_terminated)`');
-    expect(requirements).toContain('当前正式 bridge 目标是 `0.1.2-alpha.3`');
+    expect(requirements).toContain('当前正式 bridge 目标是 `0.2.0-rc.2`');
     expect(requirements).toContain('发送动作建立不可变上下文快照');
     expect(requirements).toContain('`obsidian:chat-boundary` 系统提示三层拒绝全部工具');
     expect(requirements).toContain('任务结束后的已编辑文件');
     expect(requirements).toContain('插件自动安装或更新 DSH');
     expect(hostContract).toContain('状态：已接受');
     expect(hostContract).toContain('只读 `--version` 健康检查');
-    expect(hostContract).toContain('当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.2-alpha.3`');
+    expect(hostContract).toContain('当前正式 bridge 与健康检查统一精确锁定 DSH `0.2.0-rc.2`');
     expect(storageContract).toContain('Claudian `15b78af785cda04fccc96f4effcfae6367f9be65`');
     expect(storageContract).toContain('不复制 `.claudian/sessions`');
     expect(storageContract).toContain('操作系统应用数据目录下按 Vault 绝对路径 SHA-256');
@@ -813,7 +813,7 @@ describe('发布与治理契约', () => {
     expect(spike).toContain('CI run 32708553927');
     expect(spike).toContain('原始 annotations API 后数组长度也均为 `0`');
     expect(matrix).toContain('| `0.1.1-rc.2` | 历史健康检查与正式 bridge + v1 | `superseded`（历史证据保留） |');
-    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller/WorkspaceRegistry、R2 精确读取/恢复、D1 项目数据模型 | `supported`（当前生产 D1） |');
+    expect(matrix).toContain('| `0.1.2-alpha.3` | 健康检查、正式 bridge + 产品对话/任务、公开 session controller/WorkspaceRegistry、R2 精确读取/恢复、D1 项目数据模型 | `superseded`（历史 supported） |');
     expect(matrix).toContain('新版本只产生“待验证候选”');
     expect(matrix).toContain('不得自动安装或更新用户 DSH');
     expect(matrix).toContain('不得自动合并、Release 或提交社区目录');
@@ -849,10 +849,31 @@ describe('发布与治理契约', () => {
     expect(roadmap).toContain('Batch 3 已实现 bridge 协议 v1');
     expect(roadmap).toContain('39023169811fc591be5fe33fde05662fbbc9657e');
     expect(roadmap).toContain('CI run 32711052033');
-    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | bridge `0.3.0` / protocol `1` 已实现；DSH `0.1.2-alpha.3` 已真实加载并完成握手、Agent session、精确读取/同 ID 恢复、公开 Workspace 读取、mid-turn cancel、JSONL session 与正常关闭；现有对话/任务边界保持不变 |');
+    expect(readme).toContain('| 正式 bridge、协议 v1 与 NDJSON | bridge `0.4.0` / protocol `1` 已实现；DSH `0.2.0-rc.2` 复用公开查询、发布前同 ID 恢复、文本直播、取消与 Workspace；历史会话由 DSH 原生迁移，完整支持门未闭合 |');
   });
 
-  it('固定当前正式 bridge artifact、alpha.3 夹具与历史 Batch 4 运行证据', async () => {
+  it('rc.2 迁移固定原生查询、发布前恢复、凭据边界和独立运行门', async () => {
+    const [adr, matrix, bridge, overlay, requirements] = await Promise.all([
+      readFile(path.join(repositoryRoot, 'docs/architecture/ADR-015-dsh-rc2-runtime-migration.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs/architecture/runtime-compatibility-matrix.md'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src/obsidian-bridge.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'src/managed-bridge-process.ts'), 'utf8'),
+      readFile(path.join(repositoryRoot, 'docs/requirements/new-task-v1.md'), 'utf8'),
+    ]);
+    expect(adr).toContain('不挂载 controller/file-upload/Connection');
+    expect(adr).toContain('GHSA-px8p-9vwx-vf98');
+    expect(matrix).toContain('隔离 Vault/用户门待批准，非 supported');
+    expect(requirements).toContain('当前正式 bridge 目标是 `0.2.0-rc.2`，GitHub tag 指向提交 `639ed015397290b3745d163aafe02ffee4aa3f84`');
+    expect(requirements).toContain('当前插件健康检查与正式 bridge 已统一精确锁定 `0.2.0-rc.2`');
+    expect(requirements).not.toContain('当前插件健康检查与正式 bridge 已统一精确支持 `0.1.2-alpha.3`');
+    expect(bridge).toContain('this.context.agents.resume');
+    expect(bridge).toContain('agent.inbox.nextTurn.length');
+    expect(bridge).toContain('this.context.sessionQuery.readSession');
+    expect(overlay).not.toContain("name: '@deepseek-ai/dsh-client-connection'");
+    expect(overlay).not.toContain("name: '@deepseek-ai/dsh-api-session-controller'");
+  });
+
+  it('固定当前正式 bridge artifact、rc.2 夹具与历史 Batch 4 运行证据', async () => {
     const [manifest, fixture, protocol, matrix, roadmap, runtimeTest] = await Promise.all([
       readJson<{
         artifactSha256: string;
@@ -869,18 +890,18 @@ describe('发布与治理契约', () => {
     ]);
 
     expect(manifest).toMatchObject({
-      bridgeVersion: '0.3.0',
+      bridgeVersion: '0.4.0',
       protocolVersion: '1',
-      dshVersion: '0.1.2-alpha.3',
-      artifactSha256: '3c69c61d67fe7398b08d87f83a07d1fdbf99c81012560430ae834d0a291e644d',
+      dshVersion: '0.2.0-rc.2',
+      artifactSha256: '68b7b49d9fa4300f3115164f2c1e00e228ff04f6bbe8b949f55c96f020d389b9',
     });
     expect(manifest.dshIntegrity).toMatch(/^sha512-/u);
-    expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.1.2-alpha.3');
+    expect(fixture.dependencies['@deepseek-ai/dsh']).toBe('0.2.0-rc.2');
     expect(protocol).toContain('正式 bridge、NDJSON、受管进程');
     expect(protocol).toContain('CI run 32717711862');
     expect(protocol).toContain('Ubuntu check `97402381390`、Windows check `97402381253`');
     expect(protocol).toContain('两个原始 annotations 数组均为 `[]`');
-    expect(matrix).toContain('`supported`（当前生产 D1）');
+    expect(matrix).toContain('`superseded`（历史 supported）');
     expect(roadmap).toContain('环回模型请求后的 mid-turn cancel');
     expect(roadmap).toContain('CI `32717476733` 在干净检出中揭示进程单测依赖未跟踪构建产物');
     expect(roadmap).toContain('最小修复 `a719b03c88807740581a2a0327a462fa5e5b7664`');

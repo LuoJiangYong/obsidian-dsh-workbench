@@ -177,7 +177,7 @@ async function restore(context) {
       mediaType: roundTrip.attachment.mediaType,
       sourceMediaType: 'image/png',
     },
-    history: summarizeHistory(agent.session.events),
+    history: summarizeHistory(agent.session.snapshotEvents()),
     listed: summarizeRow(after.items.find(item => item.sessionId === EXPECTED_SESSION_ID)),
     follow: summarizeFollow(followed),
     control: summarizeControl(control),

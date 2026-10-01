@@ -1,9 +1,9 @@
 # ADR-014：项目与最近导航及原身份打开
 
-- 状态：已批准并实现；完整本地门与 Windows 真实 DSH 通过；精确 SHA CI 门待闭合，隔离 Vault 与最终运行 UI 验收未完成
+- 状态：已批准并实现；完整本地门与 Windows 真实 DSH 通过；最终 `8cc2bc1c9af506b057943cc66e7adc32fb4ec807` 的 CI `36817240377` 双平台成功、原始 annotations 均为 `[]`，隔离 Vault 与最终运行 UI 验收未完成
 - 日期：`2026-10-01`
 - 基线：`main / 55f2a2f15bf7461873c33bd737a187ac1e8a8e18`，远端同值、工作树干净；D1 最终 CI `36743757135` 的 Ubuntu `109984585272`、Windows `109984585380` 均成功、原始 annotations 均为 `[]`
-- 生产：DSH `0.1.2-alpha.3`，bridge `0.3.0` / protocol `1`；不改 artifact 或锁文件
+- N1 实施生产基线：DSH `0.1.2-alpha.3`，bridge `0.3.0` / protocol `1`；N1 未改 artifact 或锁文件。当前兼容迁移见 [ADR-015](./ADR-015-dsh-rc2-runtime-migration.md)：DSH `0.2.0-rc.2` / bridge `0.4.0`，新组合 Vault/用户门未过。
 
 范围变更：用户在 N1 实施期间另行授权升级 `0.2.0-rc.2`，并授权开发会话今后核实官方新版本后更新本机 DSH、验证并精确锁定仓库。本 ADR 记录导航在 alpha.3 的独立验证基线；升级必须另有公开契约漂移、bridge、安全、Windows 与 CI 证据，不把授权冒充已支持，不自动部署 Vault。本机已核实为 `0.2.0-rc.2`，无需重复安装；插件自身仍不得安装或更新运行时。
 
