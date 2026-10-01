@@ -27,6 +27,8 @@ export interface TaskRecoveryItem {
   readonly inputSummary: string;
   readonly displayTitle: string;
   readonly workspace: TaskIndexRecord['workspace'];
+  readonly createdAt: string;
+  readonly updatedAt: string;
   readonly status: TaskRecoveryStatus;
   readonly interrupted?: true;
   readonly reason?: TaskRecoveryReason;
@@ -171,6 +173,8 @@ async function projectTask(
       ? item.title
       : task.inputSummary,
     workspace: task.workspace,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
   };
   if (!item || item.status === 'missing') {
     if (task.lifecycle.state === 'failed' || task.lifecycle.state === 'starting') {
@@ -250,6 +254,8 @@ function projectCheckFailure(
     inputSummary: task.inputSummary,
     displayTitle: task.inputSummary,
     workspace: task.workspace,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt,
     status: 'check_failed',
     reason,
   };

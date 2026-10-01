@@ -25,6 +25,7 @@ const runtimeStorageTests = await readFile('tests/runtime-storage.test.ts', 'utf
 const projectIndexTests = await readFile('tests/project-index.test.ts', 'utf8');
 const taskIndexTests = await readFile('tests/task-index.test.ts', 'utf8');
 const taskRecoveryTests = await readFile('tests/task-recovery.test.ts', 'utf8');
+const taskNavigationTests = await readFile('tests/task-navigation.test.ts', 'utf8');
 const taskWorkspaceTests = await readFile('tests/task-workspace.test.ts', 'utf8');
 const taskWorkspaceHostTests = await readFile('tests/task-workspace-host.test.ts', 'utf8');
 const taskWorkspaceFileActionTests = await readFile(
@@ -297,10 +298,10 @@ for (const hostContextContract of [
   );
 }
 for (const ardotContract of [
-  'Ardot v2 固定用户审阅真相、AI 只读边界、插件反馈差异和社区首发门',
+  'UI 真相固定实时实现与过往验收，Ardot 仅为历史参考且禁止未授权写入',
   'Codex 参考路线固定正式会话、原生右侧栏与 DSH 能力投影边界',
   'https://ardot.tencent.com/file/718186366720195',
-  'Ardot 是用户审阅和完善 UI 的专属界面，AI 默认只读',
+  'Ardot 不再作为后续实现的权威或前置门',
   '除非用户对当前批次明确要求修改 Ardot',
   'UI 真相 v2',
   '首个 Obsidian 社区插件发布功能固定为“新建任务”',
@@ -314,6 +315,15 @@ for (const ardotContract of [
 ]) {
   assert(governanceContracts.includes(ardotContract), `治理契约缺少 Ardot 规则：${ardotContract}`);
 }
+
+assert(packageJson.scripts.test === 'vitest run', '双平台完整测试必须发现 N1 导航与 UI 测试');
+assert(taskNavigationTests.includes('不按同目录猜测归属')
+  && taskNavigationTests.includes('不开放替代 session'), 'N1 导航必须测试真实索引、互斥及恢复失败');
+assert(conversationUiTests.includes('选中态不挂在新建任务')
+  && conversationUiTests.includes('不渲染可发送的假会话'), 'N1 UI 必须测试任务路由与失败界面');
+assert(newTaskConversationTests.includes('显式重试仍不创建替代 session'), 'N1 会话必须测试 restore-only');
+assert(realDshBridgeTests.includes('N1 从新实例索引导航打开真实原 session'), 'Windows 正式 bridge 必须执行 N1 真实恢复链');
+assert(governanceContracts.includes('N1 导航契约固定只读索引、原身份恢复和独立运行验收'), 'CI 必须执行 N1 治理契约');
 
 for (const environmentContract of [
   '原生右侧任务环境',
@@ -511,7 +521,7 @@ for (const runtimeContract of [
 }
 
 console.debug(
-  'CI 覆盖验证通过：双平台 Phase A、纯 alpha.3 候选控制面、专用隔离 Vault dry-run guard、Workbench 启动/正式会话 UI、原生右侧任务环境、只读知识库、Vault 外运行数据、任务工作区宿主/控制器/变更账本/文件操作、真实对话、Ardot v2、bridge 协议/正式实现/NDJSON 与 Windows alpha.3 运行门已接入。',
+  'CI 覆盖验证通过：双平台 Phase A、alpha.3 控制面、隔离 Vault dry-run guard、N1 只读导航与原身份打开、正式会话/任务环境、实时 UI 与历史验收真相、Vault 外数据、bridge 协议与 Windows 真实运行门已接入。',
 );
 
 function assert(condition, message) {

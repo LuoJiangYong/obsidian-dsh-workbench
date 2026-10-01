@@ -22,6 +22,7 @@ import {
   type NewTaskContextSnapshot,
 } from './new-task-context';
 import type { NewTaskMode, NewTaskPhase, NewTaskRuntimeStatus } from './new-task-state';
+import type { TaskRecoveryItem } from './task-recovery';
 import type {
   TaskWorkspaceSelection,
   TaskWorkspaceTurnResult,
@@ -72,6 +73,9 @@ export interface NewTaskConversationSession {
 }
 
 export interface NewTaskConversationSnapshot {
+  readonly taskId?: string;
+  readonly restored?: true;
+  readonly restoreBlocked?: true;
   readonly error: NewTaskConversationFailure | null;
   readonly messages: readonly NewTaskConversationMessage[];
   readonly mode: NewTaskMode | null;
@@ -189,6 +193,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
   private taskId: string | undefined;
   private taskIndexCreateInput: TaskIndexCreateInput | undefined;
   private taskIndexReady = false;
+  private restoreOnly = false;
   private indexWriteTail: Promise<void> = Promise.resolve();
   private sessionId: string | undefined;
   private sessionMode: BridgeSessionMode | undefined;
@@ -243,6 +248,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     this.taskId = undefined;
     this.taskIndexCreateInput = undefined;
     this.taskIndexReady = false;
+    this.restoreOnly = false;
     this.sessionId = undefined;
     this.sessionMode = undefined;
     this.sessionWorkspacePath = undefined;
@@ -263,10 +269,61 @@ export class NewTaskConversationController implements NewTaskConversationHost {
     return true;
   }
 
+  async openTask(task: TaskRecoveryItem): Promise<boolean> {
+    if (this.disposed) return false;
+    if (!canBeginTurn(this.snapshot.phase)) {
+      return this.failWithoutChangingPhase('turn_busy', '当前运行尚未结束，不能切换任务。');
+    }
+    if (task.status !== 'continuable') {
+      return this.failWithoutChangingPhase('task_unavailable', task.reason?.message ?? '任务不可恢复。');
+    }
+    if (this.taskId === task.taskId && !this.snapshot.restoreBlocked) return true;
+    this.update({ phase: 'starting' });
+    try {
+      await this.indexWriteTail;
+      await this.invalidateRuntime();
+      if (this.disposed) return false;
+      this.taskId = task.taskId;
+      this.sessionId = task.sessionId;
+      this.sessionMode = task.mode;
+      this.sessionWorkspacePath = task.workspace?.path;
+      this.taskIndexCreateInput = undefined;
+      this.taskIndexReady = true;
+      this.restoreOnly = true;
+      this.snapshot = freezeSnapshot({
+        taskId: task.taskId, restored: true, restoreBlocked: true,
+        error: null, messages: [], mode: task.mode, permission: null, phase: 'starting',
+        runtimeStatus: 'disconnected', taskTurns: [], tools: [],
+        session: { title: task.displayTitle, mode: task.mode, workspace: task.workspace, contextLabels: [] },
+      });
+      this.emit();
+      if (task.mode === 'task') {
+        const verified = await requireTaskLedger(this.options.taskLedger).validateWorkspace(
+          requireWorkspace(task.workspace).path,
+        );
+        if (verified.path !== task.workspace?.path) {
+          throw new NewTaskConversationError('workspace_identity_changed', '任务工作区真实路径已变化。');
+        }
+      }
+      await this.ensureSession(task.mode, task.workspace);
+      if (this.disposed) return false;
+      this.update({ phase: 'idle', restoreBlocked: undefined });
+      return true;
+    } catch (error) {
+      const failure = normalizeConversationError(error, 'session_restore_failed');
+      await this.invalidateRuntime();
+      this.update({ restoreBlocked: true });
+      return this.fail(failure.code, failure.message);
+    }
+  }
+
   async submit(input: NewTaskConversationSubmitInput): Promise<boolean> {
     if (this.disposed) return this.fail('controller_disposed', '对话控制器已关闭。');
     if (!canBeginTurn(this.snapshot.phase)) {
       return this.failWithoutChangingPhase('turn_busy', '当前回复尚未结束。');
+    }
+    if (this.snapshot.restoreBlocked) {
+      return this.failWithoutChangingPhase('session_restore_failed', '请从任务列表重新打开，或显式新建任务。');
     }
     if (this.snapshot.session && this.snapshot.session.mode !== input.mode) {
       return this.failWithoutChangingPhase(
@@ -343,7 +400,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       }
     }
 
-    this.update({ phase: 'starting' });
+    this.update({ phase: 'starting', taskId: this.taskId });
     let taskLedgerStarted = false;
     let turnId: string | undefined;
     try {
@@ -542,10 +599,18 @@ export class NewTaskConversationController implements NewTaskConversationHost {
       mode,
       ...(workspacePath === undefined ? {} : { workingDirectory: workspacePath }),
     });
+    if (this.disposed) {
+      process.terminateImmediately();
+      throw new NewTaskConversationError('controller_disposed', '对话控制器已关闭。');
+    }
     this.process = process;
     let client: NewTaskBridgeClient;
     try {
       client = await process.start();
+      if (this.disposed) {
+        process.terminateImmediately();
+        throw new NewTaskConversationError('controller_disposed', '对话控制器已关闭。');
+      }
       this.client = client;
       this.detachEvents = client.onEvent((event) => this.handleEvent(event));
       this.detachConnection = client.onConnectionStateChange(() => this.handleConnectionState());
@@ -558,15 +623,20 @@ export class NewTaskConversationController implements NewTaskConversationHost {
         );
       }
       const read = await client.readSessions([sessionId]);
+      if (this.disposed) throw new NewTaskConversationError('controller_disposed', '对话控制器已关闭。');
       const item = read.items[0];
       if (!item || item.sessionId !== sessionId) {
         throw new NewTaskConversationError('session_read_invalid', 'DSH 未返回请求的 session 状态。');
       }
       if (item.status === 'missing') {
+        if (this.restoreOnly) {
+          throw new NewTaskConversationError('session_not_found', 'DSH session 已不存在；未创建替代会话。');
+        }
         const title = this.snapshot.session?.title;
         if (!title) throw new NewTaskConversationError('session_title_missing', '任务标题尚未建立。');
         await client.createSession({ sessionId, mode, title });
       } else if (item.status === 'available') {
+        if (item.running) throw new NewTaskConversationError('session_busy', 'DSH session 正在运行，不能接管。');
         await client.restoreSession({ sessionId, mode });
       } else {
         throw new NewTaskConversationError(
@@ -924,7 +994,7 @@ export class NewTaskConversationController implements NewTaskConversationHost {
   private update(
     patch: Partial<Pick<
       NewTaskConversationSnapshot,
-      'error' | 'messages' | 'mode' | 'permission' | 'phase' | 'runtimeStatus' | 'session' | 'taskTurns' | 'tools'
+      'error' | 'messages' | 'mode' | 'permission' | 'phase' | 'runtimeStatus' | 'session' | 'taskTurns' | 'tools' | 'taskId' | 'restoreBlocked'
     >>,
   ): void {
     this.snapshot = freezeSnapshot({ ...this.snapshot, ...patch });

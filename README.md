@@ -10,10 +10,10 @@
 
 | 能力 | 状态 |
 | --- | --- |
-| Ardot UI 用户审阅真相 | `v2` 保持用户审阅基线；Ardot 默认由 AI 只读，只有用户明确要求时才允许修改 |
+| UI 真相与历史参考 | 按 `2026-10-01` 用户反馈，以实时代码与过往已完成的用户验收为真相；Ardot v2 仅为历史参考，未经授权仍禁止修改 |
 | 新建任务 | 宿主 UI、只读知识库、真实对话与 Vault 外任务链均已实现；R1-M 已把生产运行时迁移到 DSH `0.1.2-alpha.3`，本地、专用 Vault 与双平台 CI 门均纳入同一支持闭环 |
-| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；R2 已实现公开 session 精确读取/恢复和 Vault 外最小任务索引，D1 已实现 Vault 外项目模型与 DSH Workspace 公开读取接缝；项目/最近 UI、Vault 写入和删除工具不属于当前范围 |
-| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |
+| 新建任务 v1 需求与宿主契约 | 已批准并纳入 CI；R2 已实现公开 session 精确读取/恢复和 Vault 外最小任务索引，D1 项目模型与 N1 只读导航已实现；项目选择/管理、Vault 写入和删除工具未开放 |
+| 中央 Workbench 与当前内部导航 | N1 已实现上方“新建任务/运行”、下方“项目/最近”及原身份打开；新 UI 尚未完成隔离 Vault 与用户验收，不继承旧导航的通过状态 |
 | ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |
 | 可选右侧任务环境 | 原“快速助手”已原位演进为默认关闭的原生 `ItemView`；专用 Vault 已验证打开/复用、公开事实投影、完整路径排除和关闭不影响中央会话 |
 | DSH 路径配置与健康检查 | 命令校验和进程边界已实现；生产目标统一为 `0.1.2-alpha.3`，本地与专用隔离 Vault 读回通过，并由双平台 CI 执行精确夹具 |
@@ -23,15 +23,15 @@
 | GitHub Release | 未创建 |
 | Obsidian 社区提交 | 尚未进行 |
 
-当前 ribbon 和“打开工作台”命令打开或复用一个中央 Workbench 标签页，默认进入“新建任务”。插件自有左导航按用户 `2026-08-26` 的直接反馈只显示“新建任务”和“运行”；项目、专家/Skill/连接器、自动化、资料库和领域工作台尚未实现，因此不在插件中渲染。“运行”仍合并原概览与运行状态。
+当前 ribbon 和“打开工作台”命令打开或复用中央标签页。上方功能导航只有“新建任务”和“运行”；N1 下方另有“项目”和“最近”，正式任务选中下方记录而不是新建任务。R2 v1 没有显式项目归属，全部只在最近出现；D1 项目只显示真实记录和空态，不按目录猜测归属，不开放创建、编辑或排序交互。
 
-最新获用户批准的 [Ardot UI 真相 v2](https://ardot.tencent.com/file/718186366720195)仍是用户审阅基线，Ardot 由用户审阅和完善，AI 默认只读。`2026-08-26` 至 `2026-08-30` 的直接反馈只授权修改插件：未实现模块从插件导航移除，任务模式控件使用左右半圆胶囊边界；知识库选择入口使用“选择知识库 / 已选笔记”，选择项去除方框阴影并增加文件夹入口；真实对话使用无阴影浅底消息区和缩短的输入框；正式会话、显式新建任务、文件结果与默认关闭的原生任务环境均已接通。Obsidian ribbon、活动标签页、Workbench 左上角和任务环境继续使用同一 DeepSeek 鲸鱼几何。Batch 10 已在专用 Vault 完成技术运行验收，用户于 `2026-08-31` 明确确认第一批开发目标完成。R2 只新增后端任务身份与恢复事实，没有新 UI；Ardot 未修改、只读核对，项目/最近导航仍未实现。
+`2026-10-01` 用户明确以实时代码与过往已完成的用户验收为 UI 真相；[Ardot v2](https://ardot.tencent.com/file/718186366720195)仅保留历史参考，未经授权不修改。既有反馈对应的胶囊模式、选择知识库、正式会话、文件结果和原生任务环境保持。Obsidian ribbon、活动标签页、Workbench 左上角和任务环境继续使用同一 DeepSeek 鲸鱼几何。Batch 10 与 `2026-08-31` 用户验收是旧 UI 的有效证据；N1 新导航尚未完成隔离 Vault 和最终运行 UI 验收，不能继承旧结论。Ardot 未修改。
 
 `2026-08-28` 的插件路线进一步吸收 Codex 的会话导航、中央工作流和可选环境栏关系，但不复制桌面窗口或 Git 专属操作：确认首条消息后，开启页已在同一个 Workbench leaf 内切换为正式会话；右侧信息使用默认关闭的 Obsidian 原生 leaf。DSH 原生配置继续管理模型、插件、Agent 预设、凭据和完整 session，插件只投影当前公开且实际启用的能力。该方向已写入 [Codex 参考界面评估与正式会话路线](./docs/design/codex-reference-ui-assessment.md)，Ardot 未修改。
 
 “新建任务”承担 DeepSeek Harness 主对话、任务执行、上下文和权限审阅。它是首个 Obsidian 社区插件发布功能：完整实现、双平台 CI、隔离 Vault 运行验收和用户对最终 Obsidian 运行 UI 的明确验收均是进入社区发布审批的前置条件。当前 v1 的产品与用户验收前置条件已随第一批目标确认完成；Release 批次、发布资产验收和 Obsidian 社区提交仍未批准，也尚未执行。Ardot、CI、用户验收或 GitHub Release 任一单项都不能替代其他发布门。
 
-“新建任务”允许切换“对话”与“任务执行”、编辑内存草稿，并从原生“选择知识库”流程显式加入当前笔记、当前选区、单个 Vault Markdown 文件或文件夹当下已有的 Markdown 笔记集合。文件夹选择递归包含子文件夹，但在选择时即冻结为逐篇笔记 ID，不会静默追踪后来新增的文件；超限时整体失败，不部分加入。已选笔记可预览来源并逐项移除，文件内容在确认发送后由 Obsidian 宿主重新读取并建立不可变快照。首条消息经确认和校验后，同一个 Workbench leaf 切换为正式会话；关闭/重开 leaf 会恢复当前插件生命周期内的会话，模式与规范工作区保持锁定，只有显式“新建任务”会在处置运行时后返回开启页。当前“对话”会启动受管 DSH `0.1.2-alpha.3` session、显示流式回复并支持真实停止；该模式通过空工具清单、执行 guard 和只消费冻结上下文的系统提示三重禁止 DSH 工具，因此只读且不会写入 Vault。“任务执行”已接通单一 Vault 外工作区和逐轮账本；每个 turn 的真实文件卡默认展示三项并可展开，支持真实快照审核、Obsidian 原生右键文件操作和二次确认撤销。R2 在重启后只重建任务身份、输入摘要与可恢复状态；完整消息仍由 DSH 原生 session 管理，当前 UI 尚不显示项目/最近列表。“代码协作”与附件继续禁用；可选右侧任务环境只投影公开事实，不承担主对话。插件不伪造运行中 turn、具体模型/预设、私有推理或完整本机路径。
+“新建任务”保留对话/任务执行、内存草稿和显式只读知识库。文件夹选择只冻结当下的受限 Markdown 集合，超限整体失败；确认发送时重读形成快照。首条消息进入同一 leaf 的正式页，模式与规范工作区锁定，显式新建任务只清空内存投影，不删除 session、索引或账本。对话模式仍通过空工具清单、执行 guard 和系统提示禁止工具；任务执行仍只允许单一 Vault 外工作区、逐请求权限、文件卡/快照审核/原生菜单/二次确认撤销。N1 已接入最近列表，点击时只恢复原身份；完整消息由 DSH 保存，界面仅显示本次打开后的消息。代码协作和附件继续禁用，右侧环境只投影公开事实，不伪造运行中 turn、模型/预设、私有推理或本机路径。
 
 ## 开发运行
 
@@ -67,7 +67,7 @@ npm run test:bridge:runtime
 
 当前开发基线：
 
-- 用户手动点击“检查 DSH”时只执行固定 `--version`；用户在发送前确认后，插件才启动正式 bridge、DSH session 和由 DSH 配置管理的模型请求。
+- 用户点击“检查 DSH”时只执行固定 `--version`。启动/刷新恢复列表会运行只读 bridge 核对精确已索引 session，点击可继续任务会恢复原 session；这些操作不发送模型请求。仅确认发送后才发起由 DSH 配置管理的模型请求。
 - 健康检查本身不发起模型请求；对话的网络端点、账号和模型由用户原生 DSH 配置负责。
 - 只通过 Obsidian API 读取用户明确加入的 Markdown 笔记或冻结选区；不写入、删除或移动 Vault 内容，也不索引整个 Vault。
 - 只访问用户配置的 DSH 命令或绝对可执行路径；不接受任意参数或 Shell 命令。
@@ -78,7 +78,7 @@ npm run test:bridge:runtime
 - 插件不安装或更新 DSH、Node、Python 或其他外部依赖。
 - 仓库内 `tests/runtime-fixture` 只供开发与 Windows CI 精确复现 `0.1.2-alpha.3`，不由插件安装，不进入用户 DSH profile 或 Release 运行依赖。
 
-当前健康检查与正式 bridge 统一精确支持 DSH `0.1.2-alpha.3`；其他版本会明确显示不受支持，不做兼容 fallback。插件不会安装或更新 DSH；只有用户确认发送只读对话或已校验的 Vault 外任务后，`main.ts` 才启动正式 bridge 与模型请求。
+当前健康检查与正式 bridge 统一精确支持 DSH `0.1.2-alpha.3`；其他版本明确不受支持，不做 fallback。插件不会安装或更新 DSH；索引恢复读取/原身份打开可启动 bridge，但模型请求仅由用户确认发送触发。
 
 正式 `obsidian-bridge` 是独立 ESM artifact，只投影公开文本、工具身份、一次性权限关联、R2 精确 session 可恢复事实和 D1 精确 Workspace 读取，不复制工具参数、推理内容、完整消息或 DSH 私有文件。插件用固定 `--profile headless --patch <Vault 外 overlay>` 参数启动用户配置的 DSH；DSH 原生 `$DSH_HOME` 继续保存其设置、凭据和 session，插件生成的 overlay 位于操作系统应用数据目录下按 Vault 哈希分区的状态目录。任何状态目录、DSH `cwd` 或 `$DSH_HOME` 落入 Vault 都会在启动 DSH 前失败。对话模式在 DSH 层以空工具清单、执行 guard 和只读系统提示拒绝全部工具；任务模式只允许 `edit/glob/grep/read/read_image/write`，拒绝 Shell、网络、Skill、子代理、路径越界和依赖/缓存/构建/版本控制目录。逐轮基线、撤销材料、R2 最小索引和 D1 项目索引保存在同一 Vault 外状态分区；索引采用版本化双槽快照、原子替换、损坏隔离和独占锁。关闭时先请求协议退出，超时后终止整棵进程树。Batch 7 最终 bridge 修复 `1810aa9779bb7d3439a1b73c7c1cfdbbf2f04b80` 已通过远端 [CI run 33132970545](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/33132970545) 的双平台 job 与原始零 annotations；Batch 10 与 `2026-08-31` 用户确认已把正式 bridge + 产品对话/任务组合推进到 `supported`。R2 与 D1 都没有修改项目/最近 UI、隔离 Vault、Release、发布资产或社区目录。
 
@@ -212,9 +212,9 @@ Batch 8A 实现提交 `4f56372ae93ea9e01731b4ec19dcb8329d48aa28` 已通过 [CI r
 ## 开发治理
 
 - 项目开发宪法：[AGENTS.md](./AGENTS.md)
-- UI 用户审阅真相：[Ardot `DeepSeek Harness Workbench · UI 真相`](https://ardot.tencent.com/file/718186366720195)
+- UI 历史参考：[Ardot `DeepSeek Harness Workbench · UI 真相`](https://ardot.tencent.com/file/718186366720195)
 - UI 文字契约：[DESIGN.md](./DESIGN.md)
-- Ardot 权威 ADR：[docs/architecture/ADR-003-ardot-ui-authority.md](./docs/architecture/ADR-003-ardot-ui-authority.md)
+- UI 权威与历史参考 ADR：[docs/architecture/ADR-003-ardot-ui-authority.md](./docs/architecture/ADR-003-ardot-ui-authority.md)
 - 新建任务与首发门 ADR：[docs/architecture/ADR-004-new-task-first-release-gate.md](./docs/architecture/ADR-004-new-task-first-release-gate.md)
 - Workbench 壳层 ADR：[docs/architecture/ADR-002-workbench-shell.md](./docs/architecture/ADR-002-workbench-shell.md)
 - 设计验收：[design-qa.md](./design-qa.md)

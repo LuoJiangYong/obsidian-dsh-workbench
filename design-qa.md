@@ -1,6 +1,6 @@
-# Workbench 壳层与 Ardot UI 真相设计验收
+# Workbench 实现与用户验收、Ardot 历史设计证据
 
-状态：Ardot 设计证据有效；Batch 10 专用 Vault 技术运行门与 G0-2 可复现只读预检入口已通过，用户已于 `2026-08-31` 明确确认第一批开发目标完成；R1-M 已把生产推进至 alpha.3。R2 已完成；D1 已单独批准并实现无 UI 的 Workspace 读取接缝和项目索引，本地真实 DSH 通过，完成门要求对应实现 SHA 双平台 CI 成功及原始零 annotations；隔离 Vault 部署未授权。Ardot 未修改；N1、Release 与社区提交未授权
+状态：实时代码与过往已完成的用户验收为 UI 真相，Ardot 仅为历史参考。Batch 10/G0-2/R1-M/R2/D1 的有效证据保留；N1 已批准并实现，本地完整门与 Windows 真实 DSH 通过，精确 SHA CI 门闭合中；新 UI 隔离 Vault 与用户验收未完成，部署未授权。用户另行授权开发会话升级本机 DSH 并验证后锁定官方新版本；本机已为 `0.2.0-rc.2`，仓库兼容迁移仍须闭合公开契约、运行与清理门。插件自身不更新 DSH。Ardot 未修改，Release 与社区提交未授权。
 
 > `2026-08-26` 纠正：本文早期 Workbench 壳层运行截图使用了属于另一个插件的 `obsidian-trend-radar-evidence` Vault，不能作为本插件隔离验收证据；`docs/assets/design-qa/workbench-shell/` 只保留为历史工件，不再支撑“已通过”结论。Ardot 设计审阅证据不受影响；`docs/assets/design-qa/new-task-host-ui/` 五张截图已全部由专用 `obsidian-dsh-workbench-evidence` Vault 覆盖，当前有效运行结论只以后文修正批次为准。
 
@@ -420,3 +420,14 @@ R2/D1 Ardot status: read-only, unchanged; R2/D1 UI: none; isolated Vault deploym
 - DSH 能力真相：alpha.3 公开 `WorkspaceRegistry` 的稳定 Workspace ID、canonical path、标题、时间和 session membership 已由两个独立候选进程实测；bridge 只提供精确 `workspace/read`，不创建、删除、归档、置顶或解析私有文件。
 - 失败门：名称、Workspace ID、重复/包含路径、非 canonical/失效/符号链接源目录、损坏快照、活动锁和 Vault/junction 越界均 fail closed；损坏槽隔离并回退有效槽，所有槽不可读时不伪造空索引。
 - 验收边界：本地与双平台 CI 通过后，本批仍不授权写入专用隔离 Vault；如需部署，必须展示精确 Vault 身份、版本和资产 diff 后单独请求确认。
+
+## N1：项目/最近只读导航（2026-10-01）
+
+- 用户明确批准 N1，并调整 UI 真相为实时代码与过往已完成的用户验收；Ardot 不再作为后续前置门。开始时只读核对历史文件 `718186366720195`、v2 页面 `12:1` 与宽屏 `12:41`，未修改 Ardot。
+- 实现：上方新建任务/运行、下方真实项目/最近、原 task/session 打开、失败原因页、选中态、窄屏原生折叠入口、主题变量与 focus-visible。R2 v1 没有项目归属，全部只进入最近；项目选择与归属固定仍属 P1/U1，没有按路径猜测。
+- 本地定向门：导航/恢复/会话/UI/plugin 测试通过。Windows 正式 alpha.3 真实新增测试由独立 bridge 进程创建、冷读取、经导航恢复原 ID 并继续回复；打开本身零模型请求、临时 Vault 为空、正常关闭通过。模型为本地测试服务，不冒充真实账号或 Obsidian 运行 UI 验收。
+- 自动门：完整本地质量门和精确实现 SHA 双平台 CI/原始 annotations 在当前实现提交闭合；测试及 CI 守卫随实现，不另拆证据提交。
+- 新 UI 门：宽屏/700px、明暗主题、Tab/Enter/Space、冷启动任务选择、缺失/冲突原因、真实任务继续、插件卸载零残留及最终用户验收均未执行。旧截图与 Batch 10 通过不支撑 N1 UI 通过。
+- 停止：本地门通过后才能提出精确隔离 Vault 身份、版本与资产 diff，并单独请求部署；不自动进入 P1/O1/U1。DSH rc.2 兼容迁移与开发会话本机更新已另获授权，但尚未晋级仓库支持；本机已是该版本，不重复安装。不改 Ardot、真实 Vault 或发布。
+
+N1 implementation: present; isolated Vault deployment: not authorized; final N1 Obsidian UI user acceptance: pending.

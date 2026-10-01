@@ -14,6 +14,8 @@ import type { TaskWorkspaceHost } from '../src/task-workspace-host';
 import type { TaskWorkspaceFileActionsHost } from '../src/task-workspace-file-actions';
 import type { TaskWorkspaceTurnResult } from '../src/task-workspace';
 import { WorkbenchView } from '../src/workbench-view';
+import type { TaskNavigationHost, TaskNavigationSnapshot } from '../src/task-navigation';
+import type { TaskRecoveryItem } from '../src/task-recovery';
 import {
   App,
   MenuItem,
@@ -24,6 +26,64 @@ import {
 
 describe('Workbench 真实对话界面', () => {
   beforeEach(() => resetMockObsidian());
+
+  it('N1 上方只有功能页面；下方真实任务打开同一正式页，选中态不挂在新建任务', async () => {
+    const conversationHost = new FakeConversationHost();
+    const task = indexedTask();
+    const open = vi.fn(async (taskId: string) => {
+      conversationHost.emit({ taskId, restored: true, phase: 'idle', mode: 'chat',
+        session: conversationSession('chat', task.displayTitle) });
+      return true;
+    });
+    const navigationHost: TaskNavigationHost = {
+      getSnapshot: () => ({ phase: 'ready', projects: [], recent: [task] }),
+      openTask: open, refresh: async () => undefined, subscribe: () => () => undefined,
+    };
+    const view = navigationView(conversationHost, navigationHost);
+    await view.onOpen();
+    const content = view.contentEl as unknown as MockElement;
+    const top = content.findAllByClass('dsh-navigation')[0];
+    expect(top?.allText()).toEqual(['新建任务', '运行']);
+    const lower = content.findAllByClass('dsh-task-navigation')[0];
+    const taskButton = lower?.findAllByClass('dsh-task-navigation__task')[0];
+    expect(taskButton?.attributes.get('type')).toBe('button');
+    expect(taskButton?.attributes.get('aria-label')).toContain('可继续');
+    await taskButton?.click();
+    await vi.waitFor(() => expect(open).toHaveBeenCalledWith(task.taskId));
+    expect(content.findAllByClass('dsh-navigation__item')[0]?.attributes.has('aria-current')).toBe(false);
+    expect(content.findAllByClass('dsh-task-navigation__task')[0]?.attributes.get('aria-current')).toBe('page');
+    expect(content.findAllByClass('dsh-new-task-conversation__history')[0]?.text).toContain('历史由 DSH 保存');
+    expect(content.findAllByTag('select')[0]?.value).toBe('current-task');
+    conversationHost.emit({ phase: 'running' });
+    const stableButton = content.findAllByClass('dsh-task-navigation__task')[0];
+    conversationHost.emit({ messages: [{ id: 'delta', turnId: 'turn-one', role: 'assistant', text: '回复' }] });
+    expect(content.findAllByClass('dsh-task-navigation__task')[0]).toBe(stableButton);
+    expect(content.findAllByClass('dsh-navigation__item')[0]?.disabled).toBe(true);
+    await view.onClose();
+  });
+
+  it('N1 不可恢复记录打开原因与原始摘要，不渲染可发送的假会话；导航订阅随 leaf 关闭移除', async () => {
+    const conversationHost = new FakeConversationHost();
+    const task: TaskRecoveryItem = { ...indexedTask(), status: 'unrecoverable',
+      reason: { code: 'session_not_found', message: 'DSH 中未找到此任务的 session' } };
+    const open = vi.fn(async () => false);
+    const detach = vi.fn();
+    const state: TaskNavigationSnapshot = { phase: 'ready', projects: [], recent: [task], error: '读取告警' };
+    const view = navigationView(conversationHost, {
+      getSnapshot: () => state, openTask: open, refresh: async () => undefined, subscribe: () => detach,
+    });
+    await view.onOpen();
+    const content = view.contentEl as unknown as MockElement;
+    await content.findAllByClass('dsh-task-navigation__task')[0]?.click();
+    expect(content.findAllByTag('textarea')).toHaveLength(0);
+    expect(content.findAllByClass('dsh-task-detail')[0]?.allText()).toEqual(expect.arrayContaining([
+      task.inputSummary, '不可恢复', task.reason?.message,
+    ]));
+    expect(content.findAllByClass('dsh-task-navigation__error')[0]?.attributes.get('role')).toBe('alert');
+    expect(open).not.toHaveBeenCalled();
+    await view.onClose();
+    expect(detach).toHaveBeenCalledOnce();
+  });
 
   it('发送前展示只读审阅，取消保留草稿，确认后清空草稿并显示流式结果', async () => {
     const app = new App();
@@ -245,7 +305,7 @@ describe('Workbench 真实对话界面', () => {
     const resetModal = mockObsidian.openModals[mockObsidian.openModals.length - 1];
     expect(resetModal?.title).toBe('新建任务');
     expect(resetModal?.contentEl.allText()).toEqual(expect.arrayContaining([
-      expect.stringContaining('当前版本不提供跨重启的最近会话恢复'),
+      expect.stringContaining('任务记录、DSH 原生会话与 Vault 外逐轮账本不会被删除'),
     ]));
     await resetModal?.contentEl.findAllByClass('dsh-new-task-reset__actions')[0]
       ?.findAllByTag('button')[1]?.click();
@@ -465,6 +525,22 @@ describe('Workbench 真实对话界面', () => {
     ]));
   });
 });
+
+function indexedTask(): TaskRecoveryItem {
+  return { taskId: 'task-one', sessionId: 'session-one', mode: 'chat', workspace: null,
+    inputSummary: '原始摘要', displayTitle: 'DSH 原生标题', status: 'continuable',
+    createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T01:00:00.000Z' };
+}
+
+function navigationView(conversationHost: NewTaskConversationHost, navigationHost: TaskNavigationHost): WorkbenchView {
+  const app = new App();
+  return new WorkbenchView(app.workspace.getLeaf('tab') as never, {
+    conversationHost, navigationHost, contextHost: contextHost(),
+    getDshHealth: () => ({ status: 'unchecked' }), onContextsChanged: () => undefined,
+    openEnvironmentPanel: async () => undefined, runDshHealthCheck: async () => undefined,
+    taskWorkspaceFileActions: taskWorkspaceFileActions(), taskWorkspaceHost: taskWorkspaceHost(),
+  });
+}
 
 class FakeConversationHost implements NewTaskConversationHost {
   cancelCount = 0;

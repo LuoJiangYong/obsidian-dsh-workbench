@@ -122,6 +122,99 @@
   margin-top: 12px;
 }
 
+.dsh-task-navigation {
+  border-top: 1px solid var(--background-modifier-border);
+  font-size: var(--font-ui-small);
+  margin-top: 24px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  padding-top: 12px;
+}
+
+.dsh-task-navigation__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.dsh-task-navigation__heading {
+  display: block;
+  margin-top: 18px;
+  padding: 0 8px;
+}
+
+.dsh-task-navigation__list {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+}
+
+.dsh-workbench-view button.dsh-task-navigation__task {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  display: grid;
+  gap: 3px;
+  height: auto;
+  padding: 8px;
+  text-align: start;
+  width: 100%;
+}
+
+.dsh-workbench-view button.dsh-task-navigation__task:hover:not(:disabled) {
+  background: var(--background-modifier-hover);
+}
+
+.dsh-workbench-view button.dsh-task-navigation__task.is-active {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--interactive-accent);
+}
+
+.dsh-task-navigation__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsh-task-navigation__empty,
+.dsh-task-navigation__status,
+.dsh-new-task-conversation__history {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.dsh-task-navigation__empty,
+.dsh-task-navigation__project {
+  margin: 8px;
+}
+
+.dsh-task-navigation__project summary {
+  cursor: pointer;
+}
+
+.dsh-task-navigation__error {
+  color: var(--text-error);
+  padding: 0 8px;
+}
+
+.dsh-mobile-task-navigation {
+  display: none;
+}
+
+.dsh-task-detail {
+  margin-block: 24px;
+  overflow-wrap: anywhere;
+}
+
+.dsh-task-navigation button:focus-visible,
+.dsh-task-navigation summary:focus-visible,
+.dsh-mobile-task-navigation > summary:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
+}
+
 .dsh-navigation__icon,
 .dsh-mobile-navigation__icon {
   align-items: center;
@@ -1121,6 +1214,16 @@
   .dsh-mobile-navigation {
     display: flex;
     margin-inline: -14px;
+  }
+
+  .dsh-mobile-task-navigation {
+    display: block;
+    margin-top: 12px;
+  }
+
+  .dsh-mobile-task-navigation .dsh-task-navigation {
+    margin-top: 8px;
+    max-height: 40vh;
   }
 
   .dsh-new-task {

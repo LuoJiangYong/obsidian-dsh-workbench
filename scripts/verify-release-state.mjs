@@ -46,8 +46,9 @@ assert(
   'README 缺少 R2 最小恢复事实',
 );
 assert(
-  readme.includes('项目/最近 UI、Vault 写入和删除工具不属于当前范围'),
-  'README 误报 R2 后续范围',
+  readme.includes('项目选择/管理、Vault 写入和删除工具未开放')
+    && readme.includes('新 UI 尚未完成隔离 Vault 与用户验收，不继承旧导航的通过状态'),
+  'README 误报 N1 后续范围或新 UI 验收状态',
 );
 assert(readme.includes('GitHub Release | 未创建'), 'README 误报 GitHub Release 状态');
 assert(readme.includes('Obsidian 社区提交 | 尚未进行'), 'README 误报社区提交状态');

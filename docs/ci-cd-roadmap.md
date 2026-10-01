@@ -130,6 +130,8 @@ D1 在 alpha.3 生产基线上增加 `workspace-read` capability 与 `workspace/
 
 D1 实现 `001026b3c613455f3ad3e0fa3bca311711631748` 的 [CI run `36743179760`](https://github.com/LuoJiangYong/obsidian-dsh-workbench/actions/runs/36743179760) 两个平台均成功；Windows job `109982579848` 原始 annotations 为 `[]`，Ubuntu job `109982580040` 有一条 runner 镜像迁移 notice，因此未达到本批零 annotations 完成门。该次 Ubuntu 实际运行 `24.04.5`；本批第二个实质提交将 workflow 固定为 `ubuntu-24.04` 并同步 CI 覆盖守卫，避免 `ubuntu-latest` 迁移到 Ubuntu 26 的隐式平台漂移，不隐藏、过滤或忽略 annotations。最终完成仍以修正提交的精确双平台 CI 和原始 annotations 为准。
 
+N1 复用现有双平台 `npm test` 和 Windows `test:bridge:runtime`：新增只读导航投影、原身份打开、恢复失败禁发、互斥与排序、导航/正式页选择态及订阅清理测试；真实 Windows alpha.3 用独立进程创建、冷读取、经导航恢复同一 task/session 并继续回复。本地模型为测试服务，打开任务不调用模型。`verify:ci-coverage` 同步守卫这些测试和 UI 权威修订。无需新增 job，不改 fixture/bridge/版本/Release workflow。N1 自动门以精确实现 SHA 的双平台 CI success 和原始 `[]` annotations 为准；隔离 Vault 与最终新 UI 验收必须单独执行，未通过不得标记产品完成。
+
 ## Phase D：隔离 Vault 与发布门
 
 状态：第一批运行与用户 UI 门已通过；发布资产验收和 Release/社区外部动作未完成，Phase D 整体仍为部分建立。
@@ -185,4 +187,4 @@ Phase E 不得自动提交 Obsidian 社区目录；社区提交仍是独立外�
 
 ## 当前下一步
 
-用户已于 `2026-08-31` 明确确认第一批开发目标完成；Batch 5A–10、G0-1、G0-2、R1 与 R1-M 的既有门保持有效。用户于 `2026-09-02` 单独批准的 R2 已完成本地实现、真实 DSH、精确 SHA 双平台 CI 与原始零 annotations；用户于 `2026-09-28` 单独批准的 D1 只增加 Vault 外项目索引和 alpha.3 公开 Workspace 读取接缝。DSH 模型、插件、预设、凭据与完整 session 仍由原生配置管理，插件只新增 Vault 外最小任务/项目引用与公开恢复投影。Ardot 保持只读。当前必须停止；N1、隔离 Vault 部署、真实 Vault、Release、发布资产、社区提交、任意 Shell、自动安装/更新用户 DSH 或上游监测 workflow 均未授权。
+用户已于 `2026-08-31` 确认第一批；R2 与 D1 自动门已通过，D1 最终 CI `36743757135` 的 Ubuntu `109984585272`、Windows `109984585380` success、原始 annotations 均为 `[]`。当前实施 `2026-10-01` 批准的 N1，并另获 DSH 官方新版本兼容迁移与本机更新授权；配置、凭据与完整 session 仍归原生管理，仓库生产保持 alpha.3 至迁移验证通过。本机已是 `0.2.0-rc.2`。UI 真相改为实时代码与过往有效用户验收，Ardot 仅为历史参考且未修改。N1 自动门之后停止申请隔离 Vault/用户 UI 门，不自动进入 P1；隔离 Vault 部署、真实 Vault、Release、发布资产、社区提交、任意 Shell、插件自更新或上游监测 workflow 均未授权。

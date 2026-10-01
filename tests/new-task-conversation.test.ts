@@ -23,6 +23,7 @@ import {
   type NewTaskTaskIndex,
 } from '../src/new-task-conversation';
 import type { TaskIndexCreateInput, TaskIndexLifecycle } from '../src/task-index';
+import type { TaskRecoveryItem } from '../src/task-recovery';
 import {
   createCurrentSelectionContext,
   createNewTaskContextSnapshot,
@@ -40,6 +41,80 @@ beforeAll(() => vi.stubGlobal('window', globalThis));
 afterAll(() => vi.unstubAllGlobals());
 
 describe('新建任务真实对话控制器', () => {
+  it('N1 打开与继续使用原 task/session 身份，不创建记录、不发送首条消息、不复制历史', async () => {
+    const client = new FakeBridgeClient();
+    client.sessionReadStatus = 'available';
+    const process = new FakeBridgeProcess(client);
+    const index = new FakeTaskIndex();
+    const controller = new NewTaskConversationController({ createProcess: async () => process, taskIndex: index });
+    const task = recoveryTask();
+    await expect(controller.openTask(task)).resolves.toBe(true);
+    expect(controller.getSnapshot()).toMatchObject({
+      taskId: task.taskId, restored: true, phase: 'idle', messages: [],
+      session: { title: '原生标题', mode: 'chat', workspace: null, contextLabels: [] },
+    });
+    expect(client.createdSessionIds).toEqual([]);
+    expect(client.restoredSessionIds).toEqual([task.sessionId]);
+    expect(client.startedTexts).toEqual([]);
+    expect(index.created).toEqual([]);
+    await expect(controller.openTask(task)).resolves.toBe(true);
+    expect(process.startCount).toBe(1);
+    await expect(controller.submit({ contexts: [], draft: '继续原任务', mode: 'chat', reader: readerReturning('') })).resolves.toBe(true);
+    expect(client.startedSessionIds).toEqual([task.sessionId]);
+    expect(index.updates.every(item => item.taskId === task.taskId)).toBe(true);
+    await controller.dispose();
+  });
+
+  it('N1 点击时已丢失的 session 和恢复失败均 fail closed；显式重试仍不创建替代 session', async () => {
+    const client = new FakeBridgeClient();
+    const process = new FakeBridgeProcess(client);
+    const controller = new NewTaskConversationController({ createProcess: async () => process });
+    await expect(controller.openTask(recoveryTask())).resolves.toBe(false);
+    expect(controller.getSnapshot()).toMatchObject({ restoreBlocked: true, phase: 'failed', error: { code: 'session_not_found' } });
+    await expect(controller.submit({ contexts: [], draft: '不应发送', mode: 'chat', reader: readerReturning('') })).resolves.toBe(false);
+    expect(client.createdSessionIds).toEqual([]);
+    expect(client.startedTexts).toEqual([]);
+    client.sessionReadStatus = 'available';
+    await expect(controller.openTask(recoveryTask())).resolves.toBe(true);
+    expect(client.restoredSessionIds).toEqual(['session-restored']);
+    expect(controller.getSnapshot().restoreBlocked).toBeUndefined();
+    await controller.dispose();
+  });
+
+  it('N1 不接管运行中 session，不在活动 turn 切换', async () => {
+    const client = new FakeBridgeClient();
+    client.sessionReadStatus = 'available';
+    client.sessionRunning = true;
+    const controller = new NewTaskConversationController({ createProcess: async () => new FakeBridgeProcess(client) });
+    await expect(controller.openTask(recoveryTask())).resolves.toBe(false);
+    expect(client.restoredSessionIds).toEqual([]);
+    client.sessionRunning = false;
+    await controller.openTask(recoveryTask());
+    await controller.submit({ contexts: [], draft: '继续', mode: 'chat', reader: readerReturning('') });
+    client.emit(event('turn.started', 0, {}));
+    await expect(controller.openTask({ ...recoveryTask(), taskId: 'other-task' })).resolves.toBe(false);
+    expect(controller.getSnapshot()).toMatchObject({ taskId: 'task-restored', phase: 'running' });
+    await controller.dispose();
+  });
+
+  it('N1 正在打开时禁止另一次切换，异步进程创建后卸载不得启动或恢复', async () => {
+    const client = new FakeBridgeClient();
+    client.sessionReadStatus = 'available';
+    const process = new FakeBridgeProcess(client);
+    let release: ((process: NewTaskBridgeProcess) => void) | undefined;
+    const pending = new Promise<NewTaskBridgeProcess>(resolve => { release = resolve; });
+    const factory = vi.fn(async () => await pending);
+    const controller = new NewTaskConversationController({ createProcess: factory });
+    const opened = controller.openTask(recoveryTask());
+    await vi.waitFor(() => expect(factory).toHaveBeenCalledOnce());
+    await expect(controller.openTask({ ...recoveryTask(), taskId: 'another-task' })).resolves.toBe(false);
+    controller.disposeImmediately();
+    release?.(process);
+    await expect(opened).resolves.toBe(false);
+    expect(process.startCount).toBe(0);
+    expect(process.terminateImmediatelyCount).toBe(1);
+    expect(client.restoredSessionIds).toEqual([]);
+  });
   it('把任务与只读快照投影为确定性窄信封并冻结 64 KiB 输入上限', async () => {
     const snapshot = await createNewTaskContextSnapshot([
       createCurrentSelectionContext({
@@ -772,6 +847,8 @@ class FakeBridgeClient implements NewTaskBridgeClient {
   readonly createdSessionIds: string[] = [];
   readonly restoredSessionIds: string[] = [];
   sessionReadStatus: 'available' | 'missing' = 'missing';
+  sessionRunning = false;
+  readonly startedSessionIds: string[] = [];
   cancelCount = 0;
   readonly permissionDecisions: BridgePermissionDecision[] = [];
   readonly startedTexts: string[] = [];
@@ -803,7 +880,7 @@ class FakeBridgeClient implements NewTaskBridgeClient {
             status: 'available' as const,
             blank: false,
             cwd: process.cwd(),
-            running: false,
+            running: this.sessionRunning,
           }),
     };
   }
@@ -848,10 +925,19 @@ class FakeBridgeClient implements NewTaskBridgeClient {
     readonly text: string;
     readonly turnId: string;
   }): Promise<{ readonly accepted: true }> {
+    this.startedSessionIds.push(input.sessionId);
     this.startedTexts.push(input.text);
     this.startedTurnIds.push(input.turnId);
     return { accepted: true };
   }
+}
+
+function recoveryTask(): TaskRecoveryItem {
+  return {
+    taskId: 'task-restored', sessionId: 'session-restored', mode: 'chat', workspace: null,
+    inputSummary: '原始输入', displayTitle: '原生标题', status: 'continuable',
+    createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+  };
 }
 
 class FakeTaskIndex implements NewTaskTaskIndex {

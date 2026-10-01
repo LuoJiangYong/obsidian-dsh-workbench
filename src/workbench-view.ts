@@ -37,6 +37,8 @@ import type {
   TaskWorkspaceTurnResult,
 } from './task-workspace';
 import { createWorkbenchState } from './workbench-state';
+import type { TaskNavigationHost } from './task-navigation';
+import type { TaskRecoveryItem } from './task-recovery';
 
 export const VIEW_TYPE_WORKBENCH = 'deepseek-harness-workbench-view';
 
@@ -63,6 +65,7 @@ const WORKBENCH_NAVIGATION: readonly WorkbenchNavigationItem[] = Object.freeze([
 
 interface WorkbenchViewOptions {
   readonly conversationHost: NewTaskConversationHost;
+  readonly navigationHost?: TaskNavigationHost;
   readonly contextHost: NewTaskContextHost;
   readonly getDshHealth: () => DshHealthResult;
   readonly onContextsChanged: () => void;
@@ -77,7 +80,14 @@ export class WorkbenchView extends ItemView {
   private conversationEl: HTMLElement | undefined;
   private conversationStatusEl: HTMLElement | undefined;
   private newTaskButtonEl: HTMLButtonElement | undefined;
+  private newTaskNavigationButtonEl: HTMLButtonElement | undefined;
   private detachConversation: (() => void) | undefined;
+  private detachNavigation: (() => void) | undefined;
+  private taskNavigationEl: HTMLElement | undefined;
+  private mobileTaskNavigationEl: HTMLElement | undefined;
+  private taskDetail: TaskRecoveryItem | undefined;
+  private renderedTaskId: string | undefined;
+  private renderedNavigationPhase: NewTaskConversationSnapshot['phase'] | undefined;
   private readonly expandedTaskTurnIds = new Set<string>();
   private newTaskState: NewTaskState = createNewTaskState();
   private renderedSessionActive = false;
@@ -110,6 +120,9 @@ export class WorkbenchView extends ItemView {
     this.detachConversation ??= this.options.conversationHost.subscribe(
       () => this.handleConversationChanged(),
     );
+    this.detachNavigation ??= this.options.navigationHost?.subscribe(() => {
+      this.syncTaskNavigation();
+    });
     this.render();
   }
 
@@ -118,8 +131,11 @@ export class WorkbenchView extends ItemView {
     this.conversationEl = undefined;
     this.conversationStatusEl = undefined;
     this.newTaskButtonEl = undefined;
+    this.newTaskNavigationButtonEl = undefined;
     this.sendButtonEl = undefined;
     this.textareaEl = undefined;
+    this.taskNavigationEl = undefined;
+    this.mobileTaskNavigationEl = undefined;
     contentEl.empty();
     contentEl.addClass('dsh-workbench-view');
 
@@ -132,12 +148,17 @@ export class WorkbenchView extends ItemView {
       this.renderRun(mainEl);
       return;
     }
-    this.renderNewTask(mainEl);
+    if (this.taskDetail) this.renderTaskDetail(mainEl, this.taskDetail);
+    else this.renderNewTask(mainEl);
   }
 
   async onClose(): Promise<void> {
     this.detachConversation?.();
     this.detachConversation = undefined;
+    this.detachNavigation?.();
+    this.detachNavigation = undefined;
+    this.taskNavigationEl = undefined;
+    this.mobileTaskNavigationEl = undefined;
     this.newTaskState = createNewTaskState();
     this.conversationEl = undefined;
     this.conversationStatusEl = undefined;
@@ -176,7 +197,8 @@ export class WorkbenchView extends ItemView {
       attr: { 'aria-label': 'Workbench 页面' },
     });
     for (const item of WORKBENCH_NAVIGATION) {
-      const isActive = item.id === this.activeSection;
+      const isActive = item.id === this.activeSection
+        && (item.id !== 'new-task' || (!this.taskDetail && !this.options.conversationHost.getSnapshot().session));
       const buttonEl = navigationEl.createEl('button', {
         cls: `dsh-navigation__item${isActive ? ' is-active' : ''}`,
         attr: {
@@ -187,12 +209,139 @@ export class WorkbenchView extends ItemView {
       const iconEl = buttonEl.createSpan({ cls: 'dsh-navigation__icon' });
       setIcon(iconEl, item.icon);
       buttonEl.createSpan({ cls: 'dsh-navigation__label', text: item.label });
+      if (item.id === 'new-task') {
+        this.newTaskNavigationButtonEl = buttonEl;
+        buttonEl.disabled = !canChangeMode(this.options.conversationHost.getSnapshot().phase);
+      }
 
       buttonEl.addEventListener('click', () => {
-        this.activeSection = item.id;
-        this.render();
+        this.selectSection(item.id);
       });
     }
+    this.taskNavigationEl = sidebarEl.createEl('nav', {
+      cls: 'dsh-task-navigation', attr: { 'aria-label': '项目与最近任务' },
+    });
+    this.renderTaskNavigation(this.taskNavigationEl);
+  }
+
+  private selectSection(section: WorkbenchSectionId): void {
+    if (section === 'new-task' && this.options.conversationHost.getSnapshot().session) {
+      this.openNewTaskReset();
+      return;
+    }
+    this.taskDetail = undefined;
+    this.activeSection = section;
+    this.render();
+  }
+
+  private syncTaskNavigation(): void {
+    if (this.newTaskNavigationButtonEl) {
+      this.newTaskNavigationButtonEl.disabled = !canChangeMode(this.options.conversationHost.getSnapshot().phase);
+    }
+    for (const element of [this.taskNavigationEl, this.mobileTaskNavigationEl]) {
+      if (!element) continue;
+      element.empty();
+      element.addClass('dsh-task-navigation');
+      this.renderTaskNavigation(element);
+    }
+  }
+
+  private renderTaskNavigation(parent: HTMLElement): void {
+    const navigation = this.options.navigationHost?.getSnapshot();
+    const snapshot = this.options.conversationHost.getSnapshot();
+    this.renderedNavigationPhase = snapshot.phase;
+    const header = parent.createDiv({ cls: 'dsh-task-navigation__header' });
+    header.createEl('strong', { text: '项目' });
+    if (this.options.navigationHost) {
+      const refresh = header.createEl('button', {
+        cls: 'dsh-task-navigation__refresh',
+        attr: { type: 'button', 'aria-label': '刷新项目与任务状态' },
+      });
+      setIcon(refresh, 'refresh-cw');
+      refresh.disabled = navigation?.phase === 'loading' || !canChangeMode(snapshot.phase);
+      refresh.addEventListener('click', () => {
+        void this.options.navigationHost?.refresh().catch(
+          (error: unknown) => new Notice(taskActionFailureMessage(error)),
+        );
+      });
+    }
+    for (const project of navigation?.projects ?? []) {
+      const projectEl = parent.createEl('details', { cls: 'dsh-task-navigation__project' });
+      const summary = projectEl.createEl('summary', { text: project.displayName });
+      summary.setAttr('title', project.displayName);
+      projectEl.createEl('p', { cls: 'dsh-task-navigation__empty', text: '暂无任务' });
+    }
+    if (!navigation?.projects.length) {
+      parent.createEl('p', { cls: 'dsh-task-navigation__empty', text: '暂无项目' });
+    }
+    parent.createEl('strong', { cls: 'dsh-task-navigation__heading', text: '最近' });
+    const list = parent.createEl('ul', { cls: 'dsh-task-navigation__list' });
+    for (const task of navigation?.recent ?? []) {
+      const current = snapshot.taskId === task.taskId && !this.taskDetail;
+      const selected = this.activeSection !== 'run' && (this.taskDetail?.taskId === task.taskId || current);
+      const item = list.createEl('li');
+      const label = current ? snapshot.restoreBlocked ? '恢复失败' : '当前任务' : recoveryStatusLabel(task);
+      const button = item.createEl('button', {
+        cls: `dsh-task-navigation__task${selected ? ' is-active' : ''}`,
+        attr: { type: 'button', 'data-task-id': task.taskId,
+          'aria-label': `${task.displayTitle}，${label}`,
+          ...(selected ? { 'aria-current': 'page' } : {}) },
+      });
+      button.createSpan({ cls: 'dsh-task-navigation__title', text: task.displayTitle });
+      button.createSpan({ cls: 'dsh-task-navigation__status', text: label });
+      button.disabled = !current && (!canChangeMode(snapshot.phase) || navigation?.phase === 'loading');
+      button.addEventListener('click', () => { void this.openIndexedTask(task); });
+    }
+    if (!navigation?.recent.length) {
+      parent.createEl('p', { cls: 'dsh-task-navigation__empty', text: navigation?.phase === 'loading' ? '正在读取任务…' : '暂无任务' });
+    }
+    if (navigation?.error) {
+      parent.createEl('p', { cls: 'dsh-task-navigation__error', text: navigation.error, attr: { role: 'alert' } });
+    }
+  }
+
+  private async openIndexedTask(task: TaskRecoveryItem): Promise<void> {
+    const snapshot = this.options.conversationHost.getSnapshot();
+    if (snapshot.taskId === task.taskId && !snapshot.restoreBlocked) {
+      this.taskDetail = undefined;
+      this.activeSection = 'new-task';
+      this.hydrateNewTaskStateFromSession();
+      this.render();
+      return;
+    }
+    if (!canChangeMode(snapshot.phase)) return;
+    this.activeSection = 'new-task';
+    if (task.status !== 'continuable') {
+      this.taskDetail = task;
+      this.render();
+      return;
+    }
+    this.taskDetail = undefined;
+    try {
+      const opened = await this.options.navigationHost?.openTask(task.taskId);
+      if (!opened && !this.options.conversationHost.getSnapshot().restoreBlocked) {
+        this.taskDetail = { ...task, status: 'check_failed', reason: {
+          code: 'task_open_failed', message: '未能安全打开任务，请刷新后重试。',
+        } };
+      }
+    } catch {
+      this.taskDetail = { ...task, status: 'check_failed', reason: {
+        code: 'task_open_failed', message: '未能安全打开任务，请刷新后重试。',
+      } };
+    }
+    this.render();
+  }
+
+  private renderTaskDetail(parent: HTMLElement, task: TaskRecoveryItem): void {
+    const detail = parent.createEl('section', { cls: 'dsh-task-detail' });
+    detail.createEl('h3', { text: task.displayTitle });
+    detail.createEl('p', { text: recoveryStatusLabel(task) });
+    detail.createEl('p', { text: task.reason?.message ?? '任务不能安全继续。', attr: { role: 'alert' } });
+    detail.createEl('strong', { text: '原始输入摘要' });
+    detail.createEl('p', { text: task.inputSummary });
+    detail.createEl('p', { text: '记录和 DSH 原生 session 未删除。可刷新状态，或显式新建任务。' });
+    const fresh = detail.createEl('button', { text: '新建任务', attr: { type: 'button' } });
+    fresh.addEventListener('click', () => this.selectSection('new-task'));
   }
 
   private renderMobileNavigation(parentEl: HTMLElement): void {
@@ -205,19 +354,29 @@ export class WorkbenchView extends ItemView {
     for (const item of WORKBENCH_NAVIGATION) {
       selectEl.createEl('option', { text: item.label, value: item.id });
     }
-    selectEl.value = this.activeSection;
+    if (this.taskDetail || (this.activeSection !== 'run' && this.options.conversationHost.getSnapshot().session)) {
+      selectEl.createEl('option', { text: '当前任务', value: 'current-task' });
+    }
+    selectEl.value = this.activeSection === 'run' ? 'run'
+      : this.taskDetail || this.options.conversationHost.getSnapshot().session ? 'current-task' : 'new-task';
     selectEl.addEventListener('change', () => {
       if (selectEl.value === 'new-task' || selectEl.value === 'run') {
-        this.activeSection = selectEl.value;
-        this.render();
+        this.selectSection(selectEl.value);
       }
     });
+    const tasks = parentEl.createEl('details', { cls: 'dsh-mobile-task-navigation' });
+    tasks.createEl('summary', { text: '项目与最近任务' });
+    this.mobileTaskNavigationEl = tasks.createEl('nav', {
+      cls: 'dsh-task-navigation', attr: { 'aria-label': '项目与最近任务' },
+    });
+    this.renderTaskNavigation(this.mobileTaskNavigationEl);
   }
 
   private renderNewTask(parentEl: HTMLElement): void {
     const snapshot = this.options.conversationHost.getSnapshot();
     const session = snapshot.session;
     this.renderedSessionActive = session !== null;
+    this.renderedTaskId = snapshot.taskId;
     const taskEl = parentEl.createEl('section', {
       cls: `dsh-new-task${session ? ' is-conversation' : ''}`,
     });
@@ -587,12 +746,20 @@ export class WorkbenchView extends ItemView {
   }
 
   private handleConversationChanged(): void {
-    const sessionActive = this.options.conversationHost.getSnapshot().session !== null;
-    if (sessionActive !== this.renderedSessionActive) {
+    const snapshot = this.options.conversationHost.getSnapshot();
+    const sessionActive = snapshot.session !== null;
+    if (sessionActive !== this.renderedSessionActive || snapshot.taskId !== this.renderedTaskId) {
+      if (snapshot.restored && snapshot.taskId !== this.renderedTaskId) {
+        this.newTaskState = createNewTaskState();
+        this.expandedTaskTurnIds.clear();
+        this.taskActionErrors.clear();
+      }
+      this.taskDetail = undefined;
       this.hydrateNewTaskStateFromSession();
       this.render();
       return;
     }
+    if (snapshot.phase !== this.renderedNavigationPhase) this.syncTaskNavigation();
     this.syncConversationSurface();
   }
 
@@ -615,6 +782,8 @@ export class WorkbenchView extends ItemView {
       async () => {
         const started = await this.options.conversationHost.startNewTask();
         if (started) {
+          this.activeSection = 'new-task';
+          this.taskDetail = undefined;
           this.newTaskState = createNewTaskState();
           this.expandedTaskTurnIds.clear();
           this.taskActionBusy.clear();
@@ -678,6 +847,12 @@ export class WorkbenchView extends ItemView {
       'aria-busy',
       isConversationBusy(snapshot.phase) ? 'true' : 'false',
     );
+    if (snapshot.restored) {
+      conversationEl.createEl('p', {
+        cls: 'dsh-new-task-conversation__history',
+        text: '已按原身份打开任务。历史由 DSH 保存，此处仅显示本次打开后的消息；原有上下文和权限不会自动重新授权。',
+      });
+    }
     if (this.conversationStatusEl) {
       this.conversationStatusEl.setText(formalConversationStatus(snapshot));
     }
@@ -978,7 +1153,8 @@ export class WorkbenchView extends ItemView {
       buttonEl.disabled = true;
     } else {
       buttonEl.setText('发送');
-      buttonEl.disabled = !canSubmitNewTask(this.newTaskState, phase);
+      buttonEl.disabled = this.options.conversationHost.getSnapshot().restoreBlocked === true
+        || !canSubmitNewTask(this.newTaskState, phase);
     }
     buttonEl.setAttr('aria-disabled', buttonEl.disabled ? 'true' : 'false');
   }
@@ -1086,7 +1262,7 @@ class NewTaskResetModal extends Modal {
     this.setTitle('新建任务');
     this.contentEl.createEl('p', {
       cls: 'dsh-new-task-reset__boundary',
-      text: '将清除当前工作台在本次插件生命周期内的会话投影并返回开启页。DSH 原生会话与 Vault 外逐轮账本不会被删除；当前版本不提供跨重启的最近会话恢复。',
+      text: '将清除当前工作台的内存会话投影并返回开启页。任务记录、DSH 原生会话与 Vault 外逐轮账本不会被删除；之后可从最近任务核对恢复状态。',
     });
     const errorEl = this.contentEl.createEl('p', {
       cls: 'dsh-new-task-reset__error',
@@ -1363,6 +1539,15 @@ function conversationMessageStatus(message: NewTaskConversationMessage): string 
   if (message.delivery === 'failed') return '发送失败';
   if (message.interrupted === true) return '已中断';
   return undefined;
+}
+
+function recoveryStatusLabel(task: TaskRecoveryItem): string {
+  switch (task.status) {
+    case 'continuable': return task.interrupted ? '已中断 · 可继续' : '可继续';
+    case 'startup_failed': return '启动失败';
+    case 'unrecoverable': return '不可恢复';
+    case 'check_failed': return '未能核对';
+  }
 }
 
 function conversationPhaseStatus(

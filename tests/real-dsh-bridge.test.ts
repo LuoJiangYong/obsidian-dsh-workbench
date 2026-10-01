@@ -8,6 +8,11 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { KnownBridgeEvent } from '../src/bridge-protocol';
 import { ManagedBridgeProcess } from '../src/managed-bridge-process';
+import { NewTaskConversationController } from '../src/new-task-conversation';
+import { TaskIndexStore } from '../src/task-index';
+import { TaskRecoveryController } from '../src/task-recovery';
+import { TaskNavigationController } from '../src/task-navigation';
+import { ProjectIndexStore } from '../src/project-index';
 
 const fixtureRoot = path.join(process.cwd(), 'tests', 'runtime-fixture');
 const dshCommand = path.join(
@@ -33,6 +38,62 @@ afterAll(async () => {
 });
 
 describe.runIf(existsSync(dshCommand))('DSH 0.1.2-alpha.3 正式 bridge 运行验收', () => {
+  it('N1 从新实例索引导航打开真实原 session 并继续；打开不发模型请求，正常关闭受管进程', async () => {
+    const root = path.join(temporaryRoot, 'navigation');
+    const stateDirectory = path.join(root, 'state');
+    const vaultPath = path.join(root, 'vault');
+    await Promise.all([mkdir(stateDirectory, { recursive: true }), mkdir(vaultPath, { recursive: true })]);
+    const model = await createModelServer();
+    const managers: ManagedBridgeProcess[] = [];
+    const createProcess = () => {
+      const manager = new ManagedBridgeProcess({
+        bridgePath, command: dshCommand, dshHome: path.join(root, 'dsh-home'),
+        environment: { ...process.env, DEEPSEEK_API_KEY: 'fixture-key-never-logged', DEEPSEEK_BASE_URL: model.url },
+        stateDirectory, vaultPath, workingDirectory: stateDirectory,
+        startTimeoutMs: 15_000, requestTimeoutMs: 10_000, shutdownTimeoutMs: 5_000,
+      });
+      managers.push(manager);
+      return manager;
+    };
+    const tasks = new TaskIndexStore({ stateDirectory, vaultPath });
+    const seed = createProcess();
+    const controller = new NewTaskConversationController({ createProcess: async () => createProcess(), taskIndex: tasks });
+    const recovery = new TaskRecoveryController({ createProcess, store: new TaskIndexStore({ stateDirectory, vaultPath }), stateDirectory });
+    const navigation = new TaskNavigationController({ tasks, projects: new ProjectIndexStore({ stateDirectory, vaultPath }), recovery,
+      isBusy: () => !['idle', 'completed', 'failed', 'cancelled'].includes(controller.getSnapshot().phase),
+      openTask: async task => await controller.openTask(task) });
+    try {
+      const client = await seed.start();
+      await client.createSession({ sessionId: 'n1-original-session', mode: 'chat', title: 'N1 原生标题' });
+      await client.closeSession('n1-original-session');
+      await expect(seed.shutdown()).resolves.toEqual({ outcome: 'graceful' });
+      await tasks.createTask({ taskId: 'n1-original-task', sessionId: 'n1-original-session', mode: 'chat', workspace: null, inputSummary: '原始摘要' });
+      await tasks.updateTask('n1-original-task', { state: 'ready' });
+      await navigation.refresh();
+      expect(navigation.getSnapshot().recent).toMatchObject([
+        { taskId: 'n1-original-task', sessionId: 'n1-original-session', displayTitle: 'N1 原生标题', status: 'continuable' },
+      ]);
+      await expect(navigation.openTask('n1-original-task')).resolves.toBe(true);
+      expect(controller.getSnapshot()).toMatchObject({ taskId: 'n1-original-task', restored: true, phase: 'idle', messages: [] });
+      expect(model.requests).toEqual([]);
+      await expect(controller.submit({ contexts: [], draft: '继续原 session，只回复好', mode: 'chat', reader: { readVaultText: async p => ({ content: '', path: p }) } })).resolves.toBe(true);
+      await vi.waitFor(() => expect(controller.getSnapshot().phase).toBe('completed'), { timeout: 10_000 });
+      expect(controller.getSnapshot().messages).toMatchObject([{ role: 'user' }, { role: 'assistant', text: '好' }]);
+      expect((await tasks.load()).document.tasks.map(task => [task.taskId, task.sessionId])).toEqual([
+        ['n1-original-task', 'n1-original-session'],
+      ]);
+      await controller.dispose();
+      for (const manager of managers) await expect(manager.dispose()).resolves.toEqual({ outcome: 'graceful' });
+      expect(await readdir(vaultPath)).toEqual([]);
+    } finally {
+      navigation.dispose();
+      recovery.disposeImmediately();
+      await controller.dispose();
+      await Promise.all(managers.map(manager => manager.dispose()));
+      await model.close();
+    }
+  }, 45_000);
+
   it('真实加载 artifact，以 Vault 外 cwd 完成回复、原生 DSH 会话落盘、mid-turn cancel、跨进程 session 恢复与零残留', async () => {
     const model = await createModelServer();
     const dshHome = path.join(temporaryRoot, 'dsh-home');

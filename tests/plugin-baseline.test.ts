@@ -100,7 +100,10 @@ describe('原生 Workbench 插件基线', () => {
       '与 DeepSeek Harness 对话，定义任务、选择知识库内容，并在执行前审阅权限与变更边界。',
     );
     expect(content.allText().join('\n')).not.toMatch(/规划中|尚未实现|首发/);
-    expect(content.allText().join('\n')).not.toMatch(/项目|专家 · Skill · 连接器|自动化|资料库|领域工作台/u);
+    expect(content.allText().join('\n')).not.toMatch(/专家 · Skill · 连接器|自动化|资料库|领域工作台/u);
+    expect(content.findAllByClass('dsh-task-navigation')[0]?.allText()).toEqual([
+      '项目', '暂无项目', '最近', '暂无任务',
+    ]);
 
     const navigationItems = content.findAllByClass('dsh-navigation__item');
     expect(navigationItems).toHaveLength(2);

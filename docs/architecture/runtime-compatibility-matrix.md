@@ -16,6 +16,8 @@
 
 健康检查与正式 bridge 仍是两个独立生产消费路径，并共同精确锁定 alpha.3。R1-M 先以独立候选提交和双平台 CI 建立纯依赖图与公开控制面证据，再迁移生产常量、夹具和构建清单，并完成 Windows 与专用隔离 Vault 技术验收；用户对该具体迁移和资产 diff 均已批准。R2 在此生产基线上增加公开 session 读取/恢复接缝与 Vault 外最小索引，D1 复用 alpha.3 的公开 WorkspaceRegistry 增加精确 `workspace/read` 和 Vault 外项目索引；两批都不改变 DSH 版本，也不提供 rc.2/0.1.7 双版本 fallback。当前 `supported` 仍只覆盖 alpha.3 + bridge 0.3.0 的本地和远端自动门，不代表 D1 隔离 Vault 已部署，更不包含统一工作台后续能力、Release 或社区提交。
 
+N1 补充（2026-10-01）：导航提交仍为上表 alpha.3 / bridge 0.3.0，artifact 与两个锁文件不变。最新 GitHub/npm 候选重新核对仍为 `0.2.0-rc.2` / `639ed015397290b3745d163aafe02ffee4aa3f84`；用户另获兼容迁移及开发会话本机更新授权，本机已是 rc.2，不重复安装。N1 复用现有 session 读取/恢复接缝接入宿主导航，Windows 真实索引→导航→原 session 打开/继续已通过；新增 UI 隔离 Vault 与用户验收未完成，不能从 D1 或 v1 supported 推断 UI 通过。
+
 ## 兼容晋级状态机
 
 ```text

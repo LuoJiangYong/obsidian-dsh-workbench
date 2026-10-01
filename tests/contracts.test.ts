@@ -39,11 +39,13 @@ describe('发布与治理契约', () => {
 
     expect(readme).toContain('Unofficial community integration for DeepSeek Harness.');
     expect(readme).toContain('| 新建任务 | 宿主 UI、只读知识库、真实对话与 Vault 外任务链均已实现；R1-M 已把生产运行时迁移到 DSH `0.1.2-alpha.3`，本地、专用 Vault 与双平台 CI 门均纳入同一支持闭环 |');
-    expect(readme).toContain('| 中央 Workbench 与当前内部导航 | 按 `2026-08-26` 用户直接反馈仅渲染“新建任务”和“运行”，未开放模块不进入插件导航；专用隔离 Vault 验收已通过 |');
+    expect(readme).toContain('N1 已实现上方“新建任务/运行”、下方“项目/最近”及原身份打开');
+    expect(readme).toContain('新 UI 尚未完成隔离 Vault 与用户验收，不继承旧导航的通过状态');
     expect(readme).toContain('| 可选右侧任务环境 | 原“快速助手”已原位演进为默认关闭的原生 `ItemView`；专用 Vault 已验证打开/复用、公开事实投影、完整路径排除和关闭不影响中央会话 |');
     expect(readme).toContain('| ribbon 与中央标签页命令入口 | 已实现并通过本地测试、双平台 CI 与专用隔离 Vault 的加载、复用和禁用验收 |');
     expect(readme).toContain('| DSH 路径配置与健康检查 | 命令校验和进程边界已实现；生产目标统一为 `0.1.2-alpha.3`，本地与专用隔离 Vault 读回通过，并由双平台 CI 执行精确夹具 |');
-    expect(readme).toContain('用户在发送前确认后，插件才启动正式 bridge');
+    expect(readme).toContain('这些操作不发送模型请求');
+    expect(readme).toContain('仅确认发送后才发起由 DSH 配置管理的模型请求');
     expect(readme).toContain('当前健康检查与正式 bridge 统一精确支持 DSH `0.1.2-alpha.3`');
     expect(readme).toContain('| DSH 会话、流式事件与取消 | 对话与任务链均已接入 Obsidian 宿主；专用 Vault 已验证成功、明确失败与恢复、真实文件变更/审核/撤销，以及禁用后受管进程从 `2` 归零 |');
     expect(readme).toContain('| Vault 读取与写入 | 仅用户显式选择的 Markdown 文件、文件夹当下展开的确定笔记集合或当前选区可进入只读上下文；该只读子集已通过专用 Vault 运行验收，写入、删除、移动、整库索引和隐式整库读取仍禁用 |');
@@ -55,7 +57,7 @@ describe('发布与治理契约', () => {
     expect(readme).toContain('- 不采集客户端遥测。');
   });
 
-  it('G0-1 至 D1 历史证据与当前能力一致且不越过 N1 边界', async () => {
+  it('G0-1 至 D1 历史证据与当前能力一致且不越过 N1 后续边界', async () => {
     const [
       design,
       designQa,
@@ -161,7 +163,7 @@ describe('发布与治理契约', () => {
     );
     expect(requirements).toContain('当前正式 bridge 目标是 `0.1.2-alpha.3`');
     expect(runtimeAdr).toContain('当前生产目标为 alpha.3');
-    expect(ardotAdr).toContain('第一批用户验收闭环；Ardot 仍只读');
+    expect(ardotAdr).toContain('用户明确以实时代码与过往验收为真相，Ardot 降为历史参考');
     expect(hostAdr).toContain('当前正式 bridge 与健康检查统一精确锁定 DSH `0.1.2-alpha.3`');
     expect(sessionAdr).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
     expect(protocol).toContain('目标 bridge 版本：`0.3.0`');
@@ -184,8 +186,8 @@ describe('发布与治理契约', () => {
     expect(ciRoadmap).toContain('npm run test:runtime:candidate');
     expect(codexAssessment).toContain('用户已于 `2026-08-31` 明确确认第一批开发目标完成');
     expect(releaseStatus).toContain('GitHub Release、发布资产验收和 Obsidian 社区提交仍未批准或执行');
-    expect(implementationRoadmap).toContain('G0-1、G0-2、R1、R1-M、R2 已完成；D1 已实现并完成本地验证');
-    expect(implementationRoadmap).toContain('N1 及后续批次未获授权');
+    expect(implementationRoadmap).toContain('G0-1、G0-2、R1、R1-M、R2、D1 已完成');
+    expect(implementationRoadmap).toContain('P1 及后续批次未获授权');
     expect(implementationRoadmap).toContain('权威配置来源固定为 Obsidian 桌面 Vault 注册表');
     expect(designQa).toContain('G0-2 dedicated Vault reproducible read-only preflight: passed');
     expect(designQa).toContain('R1/R1-M alpha.3 production evidence: passed');
@@ -200,7 +202,7 @@ describe('发布与治理契约', () => {
       'utf8',
     );
 
-    expect(design).toContain('用户审阅的产品 UI 界面真相');
+    expect(design).toContain('实时代码与过往已完成的用户验收为 UI 真相');
     expect(design).toContain('中央 Workbench 标签页');
     expect(design).toContain('桌面宽屏导航宽度固定为 `194px`');
     expect(design).toContain('导航首位固定为“新建任务”');
@@ -266,7 +268,7 @@ describe('发布与治理契约', () => {
       ),
     ]);
 
-    expect(requirements).toContain('状态：R2、D1 已单独批准并实现；N1 及后续统一工作台产品批次仍是未获批准的未来实施输入');
+    expect(requirements).toContain('状态：R2、D1 已完成；N1 已单独批准并实现，新 UI 运行验收未完成；P1 及后续仍是未获批准的未来实施输入');
     expect(requirements).toContain('上方产品功能导航');
     expect(requirements).toContain('下方项目与任务导航');
     expect(requirements).toContain('项目任务与“最近”互斥，不重复展示');
@@ -278,13 +280,14 @@ describe('发布与治理契约', () => {
     expect(requirements).toContain('`运行` 保留在上方产品功能导航');
     expect(requirements).toContain('项目归档、移除与任务归档、删除的准确语义');
     expect(requirements).toContain('统一工作台分批实施路线');
-    expect(requirements).toContain('不自动批准 N1 或后续批次');
+    expect(requirements).toContain('不自动批准 P1 或后续批次');
     expect(implementationRoadmap).toContain('G0-1：第一批状态真相闭环');
     expect(implementationRoadmap).toContain('G0-2：隔离 Vault 可复现验收入口');
     expect(implementationRoadmap).toContain('R1：DSH 正式控制面兼容候选');
     expect(implementationRoadmap).toContain('R1-M：DSH alpha.3 生产运行时迁移门');
     expect(implementationRoadmap).toContain('任务归档、删除和恢复语义');
-    expect(implementationRoadmap).toContain('D1 已实现 Vault 外项目模型和顺序持久化；N1 项目/最近 UI 仍未实现');
+    expect(implementationRoadmap).toContain('N1 已批准并实现');
+    expect(implementationRoadmap).toContain('隔离 Vault/用户 UI 门未完成');
     expect(implementationRoadmap).toContain('Ardot 未修改、只读核对');
     expect(design).toContain('统一工作台下一批未来实施契约');
     expect(readme).toContain('统一工作台下一批未来实施契约');
@@ -338,7 +341,7 @@ describe('发布与治理契约', () => {
     expect(adr).toContain('当前协议未公开具体标识');
   });
 
-  it('Ardot v2 固定用户审阅真相、AI 只读边界、插件反馈差异和社区首发门', async () => {
+  it('UI 真相固定实时实现与过往验收，Ardot 仅为历史参考且禁止未授权写入', async () => {
     const [agents, design, readme, designQa, adr, releaseGateAdr] = await Promise.all([
       readFile(path.join(repositoryRoot, 'AGENTS.md'), 'utf8'),
       readFile(path.join(repositoryRoot, 'DESIGN.md'), 'utf8'),
@@ -361,8 +364,9 @@ describe('发布与治理契约', () => {
     const ardotUrl = 'https://ardot.tencent.com/file/718186366720195';
 
     expect(agents).toContain(ardotUrl);
-    expect(agents).toContain('最新获用户批准版本，是用户审阅的产品 UI 界面真相');
-    expect(agents).toContain('Ardot 是用户审阅和完善 UI 的专属界面，AI 默认只读');
+    expect(agents).toContain('以实时代码与过往已完成的用户验收为真相');
+    expect(agents).toContain('Ardot 不再作为后续实现的权威或前置门');
+    expect(agents).toContain('Ardot 默认只读');
     expect(agents).toContain('除非用户对当前批次明确要求修改 Ardot');
     expect(agents).toContain('不显示“首发”“规划中”“尚未实现”等开发阶段、发布批次或治理审批文案');
     expect(agents).toContain('尚未开放但需要保留的导航项必须使用浅灰文字与图标');
@@ -382,8 +386,8 @@ describe('发布与治理契约', () => {
     expect(design).toContain('当前实现已注册同一鲸鱼 path 几何');
     expect(readme).toContain('Obsidian ribbon、活动标签页、Workbench 左上角和任务环境继续使用同一 DeepSeek 鲸鱼几何');
     expect(adr).toContain('状态：已接受');
-    expect(adr).toContain('当前批准基线为页面 `UI 真相 v2`（`12:1`）');
-    expect(adr).toContain('同一 Ardot 项目持续演进');
+    expect(adr).toContain('历史批准基线为 Ardot 页面 `UI 真相 v2`（`12:1`）');
+    expect(adr).toContain('新批次仍需自己的运行验收');
     expect(releaseGateAdr).toContain('“新建任务”固定为 Workbench 内部导航第一个功能');
     expect(releaseGateAdr).toContain('原“概览”和“运行状态”合并为“运行”，固定在功能导航最后');
     expect(releaseGateAdr).toContain('发布门和实现差异只记录在治理文档、测试、CI 与验收证据中');
@@ -408,6 +412,28 @@ describe('发布与治理契约', () => {
       );
       expect(bytes.byteLength).toBeGreaterThan(1_000);
     }
+  });
+
+  it('N1 导航契约固定只读索引、原身份恢复和独立运行验收', async () => {
+    const [adr, navigation, conversation, styles, main] = await Promise.all([
+      readFile('docs/architecture/ADR-014-project-and-recent-navigation.md', 'utf8'),
+      readFile('src/task-navigation.ts', 'utf8'), readFile('src/new-task-conversation.ts', 'utf8'),
+      readFile('styles.css', 'utf8'), readFile('src/main.ts', 'utf8'),
+    ]);
+    expect(adr).toContain('所有 v1 任务只进入“最近”');
+    expect(adr).toContain('项目选择及首次发送时固定归属仍由 P1/U1 实施');
+    expect(adr).toContain('隔离 Vault 与最终运行 UI 验收未完成');
+    expect(adr).toContain('c269ac64e35673566b0c958d956c6d0367556c3e');
+    expect(adr).toContain('生产 alpha.3 公开 session controller');
+    expect(navigation).not.toMatch(/createTask\(|createProject\(|updateTask\(|updateProject\(/u);
+    expect(navigation).toContain('right.updatedAt.localeCompare(left.updatedAt)');
+    expect(conversation).toContain('async openTask(task: TaskRecoveryItem)');
+    expect(conversation).toContain('if (this.restoreOnly)');
+    expect(conversation).toContain('session_restore_failed');
+    expect(main).toContain('navigationHost: this.taskNavigationController');
+    expect(styles).toContain('.dsh-mobile-task-navigation');
+    expect(styles).toContain('.dsh-task-navigation summary:focus-visible');
+    expect(styles).toContain('color: var(--text-error)');
   });
 
   it('Batch 5A UI 基线、Batch 7 对话与 Batch 9 正式会话各自保持单一职责', async () => {

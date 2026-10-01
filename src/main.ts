@@ -23,6 +23,8 @@ import { ElectronTaskWorkspaceFileActions } from './task-workspace-file-actions'
 import { TaskWorkspaceLedger } from './task-workspace';
 import { TaskIndexStore } from './task-index';
 import { TaskRecoveryController } from './task-recovery';
+import { ProjectIndexStore } from './project-index';
+import { TaskNavigationController } from './task-navigation';
 import {
   QuickAssistantView,
   VIEW_TYPE_QUICK_ASSISTANT,
@@ -37,6 +39,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
   private taskWorkspaceLedger: TaskWorkspaceLedger | undefined;
   private taskIndexStore: TaskIndexStore | undefined;
   private taskRecoveryController: TaskRecoveryController | undefined;
+  private taskNavigationController: TaskNavigationController | undefined;
   private readonly taskWorkspaceHost = new ElectronTaskWorkspaceHost({
     validateWorkspace: async (workspacePath) => (
       await this.getTaskWorkspaceLedger().validateWorkspace(workspacePath)
@@ -50,10 +53,16 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
   private readonly conversationHost = new NewTaskConversationController({
     createProcess: (input) => Promise.resolve(this.createConversationProcess(input)),
     taskIndex: {
-      createTask: async (input) => await this.getTaskIndexStore().createTask(input),
-      updateTask: async (taskId, lifecycle) => (
-        await this.getTaskIndexStore().updateTask(taskId, lifecycle)
-      ),
+      createTask: async (input) => {
+        const result = await this.getTaskIndexStore().createTask(input);
+        await this.taskNavigationController?.reloadIndex();
+        return result;
+      },
+      updateTask: async (taskId, lifecycle) => {
+        const result = await this.getTaskIndexStore().updateTask(taskId, lifecycle);
+        await this.taskNavigationController?.reloadIndex();
+        return result;
+      },
     },
     taskLedger: {
       beginTurn: async (turnId, workspacePath) => (
@@ -85,6 +94,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
       VIEW_TYPE_WORKBENCH,
       (leaf: WorkspaceLeaf) => new WorkbenchView(leaf, {
         conversationHost: this.conversationHost,
+        navigationHost: this.taskNavigationController,
         getDshHealth: () => this.health,
         contextHost: this.contextHost,
         onContextsChanged: () => this.refreshQuickAssistantViews(),
@@ -140,6 +150,7 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     this.healthProbe.dispose();
     this.conversationHost.disposeImmediately();
     this.taskRecoveryController?.disposeImmediately();
+    this.taskNavigationController?.dispose();
   }
 
   async updateDshCommand(rawCommand: string): Promise<void> {
@@ -266,6 +277,17 @@ export default class DeepSeekHarnessWorkbenchPlugin extends Plugin {
     });
     this.taskRecoveryController = controller;
     await controller.refresh();
+    const navigation = new TaskNavigationController({
+      tasks: taskIndexStore,
+      projects: new ProjectIndexStore({ stateDirectory: storage.stateDirectory, vaultPath }),
+      recovery: controller,
+      isBusy: () => !['idle', 'completed', 'cancelled', 'failed'].includes(
+        this.conversationHost.getSnapshot().phase,
+      ),
+      openTask: async task => await this.conversationHost.openTask(task),
+    });
+    this.taskNavigationController = navigation;
+    await navigation.reloadIndex();
   }
 
   private getTaskIndexStore(): TaskIndexStore {
