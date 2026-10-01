@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, realpath, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -84,7 +84,7 @@ describe('N1 项目与最近的只读导航投影', () => {
 });
 
 async function harness() {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'dsh-n1-navigation-'));
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'dsh-n1-navigation-')));
   roots.push(root);
   const stateDirectory = path.join(root, 'state');
   const vaultPath = path.join(root, 'vault');

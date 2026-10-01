@@ -55,6 +55,8 @@ R2 task-index v1 没有 projectId 或 DSH WorkspaceId；D1 的项目引用也不
 
 本地完整 `npm test`：26 个测试文件，182 passed / 2 skipped；跳过为平台条件，不冒充对应平台运行验收。`typecheck`、`lint`、`build`、`verify`、`test:runtime`（48 passed / 1 skipped）与 `test:runtime:candidate`（5 passed）均通过，bridge artifact 保持 alpha.3 原 hash。真实模型使用本地 fixture 服务，不调用用户账号、不读写用户 DSH session。补充验证异步打开期间卸载不启动进程，以及视图通知异常不覆盖索引写入结果。
 
+首次实现 `cf309a5a595561e6b7f7a399799c9000a47dc561` 的 CI `36816983450`：Ubuntu 通过，Windows 导航夹具被真实 canonical-path 校验拒绝。Windows runner 的临时目录可能使用短路径别名，因此夹具在创建后通过 `realpath` 取得规范根，与 D1 既有测试做法一致；不放宽生产路径校验、不降低断言。第二个提交只闭合该平台运行契约，仍属同一 N1 批次。
+
 ## 7. 提交、回滚与停止
 
 一个 N1 批次，优先一个实现提交；只有独立回滚所需时最多两个实质提交，测试/文档/CI 随实现，不另拆证据批次。回滚到上一插件实现时保留 task-index、project-index、DSH session 和账本，不迁移、不删文件。
